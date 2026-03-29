@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if pageTitle %}{{ pageTitle }} — {% endif %}{{ siteConfig.title }}</title>
+
+  {# ── Primary meta ────────────────────────────────────── #}
+  <meta name="description" content="{{ ogDescription or siteConfig.description }}">
+  <meta name="author" content="Arpit (@thedataareclean)">
+  {% if siteConfig.url %}<link rel="canonical" href="{{ siteConfig.url }}{{ page.url }}">{% endif %}
+
+  {# ── Open Graph ──────────────────────────────────────── #}
+  {# Use the explicit ogImage, or fall back to the most recent photo for the homepage #}
+  {% set _ogImage = ogImage or (photos[0].url.display if photos | length > 0) %}
+  <meta property="og:site_name" content="{{ siteConfig.title }}">
+  <meta property="og:title"     content="{{ pageTitle or siteConfig.title }}">
+  <meta property="og:description" content="{{ ogDescription or siteConfig.description }}">
+  {% if ogImage %}
+  <meta property="og:type" content="article">
+  {% else %}
+  <meta property="og:type" content="website">
+  {% endif %}
+  {% if siteConfig.url %}<meta property="og:url" content="{{ siteConfig.url }}{{ page.url }}">{% endif %}
+  {% if _ogImage %}
+  <meta property="og:image" content="{{ _ogImage | absUrl(siteConfig.url) }}">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  {% endif %}
+
+  {# ── Twitter / X ─────────────────────────────────────── #}
+  <meta name="twitter:card"    content="summary_large_image">
+  <meta name="twitter:site"    content="@thedataareclean">
+  <meta name="twitter:creator" content="@thedataareclean">
+  <meta name="twitter:title"   content="{{ pageTitle or siteConfig.title }}">
+  <meta name="twitter:description" content="{{ ogDescription or siteConfig.description }}">
+  {% if _ogImage %}
+  <meta name="twitter:image" content="{{ _ogImage | absUrl(siteConfig.url) }}">
+  {% endif %}
+
+  {# ── Favicons ─────────────────────────────────────────── #}
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
+
+  {# ── Fonts ───────────────────────────────────────────── #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Schoolbell&display=swap">
+
+  {# ── Styles ──────────────────────────────────────────── #}
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/desk.css">
+  <link rel="stylesheet" href="/styles/grid.css">
+  <link rel="stylesheet" href="/styles/photo-card.css">
+  <link rel="stylesheet" href="/styles/lightbox.css">
+  <link rel="stylesheet" href="/styles/photo-page.css">
+</head>
+<body>
+
+{{ content | safe }}
+
+</body>
+</html>

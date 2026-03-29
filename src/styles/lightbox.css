@@ -1,0 +1,386 @@
+/* ── Lightbox shell ─────────────────────────────────── */
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS Safari */
+}
+
+#lightbox[hidden] { display: none; }
+
+/* Full-screen dim — fixed so it stays put during mobile scroll */
+.lightbox__backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  cursor: zoom-out;
+}
+
+/* ── Two-column layout ──────────────────────────────── */
+.lightbox__layout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 1400px;
+  padding: 64px 56px 48px;
+  gap: 48px;
+  min-height: 100%;
+}
+
+/* ── Left: photo ────────────────────────────────────── */
+.lightbox__photo-col {
+  flex: 1;
+  min-width: 0;               /* prevent flex overflow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox__print {
+  transform-origin: center center;
+  box-shadow:
+    0 4px 14px   rgba(0, 0, 0, 0.65),
+    0 24px 64px  rgba(0, 0, 0, 0.55),
+    0 60px 130px rgba(0, 0, 0, 0.35);
+}
+
+.lightbox__print img {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 128px);
+  width: auto;
+  height: auto;
+  transition: opacity var(--dur-med) ease;
+}
+
+/* ── Right: meta panel ──────────────────────────────── */
+.lightbox__meta-col {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;           /* contains child overflow so photo is never affected */
+}
+
+/* Panels wrapper — flex column so meta-top can grow and push meta-bottom down */
+.lightbox__meta-panels {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Description lives at the top, scrolls if long.
+   min-height: 0 is required — without it flex children grow to content
+   size and overflow-y: auto never triggers. */
+.lightbox__meta-top {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb), 0.15) transparent;
+}
+
+.lightbox__title {
+  font-family: var(--font-ibm-sans);
+  font-size: var(--text-md);
+  color: var(--on-dark);
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+
+.lightbox__title[hidden],
+.lightbox__description[hidden],
+.lightbox__exif[hidden] {
+  display: none;
+}
+
+.lightbox__description {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  line-height: 1.8;
+  color: var(--paper-body);
+  white-space: pre-wrap;
+}
+
+/* EXIF + footer pushed to bottom of panel */
+.lightbox__meta-bottom {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--accent-subtle);
+  flex-shrink: 0;
+}
+
+.lightbox__exif {
+  padding-bottom: 4px;
+}
+
+.exif-grid {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  row-gap: 5px;
+  column-gap: 10px;
+  font-family: var(--font-mono-read);
+  font-size: var(--text-sm);
+  letter-spacing: 0.03em;
+}
+
+.exif-grid dt {
+  color: rgba(var(--accent-rgb), 0.45);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  padding-top: 1px;
+}
+
+.exif-grid dd {
+  color: var(--accent-body);
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.lightbox__footer {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--accent-ui);
+  font-family: var(--font-mono-read);
+  letter-spacing: 0.06em;
+}
+
+.lightbox__footer a {
+  color: rgba(var(--accent-rgb), 0.75);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-border);
+  align-self: flex-start;
+  transition: color var(--dur-fast), border-color var(--dur-fast);
+}
+
+.lightbox__footer a:hover {
+  color: var(--on-dark);
+  border-bottom-color: var(--accent-ui);
+}
+
+/* ── Nav: arrows + counter at foot of right panel ───── */
+.lightbox__nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--accent-faint);
+}
+
+.lightbox__counter {
+  font-family: var(--font-mono-read);
+  font-size: var(--text-sm);
+  color: var(--accent-dim);
+  letter-spacing: 0.1em;
+}
+
+.lightbox__prev,
+.lightbox__next {
+  background: none;
+  border: none;
+  color: var(--paper-dim);
+  cursor: pointer;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  padding: 4px 6px;
+  transition: color var(--dur-fast) ease;
+}
+
+.lightbox__prev:hover,
+.lightbox__next:hover {
+  color: var(--paper-strong);
+}
+
+.lightbox__prev:disabled,
+.lightbox__next:disabled {
+  opacity: 0.12;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Share + Download actions ───────────────────────── */
+.lightbox__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.lightbox__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid var(--accent-border);
+  color: var(--accent-ui);
+  font-family: var(--font-mono-read);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color var(--dur-fast), border-color var(--dur-fast);
+  line-height: 1.6;
+}
+
+.lightbox__action-btn:hover {
+  color: var(--on-dark);
+  border-color: var(--accent-ui);
+}
+
+/* ── Close button ───────────────────────────────────── */
+.lightbox__close {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 2;
+  background: none;
+  border: none;
+  color: var(--paper-faint);
+  font-size: var(--text-xl);
+  line-height: 1;
+  padding: 10px;
+  cursor: pointer;
+  transition: color var(--dur-fast) ease;
+}
+
+.lightbox__close:hover {
+  color: var(--paper-strong);
+}
+
+/* ── Tabs (mobile only) ─────────────────────────────── */
+.lightbox__tabs {
+  display: none;
+}
+
+/* ── Mobile: fixed zones, tab-toggled meta ──────────── */
+@media (max-width: 680px) {
+  /* Lightbox fills the viewport exactly — no scroll on the outer shell */
+  #lightbox {
+    align-items: stretch;
+    overflow: hidden;
+  }
+
+  .lightbox__layout {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    gap: 0;
+    height: 100dvh;           /* fill full viewport */
+    height: 100vh;            /* fallback */
+  }
+
+  /* ── Photo: fills remaining space above meta ── */
+  .lightbox__photo-col {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 16px 12px;  /* 60px top clears the close button */
+    overflow: hidden;
+  }
+
+  .lightbox__print {
+    max-height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .lightbox__print img {
+    max-height: 100%;
+    max-width: 100%;
+  }
+
+  /* ── Tabs ── */
+  .lightbox__tabs {
+    display: flex;
+    flex: 0 0 auto;
+    border-top:    1px solid var(--accent-faint);
+    border-bottom: 1px solid var(--accent-faint);
+  }
+
+  .lightbox__tab-btn {
+    flex: 1;
+    padding: 10px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(var(--accent-rgb), 0.4);
+    font-family: var(--font-mono-read);
+    font-size: var(--text-xs);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color var(--dur-fast), border-color var(--dur-fast);
+  }
+
+  .lightbox__tab-btn.is-active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── Meta col ── */
+  .lightbox__meta-col {
+    width: 100%;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 20px;
+  }
+
+  /* Panels container: height driven by EXIF content (in flow).
+     Info panel overlays it absolutely so switching tabs never changes height. */
+  .lightbox__meta-panels {
+    display: block;        /* override desktop flex-direction */
+    position: relative;
+    flex: 0 0 auto;
+  }
+
+  /* Info panel — absolutely fills the panels container, scrolls if needed */
+  .lightbox__meta-top {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    padding: 12px 0 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--accent-rgb), 0.15) transparent;
+  }
+
+  /* EXIF panel — stays in flow and sizes the container */
+  .lightbox__meta-bottom {
+    padding: 12px 0 8px;
+    margin-top: 0;
+    border-top: none;
+  }
+
+  /* Tab switching — visibility:hidden keeps layout height intact */
+  .lightbox__meta-top.is-hidden,
+  .lightbox__meta-bottom.is-hidden {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* ── Nav: always pinned at bottom ── */
+  .lightbox__nav {
+    flex: 0 0 auto;
+    margin-top: 0;
+    padding: 10px 0 14px;
+    border-top: 1px solid var(--accent-faint);
+  }
+}

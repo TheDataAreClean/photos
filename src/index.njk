@@ -1,0 +1,72 @@
+---
+layout: layouts/base.njk
+permalink: /
+---
+
+<header class="site-header">
+  <h1 class="site-title">{{ siteConfig.displayTitle }}</h1>
+  <p class="site-subtitle">{{ photos | length }} and counting..</p>
+</header>
+
+<main>
+  <div
+    id="gallery-root"
+    class="gallery-grid is-loading"
+    role="list"
+    data-chunk-size="60"
+    data-total-chunks="{{ photos | chunkCount(60) }}"
+  ></div>
+  <div id="scroll-sentinel" aria-hidden="true" style="height:1px"></div>
+</main>
+
+<footer class="site-footer"><a href="https://thedataareclean.com">@thedataareclean</a></footer>
+
+{# ── Lightbox ─────────────────────────────────────────── #}
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo viewer" data-total-photos="{{ photos | length }}">
+  <div class="lightbox__backdrop"></div>
+  <div class="lightbox__layout">
+
+    <div class="lightbox__photo-col">
+      <div class="lightbox__print">
+        <img id="lightbox-img" src="" alt="" />
+      </div>
+    </div>
+
+    <div class="lightbox__meta-col">
+
+      <div class="lightbox__tabs">
+        <button class="lightbox__tab-btn is-active" data-tab="info">Info</button>
+        <button class="lightbox__tab-btn" data-tab="exif">EXIF</button>
+      </div>
+
+      <div class="lightbox__meta-panels">
+        <div class="lightbox__meta-top">
+          <div id="lightbox-title" class="lightbox__title" hidden></div>
+          <div id="lightbox-desc"  class="lightbox__description" hidden></div>
+        </div>
+        <div class="lightbox__meta-bottom">
+          <div id="lightbox-exif"   class="lightbox__exif" hidden></div>
+          <div id="lightbox-footer" class="lightbox__footer"></div>
+          <div class="lightbox__actions">
+            <button id="lightbox-share" class="lightbox__action-btn"><span>Share</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+            <a id="lightbox-download" class="lightbox__action-btn" href="#" download>Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+            <a id="lightbox-glass" class="lightbox__action-btn" href="#" target="_blank" rel="noopener noreferrer" hidden>Glass<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="lightbox__nav">
+        <button class="lightbox__prev" aria-label="Previous photo">&#8249;</button>
+        <span id="lightbox-counter" class="lightbox__counter"></span>
+        <button class="lightbox__next" aria-label="Next photo">&#8250;</button>
+      </div>
+    </div>
+
+  </div>
+  <button class="lightbox__close" aria-label="Close (Esc)">&times;</button>
+</div>
+
+{# First 60 photos inlined for instant paint; remaining loaded via infinite scroll #}
+<script id="gallery-data" type="application/json">{{ photos | first(60) | json | safe }}</script>
+<script src="/scripts/gallery.js"></script>
+<script src="/scripts/lightbox.js"></script>

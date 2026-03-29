@@ -1,0 +1,47 @@
+/* ── Masonry grid — JS-positioned, left-to-right order ── */
+.gallery-grid {
+  position: relative;   /* JS sets card positions absolutely inside here */
+  padding: 40px 44px 60px;
+  max-width: 1640px;
+  margin: 0 auto;
+  /* height is set by JS masonry() */
+}
+
+.gallery-grid.is-loading {
+  opacity: 0;
+}
+
+.gallery-grid.is-ready {
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+
+.gallery-empty {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 80px 44px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  color: var(--accent-dim);
+  font-size: var(--text-sub);
+}
+
+/* ── Mobile: single column, normal document flow ─────── */
+@media (max-width: 560px) {
+  .gallery-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 14px 32px;
+    height: auto !important;
+  }
+
+  /* JS resets these inline styles on resize, but guard here too */
+  .gallery-grid .photo-card {
+    position: static !important;
+    width: 100% !important;
+    left: auto !important;
+    top: auto !important;
+  }
+}

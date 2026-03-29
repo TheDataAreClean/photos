@@ -1,0 +1,45 @@
+/* ── Photo permalink page — uses lightbox classes, minimal overrides ── */
+
+/* lightbox__layout uses min-height:100% relative to #lightbox (fixed).
+   On a static page the parent is body, so force 100vh instead. */
+.photo-page.lightbox__layout {
+  min-height: 100vh;
+}
+
+/* Backdrop — same dark overlay as lightbox, but not clickable */
+.photo-page__backdrop {
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Close button repurposed as a back-to-gallery link */
+a.photo-page__close {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Back link in the nav row */
+.photo-page__back {
+  font-family: var(--font-mono-read);
+  font-size: var(--text-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(var(--accent-rgb), 0.55);
+  text-decoration: none;
+  transition: color var(--dur-fast);
+}
+
+.photo-page__back:hover {
+  color: var(--paper-strong);
+}
+
+/* Mobile: needs explicit height like the lightbox for fixed-zone layout */
+@media (max-width: 680px) {
+  .photo-page.lightbox__layout {
+    height: 100dvh;
+    height: 100vh;
+  }
+
+}

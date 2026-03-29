@@ -1,0 +1,114 @@
+---
+pagination:
+  data: photos
+  size: 1
+  alias: photo
+permalink: /photos/{{ photo.id }}/index.html
+layout: layouts/base.njk
+---
+
+<a href="/" class="lightbox__close photo-page__close" aria-label="Back to gallery">&times;</a>
+
+<div class="lightbox__backdrop photo-page__backdrop"></div>
+<main class="lightbox__layout photo-page">
+
+  <div class="lightbox__photo-col">
+    <div class="lightbox__print">
+      <img
+        src="{{ photo.url.display }}"
+        alt="{{ photo.altText or photo.title or '' }}"
+      />
+    </div>
+  </div>
+
+  <div class="lightbox__meta-col">
+
+    <div class="lightbox__tabs">
+      <button class="lightbox__tab-btn is-active" data-tab="info">Info</button>
+      <button class="lightbox__tab-btn" data-tab="exif">EXIF</button>
+    </div>
+
+    <div class="lightbox__meta-panels">
+    <div class="lightbox__meta-top">
+      {% if photo.title %}
+      <div class="lightbox__title">{{ photo.title }}</div>
+      {% endif %}
+      {% if photo.description %}
+      <p class="lightbox__description">{{ photo.description }}</p>
+      {% endif %}
+    </div>
+
+    <div class="lightbox__meta-bottom">
+      {% if photo.exif %}
+      {%- set focal = photo.exif.focalLength35 -%}
+      {%- if focal and photo.exif.focalLength -%}{%- set focal = focal + ' (' + photo.exif.focalLength + ')' -%}
+      {%- elif not focal -%}{%- set focal = photo.exif.focalLength or '—' -%}
+      {%- endif -%}
+      <div class="lightbox__exif">
+        <dl class="exif-grid">
+          <dt>Camera</dt>  <dd>{{ photo.exif.camera       or '—' }}</dd>
+          <dt>Lens</dt>    <dd>{{ photo.exif.lens         or '—' }}</dd>
+          <dt>Focal</dt>   <dd>{{ focal }}</dd>
+          <dt>Aperture</dt><dd>{{ photo.exif.aperture     or '—' }}</dd>
+          <dt>Shutter</dt> <dd>{{ photo.exif.shutterSpeed or '—' }}</dd>
+          <dt>ISO</dt>     <dd>{{ photo.exif.iso          or '—' }}</dd>
+        </dl>
+      </div>
+      {% endif %}
+
+      <div class="lightbox__footer">
+        {% if photo.dateTaken %}<span>{{ photo.dateTaken | longDate }}</span>{% endif %}
+      </div>
+
+      <div class="lightbox__actions">
+        <button class="lightbox__action-btn" id="pp-share">
+          <span>Share</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </button>
+        {% if photo.url.download or photo.url.display %}
+        <a class="lightbox__action-btn" href="{{ photo.url.download or photo.url.display }}" download="{{ photo.id }}">Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+        {% endif %}
+        {% if photo.url.glass %}
+        <a class="lightbox__action-btn" href="{{ photo.url.glass }}" target="_blank" rel="noopener noreferrer">Glass<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+        {% endif %}
+      </div>
+    </div>
+    </div>
+
+    <div class="lightbox__nav">
+      <a href="/" class="photo-page__back">&#8592; Gallery</a>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+(function () {
+  // Share button — copies page URL
+  var shareBtn = document.getElementById('pp-share');
+  if (shareBtn) {
+    var label = shareBtn.querySelector('span');
+    shareBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(window.location.href).then(function () {
+        label.textContent = 'Copied!';
+        setTimeout(function () { label.textContent = 'Share'; }, 1500);
+      });
+    });
+  }
+
+  // Mobile tab switching — set initial state (info visible, exif hidden)
+  var tabs = document.querySelectorAll('.photo-page .lightbox__tab-btn');
+  var top  = document.querySelector('.photo-page .lightbox__meta-top');
+  var bot  = document.querySelector('.photo-page .lightbox__meta-bottom');
+  if (bot) bot.classList.add('is-hidden');
+  tabs.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tabs.forEach(function (b) { b.classList.remove('is-active'); });
+      btn.classList.add('is-active');
+      var isExif = btn.dataset.tab === 'exif';
+      if (top) top.classList.toggle('is-hidden', isExif);
+      if (bot) bot.classList.toggle('is-hidden', !isExif);
+    });
+  });
+})();
+</script>

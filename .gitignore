@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build cache (re-created on build)
+.cache/
+
+# Environment — never commit secrets
+.env
+.env.*
+
+# Build output
+# Remove dist/ from this file if deploying via GitHub Pages without CI.
+# Keep it ignored if using Netlify / Vercel / any CI that runs the build.
+dist/
+
+# OS
+.DS_Store
+Thumbs.db

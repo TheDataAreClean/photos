@@ -1,0 +1,233 @@
+# CLAUDE.md — Memories Gallery
+
+Developer and AI reference for the Memories photography gallery.
+
+**Stack:** Eleventy 3.x · Nunjucks · vanilla CSS · vanilla JS · Node.js build pipeline
+**Author:** Arpit (@thedataareclean)
+
+---
+
+## Commands
+
+```sh
+npm run dev               # Eleventy dev server + live reload — http://localhost:3003
+npm run build             # Production build → dist/
+npm run build:fresh       # Force re-fetch Glass API (bypasses 1-hour cache)
+
+npm run rename            # Dry-run rename preview for all photos (local + glass sidecars)
+npm run rename -- --apply # Apply renames
+npm run rename:local      # Local photos only
+npm run rename:glass      # Glass sidecars only
+
+npm run sync:glass        # Pull latest Glass API data without a full build
+npm run gen:favicon       # Regenerate apple-touch-icon.png + favicon-32.png from SVG design
+```
+
+---
+
+## File structure
+
+```
+config.js              Site + build configuration (single source of truth)
+.eleventy.js           Eleventy config: filters, passthrough, output dir
+
+_data/
+  photos.js            Data pipeline: Glass + local → merged array + JSON chunks + stale prune
+  siteConfig.js        Exposes config.site to templates
+
+_includes/
+  layouts/
+    base.njk           HTML shell: head, CSS links, OG tags, content slot
+
+src/
+  index.njk            Gallery index: masonry grid + lightbox
+  photos/
+    photo.njk          Per-photo permalink pages (Eleventy pagination, size: 1)
+    photos.11tydata.js Computed data: pageTitle, ogImage, ogDescription
+  styles/
+    base.css           Design tokens + reset (single source of truth for all tokens)
+    desk.css           Wood grain background, vignette, header, footer
+    grid.css           Masonry grid, mobile single-column
+    photo-card.css     Card: rotation, shadows, hover, caption
+    lightbox.css       Lightbox modal: two-column desktop, stacked mobile
+    photo-page.css     Individual photo permalink page layout
+  scripts/
+    gallery.js         Card rendering, JS masonry, infinite scroll
+    lightbox.js        Lightbox open/close FLIP animation, keyboard nav
+
+build/
+  exif.js              EXIF extraction via exifr
+  merge.js             Deduplication (local overrides Glass) + date sort
+  watermark.js         Watermark compositing via sharp
+  gen-watermark.js     Generates the watermark asset
+  sources/
+    glass.js           Glass API pagination, slug IDs, sidecar create/merge
+    local.js           Local photo processor: auto-rename, EXIF, sharp resize
+  utils/
+    slug.js            toSlug(), dateTitleStem(), isCleanStem()
+    sidecar.js         Shared sidecar read/write helpers
+
+scripts/
+  rename.js            Master rename: runs rename-local.js then rename-glass.js
+  rename-local.js      Rename local photos by EXIF date + title
+  rename-glass.js      Rename glass sidecars by title (injects glassAutoId first)
+  sync-glass.js        Standalone Glass sync — fetches API, updates cache + sidecars
+  glass-sync.sh        Shell wrapper for launchd (resolves node across nvm/Homebrew)
+
+launchd/
+  com.thedataareclean.photos-sync.plist  Weekly launchd agent (Sundays 08:00)
+
+local/                 Drop photos here — auto-processed on build
+glass-sidecars/        One .md per Glass photo — auto-created, edit freely
+dist/                  Build output (not committed)
+  data/                Paginated JSON chunks (photos-1.json, photos-2.json, …)
+  photos/              Resized local photo assets (auto-pruned by build)
+```
+
+---
+
+## Architecture
+
+### Data pipeline is a side-effect data file
+`_data/photos.js` returns the photo array and has side effects: resizes images into `dist/photos/`, writes `dist/data/photos-N.json` chunks, creates sidecar stubs, prunes stale assets. All side effects run before Eleventy generates HTML — correct order by design.
+
+### Stale asset pruning runs automatically
+After every build, `pruneStaleAssets()` derives the exact expected filenames from `photo.url.*` values and deletes anything in `dist/photos/` not in that set. It also removes `photos-N.json` chunks beyond the current count. `dist/` stays accurate without manual cleanup or full rebuilds.
+
+### Glass cache stores raw API data
+`.cache/glass-raw.json` stores the raw Glass API response. `glassToUnified()` runs on every build from this raw data. Changing slug logic, ID generation, or field mapping takes effect immediately without `--fresh`. The cache has a 1-hour TTL — use `npm run build:fresh` or `npm run sync:glass` to bypass it.
+
+### Weekly Glass sync via launchd
+`launchd/com.thedataareclean.photos-sync.plist` runs `scripts/glass-sync.sh` every Sunday at 08:00. The shell wrapper resolves node via nvm → Homebrew (Apple Silicon) → Homebrew (Intel) → system PATH, since launchd runs with a minimal PATH. Logs to `~/Library/Logs/photos-sync.log`.
+
+To install/uninstall the agent:
+```sh
+cp launchd/com.thedataareclean.photos-sync.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
+
+launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
+```
+
+### URL slugs are derived, not stored
+Glass photo IDs: `YYYY-MM-DD-glass-{slug}` — derived from date + first six words of description. Local photo IDs: `YYYY-MM-DD-local-{slug}` — derived from filename. **Changing a Glass description or local filename changes the URL.** Avoid editing the slug-contributing portion of a Glass description once deployed.
+
+### Glass sidecar renaming with glassAutoId
+`rename-glass.js` renames sidecar files to match their `title:` field. Before renaming, it injects `glassAutoId: "original-stem"` into the frontmatter. On the next build, `glass.js` builds an ID map from all `glassAutoId` values, so it still matches the sidecar to the correct Glass photo after the rename. The build never depends on the sidecar filename for Glass photos.
+
+### Sidecar override semantics
+Empty string `""` in a sidecar field falls back to the Glass/EXIF source value — not the override. This is intentional: clearing a field restores the original. Implemented via the `ov(override, fallback)` helper in `glass.js` and `local.js`.
+
+### Infinite scroll via pre-built JSON chunks
+Photos split into 60-photo chunks at `dist/data/photos-N.json`. Index page inlines chunk 1 for instant first paint; `gallery.js` fetches subsequent chunks via `IntersectionObserver` on `#scroll-sentinel`. Total chunk count passed via `data-total-chunks` on `#gallery-root`.
+
+### Lightbox reads a live array
+`window.GalleryPhotos` is the single source of truth for photo data at runtime. `gallery.js` initialises it from the inlined chunk and pushes new photos as chunks load. `lightbox.js` holds a reference — not a copy — so navigation covers newly loaded photos automatically.
+
+### CSS design tokens are in base.css only
+All design values live in `base.css` as `:root` custom properties. Token categories:
+- **Colours:** `--bg`, `--paper`, `--accent`, `--ink-paper`, `--stamp`, `--overlay`, `--on-dark`
+- **RGB components:** `--accent-rgb`, `--paper-rgb`, etc. — enables `rgba(var(--accent-rgb), 0.3)` composition
+- **Named opacity steps:** `--accent-faint` (0.12) through `--accent-body` (0.9); `--paper-faint` through `--paper-strong`
+- **Type scale:** `--text-2xs` (0.6rem) through `--text-2xl` (1.9rem)
+- **Fonts:** `--font-serif` (Schoolbell), `--font-ibm-sans` (IBM Plex Sans), `--font-mono`
+- **Durations:** `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s)
+
+Never hardcode a value that has a token. The grain gradients in `desk.css` use raw rgba intentionally — they are texture-specific.
+
+### Local photo renaming is automatic
+`processLocal()` calls `autoRename()` before processing. Any file whose stem doesn't start with `YYYY-MM-DD` is renamed in-place (image + sidecar) using EXIF date + sidecar title. **The build mutates `local/` on disk.** Files already starting with a date are never touched.
+
+---
+
+## Photo metadata
+
+Every photo has a Markdown sidecar. Glass photos: `glass-sidecars/YYYY-MM-DD-glass-slug.md`. Local photos: `local/YYYY-MM-DD-local-slug.md` (co-located with the image).
+
+Sidecars are auto-created on first build with real EXIF/Glass values pre-filled.
+
+```markdown
+---
+title: "Bougainvillea wall"       # Card label + photo page h1
+tags: [street, mumbai]
+
+overrideExif:
+  camera: "Fujifilm X-T50"        # Leave blank to use Glass/EXIF source
+  lens: "XF23mmF2 R WR"
+  focalLength: "23mm"
+  focalLength35: "35mm"
+  aperture: "f/2.8"
+  shutterSpeed: "1/250s"
+  iso: 400
+
+dateTaken: "2026-03-09T08:57:02Z" # Leave blank to use EXIF date
+---
+
+Description in the lightbox + photo permalink page. Supports multiple paragraphs.
+```
+
+**iPhone lens format:** `"Back Wide 6.765mm ƒ/1.78"` — strip device name, use ƒ (not f).
+
+**Glass title default:** first word of Glass description. Override via `title:` in the sidecar.
+
+**Local rename trigger:** adding/changing `title:` in a local sidecar renames the image file and sidecar on next build. The URL changes with the filename.
+
+---
+
+## Known traps
+
+### Changing a slug breaks the URL
+The Glass slug uses the first six words of the description. Change it → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body (not the Glass description).
+
+### Empty overrideExif fields fall back to source
+`overrideExif: { camera: "" }` falls back to the EXIF source value (empty string = not set). `iso: 0` would override with 0 — be explicit with numeric zeros.
+
+### Auto-rename runs before the sidecar is read
+First build after dropping a new photo: sidecar is created from EXIF, then the file is renamed. The sidecar filename updates too. No data is lost, but a two-step build is normal for brand-new files.
+
+### Glass cache TTL
+1-hour TTL. New Glass photos won't appear until the cache expires. Use `npm run build:fresh` or `npm run sync:glass` to force a re-fetch.
+
+### Per-photo page images need root-relative URLs
+Local photo URLs are root-relative (`/photos/filename.jpg`) so they resolve correctly from `/photos/YYYY-MM-DD-local-slug/`. Never make them relative paths.
+
+---
+
+## Pre-push checklist
+
+- [ ] `npm run build` — zero errors, zero warnings
+- [ ] `dist/` not committed
+- [ ] Browser console clean — no JS errors, no 404s
+- [ ] New local photos renamed (date-based stem) and sidecars auto-created
+- [ ] `glass-sidecars/` has one file per Glass photo
+- [ ] Gallery grid loads, masonry correct at desktop + mobile
+- [ ] Lightbox opens, FLIP animation, prev/next/close, keyboard nav
+- [ ] Infinite scroll loads next chunk when > 60 photos
+- [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{source}-{slug}/`
+
+---
+
+## Commit convention
+
+`{Type}: {short description}`
+
+| Type | Use for |
+|---|---|
+| `Add` | New feature or photo source |
+| `Fix` | Bug fix |
+| `Update` | Change to existing feature or content |
+| `Refactor` | Code restructure, no behaviour change |
+| `Docs` | CLAUDE.md, README, comments only |
+| `Chore` | Dependencies, config, `.gitignore` |
+
+## Release tagging
+
+```sh
+git tag -a v1.0.0 -m "Brief description"
+git push origin v1.0.0
+```
+
+| Part | When to increment |
+|---|---|
+| MAJOR | Visual redesign or change in site concept |
+| MINOR | New feature (new source, tag pages, RSS, etc.) |
+| PATCH | Bug fix, content update, sidecar edit |
