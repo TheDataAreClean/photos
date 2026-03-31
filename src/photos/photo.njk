@@ -17,7 +17,9 @@ layout: layouts/base.njk
       <img
         src="{{ photo.url.display }}"
         alt="{{ photo.altText or photo.title or '' }}"
+        draggable="false"
       />
+      <div class="img-protect"></div>
     </div>
   </div>
 
@@ -95,6 +97,10 @@ layout: layouts/base.njk
       });
     });
   }
+
+  // Block right-click on photo
+  var photoImg = document.querySelector('.lightbox__print img');
+  if (photoImg) photoImg.addEventListener('contextmenu', function (e) { e.preventDefault(); });
 
   // Mobile tab switching — set initial state (info visible, exif hidden)
   var tabs = document.querySelectorAll('.photo-page .lightbox__tab-btn');

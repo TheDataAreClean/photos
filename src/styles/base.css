@@ -3,11 +3,8 @@
   --bg:           #251108;        /* desk / body background          */
   --paper:        #f4efe6;        /* light text on dark bg           */
   --paper-aged:   #ddd6cc;        /* photo print / card surface      */
-  --paper-dark:   #e4ddd0;        /* image-wrap loading placeholder  */
 
   /* ── Ink ─────────────────────────────────────────────── */
-  --ink:          #2c2416;        /* dark text on paper              */
-  --ink-muted:    #6b5a4a;        /* secondary dark text on paper    */
   --ink-paper:    #3a1c06;        /* body ink on aged-paper surfaces */
   --ink-paper-rgb: 58, 28, 6;    /* rgb components for opacity use  */
   --sepia-rgb:    100, 55, 10;    /* lighter sepia — card borders/labels */
@@ -20,12 +17,12 @@
   --accent-faint:  rgba(196, 168, 130, 0.12); /* barely visible borders  */
   --accent-subtle: rgba(196, 168, 130, 0.18); /* soft dividers           */
   --accent-border: rgba(196, 168, 130, 0.3);  /* standard borders        */
-  --accent-dim:    rgba(196, 168, 130, 0.5);  /* secondary UI            */
-  --accent-ui:     rgba(196, 168, 130, 0.65); /* active UI elements      */
-  --accent-body:   rgba(196, 168, 130, 0.9);  /* readable accent text    */
+  --accent-dim:      rgba(196, 168, 130, 0.5);  /* secondary UI            */
+  --accent-ui:       rgba(196, 168, 130, 0.65); /* active UI elements      */
+  --accent-readable: rgba(196, 168, 130, 0.75); /* AA-accessible text      */
+  --accent-body:     rgba(196, 168, 130, 0.9);  /* readable accent text    */
 
   /* ── On-dark (lightbox / overlay context) ────────────── */
-  --paper-rgb:    244, 239, 230;  /* rgb components for opacity use  */
   --on-dark:      #e8d5b8;        /* warm primary text on dark bg    */
   --paper-faint:  rgba(244, 239, 230, 0.5);   /* dim, close button       */
   --paper-dim:    rgba(244, 239, 230, 0.55);  /* inactive buttons        */
@@ -35,6 +32,7 @@
   /* ── Special ─────────────────────────────────────────── */
   --stamp:        #e8a020;        /* amber date-stamp colour         */
   --stamp-rgb:    232, 160, 32;   /* rgb components for opacity use  */
+  --stamp-bright: #ffe066;        /* lighter amber — stamp hover     */
   --overlay:      rgba(10, 6, 3, 0.96); /* lightbox / modal backdrop */
 
   /* ── Typography — fonts ──────────────────────────────── */

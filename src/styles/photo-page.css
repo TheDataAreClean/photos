@@ -26,7 +26,7 @@ a.photo-page__close {
   font-size: var(--text-sm);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(var(--accent-rgb), 0.55);
+  color: var(--accent-readable);
   text-decoration: none;
   transition: color var(--dur-fast);
 }

@@ -4,6 +4,8 @@ A static photography gallery that combines photos from [Glass.photo](https://gla
 
 **Features**
 - Masonry grid with FLIP animations and per-photo lightbox
+- Stack view — one-photo-at-a-time reading mode with swipe, keyboard, and navigation controls
+- Shuffle mode — randomises display order, persisted across visits
 - Infinite scroll — first 60 photos load instantly, rest fetched on demand
 - Per-photo permalink pages with Open Graph tags for sharing
 - Every photo has a Markdown sidecar file for editing title, description, tags, and EXIF overrides
@@ -15,14 +17,9 @@ A static photography gallery that combines photos from [Glass.photo](https://gla
 ## Quick start
 
 ```bash
-# 1. Install dependencies
 npm install
-
-# 2. Configure (see config.js)
-#    Set your Glass username, site title, etc.
-
-# 3. Build and preview
-npm run dev        # build + live reload at http://localhost:3000
+# Edit config.js — set your Glass username, site title, site URL
+npm run dev        # build + live reload at http://localhost:3003
 ```
 
 ---
@@ -31,18 +28,7 @@ npm run dev        # build + live reload at http://localhost:3000
 
 ### Glass photos
 
-Set your Glass username in `config.js`. The build fetches your public posts automatically and caches them for one hour. Run `npm run build:fresh` to force a re-fetch.
-
-Each Glass photo gets a Markdown sidecar auto-created in `glass-sidecars/`:
-
-```
-glass-sidecars/
-  2026-03-14-glass-still.md
-  2026-03-09-glass-bougainvillea.md
-  ...
-```
-
-Open any file to edit it — see [Editing photo metadata](#editing-photo-metadata) below.
+Set your Glass username in `config.js`. The build fetches your public posts, caches them for one hour, and auto-creates a sidecar in `glass-sidecars/` for each photo. Run `npm run build:fresh` to force a re-fetch. Open any sidecar to edit metadata — see [Editing photo metadata](#editing-photo-metadata).
 
 ### Local photos
 
@@ -82,11 +68,11 @@ Write your description here.
 It supports multiple paragraphs and line breaks.
 ```
 
-- **title** — displayed on the card and photo page; also used to rename local files
-- **tags** — available for filtering (feature coming)
-- **overrideExif** — any value left blank falls back to what Glass or EXIF provides
+- **title** — displayed on the card and photo page; also triggers a rename for local files
+- **tags** — stored, not yet used in the UI
+- **overrideExif** — any field left blank falls back to what Glass or EXIF provides
 - **dateTaken** — leave blank to use EXIF or Glass date
-- **body** — description text shown in the lightbox and on the photo page
+- **body** — description shown in the lightbox and on the photo page
 
 Save the file and run `npm run build` — changes appear immediately.
 
@@ -112,15 +98,20 @@ Save the file and run `npm run build` — changes appear immediately.
 │   │   ├── photo.njk       Per-photo permalink pages
 │   │   └── photos.11tydata.js  Computed data (OG tags) for photo pages
 │   ├── styles/
-│   │   ├── base.css        CSS variables and resets
-│   │   ├── desk.css        Wood grain background, header, footer
-│   │   ├── grid.css        Masonry grid layout
-│   │   ├── photo-card.css  Card styling, rotation, hover
-│   │   ├── lightbox.css    Lightbox modal (desktop + mobile)
-│   │   └── photo-page.css  Individual photo permalink pages
+│   │   ├── base.css           Design tokens and reset
+│   │   ├── desk.css           Wood grain background, header, footer
+│   │   ├── grid.css           Masonry grid layout
+│   │   ├── photo-card.css     Card styling, rotation, hover, flip
+│   │   ├── lightbox.css       Lightbox modal (desktop + mobile)
+│   │   ├── photo-page.css     Individual photo permalink pages
+│   │   ├── stack.css          Stack view layout and animations
+│   │   └── view-toggle.css    Grid/stack/shuffle toggle widget
 │   └── scripts/
-│       ├── gallery.js      Grid rendering and infinite scroll
-│       └── lightbox.js     Lightbox viewer and FLIP animation
+│       ├── gallery-core.js    Shared card factory and utilities
+│       ├── gallery.js         Grid rendering and infinite scroll
+│       ├── lightbox.js        Lightbox viewer and FLIP animation
+│       ├── stack.js           Stack view navigation and transitions
+│       └── view-toggle.js     View state persistence and toggle wiring
 │
 ├── build/
 │   ├── exif.js             EXIF extraction (exifr)
@@ -129,20 +120,19 @@ Save the file and run `npm run build` — changes appear immediately.
 │   │   ├── glass.js        Glass API client, sidecar management
 │   │   └── local.js        Local photo processor, auto-rename
 │   └── utils/
-│       └── slug.js         Slug generation utilities
+│       ├── slug.js         Slug generation utilities
+│       └── sidecar.js      Shared sidecar read/write helpers
 │
 ├── scripts/
-│   └── rename-local.js     Preview local renames before building
+│   ├── rename.js           Master rename (local + glass)
+│   ├── rename-local.js     Rename local photos by EXIF date + title
+│   ├── rename-glass.js     Rename glass sidecars by title
+│   └── sync-glass.js       Standalone Glass API sync
 │
 ├── local/                  Drop local photos here
 ├── glass-sidecars/         Auto-created Glass photo sidecars (edit freely)
 │
 └── dist/                   Build output (not committed)
-    ├── index.html
-    ├── data/               Paginated JSON chunks for infinite scroll
-    ├── photos/             Local photo assets + per-photo HTML pages
-    ├── styles/
-    └── scripts/
 ```
 
 ---
@@ -168,33 +158,30 @@ All options are in `config.js`:
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Build and serve at `localhost:3000` with live reload |
+| `npm run dev` | Build and serve at `localhost:3003` with live reload |
 | `npm run build` | Production build |
-| `npm run build:fresh` | Force re-fetch Glass API (bypasses cache) |
-| `npm run rename` | Preview auto-renames of local photos (dry run) |
+| `npm run build:fresh` | Force re-fetch Glass API (bypasses 1-hour cache) |
+| `npm run sync:glass` | Pull latest Glass data without a full build |
+| `npm run rename` | Dry-run rename preview for all photos |
 | `npm run rename -- --apply` | Apply renames |
+| `npm run rename:local` | Local photos only |
+| `npm run rename:glass` | Glass sidecars only |
+| `npm run gen:favicon` | Regenerate favicon assets from SVG |
 
 ---
 
 ## Deployment
 
-The `dist/` folder is a fully static site — deploy it anywhere.
+`dist/` is a fully static site — deploy it anywhere.
 
-**Netlify / Vercel**
-Connect the repo and set the build command to `npm run build` with publish directory `dist`. Set `GLASS_TOKEN` and `SITE_URL` as environment variables if needed.
+**Netlify / Vercel** — build command `npm run build`, publish directory `dist`.
 
-**GitHub Pages**
-Use a GitHub Action to run the build and push `dist/` to the `gh-pages` branch.
+**GitHub Pages** — a workflow is included at `.github/workflows/`. Push to `main` to deploy.
 
-**Anywhere else**
-Upload the contents of `dist/` to any static file host.
-
----
-
-## Environment variables
+**Environment variables**
 
 | Variable | Description |
 |----------|-------------|
 | `GLASS_TOKEN` | Glass API token (optional, improves rate limits) |
-| `SITE_URL` | Full deployed URL for Open Graph image tags |
+| `SITE_URL` | Full deployed URL — required for correct OG image tags |
 | `FRESH` | Set to `1` to bypass the Glass cache (`FRESH=1 npm run build`) |

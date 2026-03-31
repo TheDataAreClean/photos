@@ -1,0 +1,214 @@
+/* ── Stack view ───────────────────────────────────────── */
+
+/* Critical: author display:flex overrides UA [hidden]{display:none}.
+   This re-establishes the hidden attribute. */
+#stack-root[hidden] {
+  display: none !important;
+}
+
+/* ── Full-viewport flex column in stack mode ─────────── */
+/* body → header → main → footer fills the viewport exactly.
+   Everything is in-flow; no position:fixed anywhere.       */
+body.stack-mode {
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.stack-mode .site-header {
+  flex-shrink: 0;
+  /* Keep header above stack content on any device */
+  position: relative;
+  z-index: 2;
+}
+
+body.stack-mode .site-footer {
+  display: none;
+}
+
+body.stack-mode main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Stack root fills main ───────────────────────────── */
+#stack-root {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 0;
+}
+
+/* ── Stage: centering container, grows to fill all space above controls ── */
+#stack-stage {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Deck: naturally sized to the card's aspect ratio ── */
+/* Shadow layers are inset:0 here so they match the card exactly. */
+.stack-deck {
+  position: relative;
+  width: min(480px, 90vw);
+}
+
+/* ── Shadow layers — same size as the deck/card ─────── */
+.stack-layer {
+  position: absolute;
+  inset: 0;
+  background-color: var(--paper-aged);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 1px 2px   rgba(0, 0, 0, 0.55),
+    0 5px 14px  rgba(0, 0, 0, 0.38),
+    0 18px 52px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.stack-layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--paper-aged);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.stack-layer--2 {
+  transform: rotate(-4deg) translateY(8px) translateX(-6px);
+  opacity: 0.55;
+  z-index: 0;
+}
+
+.stack-layer--1 {
+  transform: rotate(2.5deg) translateY(5px) translateX(4px);
+  opacity: 0.72;
+  z-index: 1;
+}
+
+/* ── Active card: in-flow, natural size ──────────────── */
+/* The card is NOT stretched to fill the stage.
+   Its height is driven by the photo's aspect-ratio (set inline by makeCard).
+   JS adjusts deck width per photo so tall portraits always fit in the stage height.
+   The mat border (10px, same as grid view) is always consistent. */
+#stack-stage .photo-card {
+  position: relative;
+  width: 100%;
+  margin-bottom: 0;
+  z-index: 2;
+}
+
+/* Photo at its own natural aspect ratio — no forced height, no object-fit override */
+#stack-stage .photo-card__image-wrap img {
+  width: 100%;
+  height: auto;
+}
+
+/* Hover: gentle lift (overrides base card's larger lift) */
+#stack-stage .photo-card:hover,
+#stack-stage .photo-card:focus-visible {
+  transform: rotate(var(--rotation, 0deg)) translateY(-5px) scale(1.015);
+}
+
+/* ── Nav controls — in-flow below the stage ──────────── */
+/* CSS grid: empty · nav group · attribution
+   Grid keeps the nav centred regardless of attribution text width. */
+#stack-controls {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 6px 16px 10px;
+  width: 100%;
+}
+
+.stack-nav-group {
+  /* second column — always centred */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Attribution — natural text width only, right-aligned in its column */
+.stack-attribution {
+  justify-self: end;
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  letter-spacing: 0.08em;
+  color: var(--accent-dim);
+  text-decoration: none;
+  transition: color var(--dur-fast);
+  white-space: nowrap;
+  padding: 4px 0;
+}
+
+.stack-attribution:hover {
+  color: var(--accent-readable);
+}
+
+/* Chevrons match lightbox exactly — same size, no explicit font-family */
+.stack-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  color: var(--accent-dim);
+  cursor: pointer;
+  font-size: var(--text-2xl);
+  line-height: 1;
+  padding: 4px 6px;
+  transition: color var(--dur-fast);
+}
+
+.stack-nav-btn:hover {
+  color: var(--accent-body);
+}
+
+.stack-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+.stack-counter {
+  font-family: var(--font-ibm-sans);
+  font-size: var(--text-sm);
+  color: var(--accent-readable);
+  min-width: 6ch;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 560px) {
+  #stack-root {
+    padding: 4px 0 0;
+  }
+
+  .stack-deck {
+    width: 92vw;
+  }
+
+  .stack-attribution {
+    font-size: var(--text-sm);
+  }
+}

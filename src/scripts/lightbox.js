@@ -1,3 +1,6 @@
+// lightbox.js — full-screen photo viewer
+// Opens with a FLIP animation from the clicked card; closes back to the origin card.
+// In stack mode, originCardEl is captured at open() time because only one card exists in the DOM.
 (function () {
   'use strict';
 
@@ -5,6 +8,7 @@
   let photos = [];
   let currentIndex = 0;
   let cardEls = [];      // live NodeList snapshot, refreshed on open
+  let originCardEl = null; // card that opened the lightbox — used by flipClose in stack mode
 
   // ── Elements ──────────────────────────────────────────
   const lightboxEl  = document.getElementById('lightbox');
@@ -27,6 +31,10 @@
   const metaTopEl   = lightboxEl.querySelector('.lightbox__meta-top');
   const metaBotEl   = lightboxEl.querySelector('.lightbox__meta-bottom');
   const tabBtns     = Array.from(lightboxEl.querySelectorAll('.lightbox__tab-btn'));
+
+  // Block right-click on lightbox image
+  if (imgEl) imgEl.addEventListener('contextmenu', e => e.preventDefault());
+  if (printEl) printEl.addEventListener('contextmenu', e => e.preventDefault());
 
   // Live reference — gallery.js appends to this array as chunks load
   photos = window.GalleryPhotos || [];
@@ -161,7 +169,9 @@
 
   // ── FLIP close animation ──────────────────────────────
   function flipClose(onDone) {
-    const cardEl = cardEls[currentIndex];
+    // originCardEl is used in stack mode: only one .photo-card exists in the DOM
+    // and cardEls[currentIndex] is wrong after lightbox-internal navigation.
+    const cardEl = originCardEl || cardEls[currentIndex];
     if (!cardEl || !printEl) { onDone(); return; }
 
     const printRect = printEl.getBoundingClientRect();
@@ -194,6 +204,7 @@
 
     // Snapshot current card elements for FLIP + return focus
     cardEls = Array.from(document.querySelectorAll('.photo-card'));
+    originCardEl = cardEl; // stored for flipClose — stack mode has only one card in DOM
 
     loadPhoto(index);
 

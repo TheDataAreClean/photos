@@ -1,0 +1,82 @@
+/* ── View toggle widget — lives in the site header ─────── */
+/* Styled like the card action buttons: rectangular, thin border,
+   accent/amber colour family. No pill, no rounded softness.    */
+#view-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.view-toggle__btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 34px;
+  background: none;
+  border: 1px solid var(--accent-border);
+  color: var(--accent-dim);
+  cursor: pointer;
+  padding: 6px;
+  transition: color var(--dur-fast), border-color var(--dur-fast), background var(--dur-fast);
+}
+
+.view-toggle__btn:hover,
+.view-toggle__btn:focus-visible {
+  color: var(--accent-body);
+  border-color: var(--accent-ui);
+  outline: none;
+}
+
+.view-toggle__btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+
+.view-toggle__btn.is-active {
+  color: var(--accent-body);
+  border-color: var(--accent-ui);
+  background: var(--accent-subtle);
+}
+
+/* Shuffle — amber family, separated by a small gap */
+.view-toggle__btn--shuffle {
+  margin-left: 5px;
+  border-color: rgba(var(--stamp-rgb), 0.3);
+  color: rgba(var(--stamp-rgb), 0.5);
+}
+
+.view-toggle__btn--shuffle:hover,
+.view-toggle__btn--shuffle:focus-visible {
+  color: var(--stamp);
+  border-color: rgba(var(--stamp-rgb), 0.6);
+  background: none;
+}
+
+.view-toggle__btn--shuffle.is-active {
+  color: var(--stamp);
+  border-color: rgba(var(--stamp-rgb), 0.5);
+  background: rgba(var(--stamp-rgb), 0.12);
+}
+
+/* Material Symbols sizing — outlined at rest, filled when active */
+.view-toggle__btn .material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  transition: font-variation-settings var(--dur-fast);
+}
+
+.view-toggle__btn.is-active .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .view-toggle__btn {
+    width: 40px;
+    height: 36px;
+  }
+}

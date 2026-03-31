@@ -4,19 +4,58 @@ permalink: /
 ---
 
 <header class="site-header">
-  <h1 class="site-title">{{ siteConfig.displayTitle }}</h1>
-  <p class="site-subtitle">{{ photos | length }} and counting..</p>
+  <div class="site-header__text">
+    <h1 class="site-title">{{ siteConfig.displayTitle }}</h1>
+    <p class="site-subtitle">{{ photos | length }} and counting..</p>
+  </div>
+  <div id="view-toggle" role="group" aria-label="Gallery view controls">
+    <button id="toggle-grid"    class="view-toggle__btn is-active" aria-pressed="true"  aria-label="Grid view"    title="Grid view">
+      <span class="material-symbols-outlined" aria-hidden="true">dashboard_2</span>
+    </button>
+    <button id="toggle-stack"   class="view-toggle__btn"           aria-pressed="false" aria-label="Stack view"   title="Stack view">
+      <span class="material-symbols-outlined" aria-hidden="true">photo_prints</span>
+    </button>
+    <button id="toggle-shuffle" class="view-toggle__btn view-toggle__btn--shuffle" aria-pressed="false" aria-label="Shuffle order" title="Shuffle order">
+      <span class="material-symbols-outlined" aria-hidden="true">shuffle</span>
+    </button>
+  </div>
 </header>
 
 <main>
+
+  {# ── Masonry grid ─────────────────────────────────────── #}
   <div
     id="gallery-root"
     class="gallery-grid is-loading"
     role="list"
-    data-chunk-size="60"
     data-total-chunks="{{ photos | chunkCount(60) }}"
   ></div>
+
+  {# ── Stack view ───────────────────────────────────────── #}
+  <div id="stack-root" hidden aria-live="polite" aria-label="Stack view">
+
+    <div id="stack-stage">
+      <div class="stack-deck">
+        <div class="stack-layer stack-layer--2" aria-hidden="true"></div>
+        <div class="stack-layer stack-layer--1" aria-hidden="true"></div>
+        {# Active .photo-card injected here by stack.js #}
+      </div>
+    </div>
+
+    <div id="stack-controls">
+      <div class="stack-nav-start" aria-hidden="true"></div>
+      <div class="stack-nav-group">
+        <button id="stack-prev" class="stack-nav-btn" aria-label="Previous photo" disabled>&#8249;</button>
+        <span   id="stack-counter" class="stack-counter"></span>
+        <button id="stack-next" class="stack-nav-btn" aria-label="Next photo">&#8250;</button>
+      </div>
+      <a href="https://thedataareclean.com" class="stack-attribution">@thedataareclean</a>
+    </div>
+
+  </div>
+
   <div id="scroll-sentinel" aria-hidden="true" style="height:1px"></div>
+
 </main>
 
 <footer class="site-footer"><a href="https://thedataareclean.com">@thedataareclean</a></footer>
@@ -28,7 +67,8 @@ permalink: /
 
     <div class="lightbox__photo-col">
       <div class="lightbox__print">
-        <img id="lightbox-img" src="" alt="" />
+        <img id="lightbox-img" src="" alt="" draggable="false" />
+        <div class="img-protect"></div>
       </div>
     </div>
 
@@ -68,5 +108,8 @@ permalink: /
 
 {# First 60 photos inlined for instant paint; remaining loaded via infinite scroll #}
 <script id="gallery-data" type="application/json">{{ photos | first(60) | json | safe }}</script>
+<script src="/scripts/gallery-core.js"></script>
+<script src="/scripts/view-toggle.js"></script>
 <script src="/scripts/gallery.js"></script>
+<script src="/scripts/stack.js"></script>
 <script src="/scripts/lightbox.js"></script>

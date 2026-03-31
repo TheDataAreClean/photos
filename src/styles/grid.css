@@ -27,6 +27,12 @@
   font-size: var(--text-sub);
 }
 
+/* Critical: .gallery-grid{display:flex} on mobile overrides UA [hidden]{display:none}.
+   Re-establish it so hiding the gallery actually works when switching to stack view. */
+#gallery-root[hidden] {
+  display: none !important;
+}
+
 /* ── Mobile: single column, normal document flow ─────── */
 @media (max-width: 560px) {
   .gallery-grid {

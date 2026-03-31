@@ -43,6 +43,7 @@
 }
 
 .lightbox__print {
+  position: relative;
   transform-origin: center center;
   box-shadow:
     0 4px 14px   rgba(0, 0, 0, 0.65),
@@ -57,6 +58,16 @@
   width: auto;
   height: auto;
   transition: opacity var(--dur-med) ease;
+  -webkit-touch-callout: none;
+}
+
+/* Overlay present for future use; events handled via JS contextmenu listener */
+.lightbox__print .img-protect {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* ── Right: meta panel ──────────────────────────────── */
@@ -133,7 +144,7 @@
 }
 
 .exif-grid dt {
-  color: rgba(var(--accent-rgb), 0.45);
+  color: var(--accent-readable);
   text-transform: uppercase;
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
@@ -152,7 +163,7 @@
   flex-direction: column;
   gap: 4px;
   font-size: var(--text-sm);
-  color: var(--accent-ui);
+  color: var(--accent-readable);
   font-family: var(--font-mono-read);
   letter-spacing: 0.06em;
 }
@@ -184,7 +195,7 @@
 .lightbox__counter {
   font-family: var(--font-mono-read);
   font-size: var(--text-sm);
-  color: var(--accent-dim);
+  color: var(--accent-readable);
   letter-spacing: 0.1em;
 }
 
@@ -224,8 +235,8 @@
   align-items: center;
   gap: 5px;
   background: none;
-  border: 1px solid var(--accent-border);
-  color: var(--accent-ui);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent-readable);
   font-family: var(--font-mono-read);
   font-size: var(--text-xs);
   letter-spacing: 0.1em;
@@ -239,7 +250,7 @@
 
 .lightbox__action-btn:hover {
   color: var(--on-dark);
-  border-color: var(--accent-ui);
+  border-color: var(--accent-readable);
 }
 
 /* ── Close button ───────────────────────────────────── */
@@ -320,7 +331,7 @@
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
-    color: rgba(var(--accent-rgb), 0.4);
+    color: var(--accent-readable);
     font-family: var(--font-mono-read);
     font-size: var(--text-xs);
     letter-spacing: 0.14em;

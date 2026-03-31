@@ -51,9 +51,14 @@ src/
     photo-card.css     Card: rotation, shadows, hover, caption
     lightbox.css       Lightbox modal: two-column desktop, stacked mobile
     photo-page.css     Individual photo permalink page layout
+    stack.css          Stack view: stage, shadow layers, nav buttons, card animations
+    view-toggle.css    View toggle widget: grid/stack buttons + shuffle toggle
   scripts/
-    gallery.js         Card rendering, JS masonry, infinite scroll
+    gallery-core.js    Shared card factory (makeCard, seedRotation, formatDateStamp, buildBackExif, SVG icons) — exposed as window.GalleryCore
+    gallery.js         Grid rendering, JS masonry, infinite scroll — consumes GalleryCore
     lightbox.js        Lightbox open/close FLIP animation, keyboard nav
+    stack.js           Stack view: navigation, WAAPI card transitions, swipe, chunk proximity trigger — exposed as window.StackView
+    view-toggle.js     window.ViewState singleton (localStorage r/w, Fisher-Yates shuffle); toggle button wiring
 
 build/
   exif.js              EXIF extraction via exifr
@@ -88,19 +93,17 @@ dist/                  Build output (not committed)
 
 ## Architecture
 
-### Data pipeline is a side-effect data file
-`_data/photos.js` returns the photo array and has side effects: resizes images into `dist/photos/`, writes `dist/data/photos-N.json` chunks, creates sidecar stubs, prunes stale assets. All side effects run before Eleventy generates HTML — correct order by design.
+### Data pipeline
+`_data/photos.js` returns the photo array with side effects: resizes images into `dist/photos/`, writes `dist/data/photos-N.json` chunks, creates sidecar stubs, prunes stale assets. All side effects run before Eleventy generates HTML — correct order by design.
 
-### Stale asset pruning runs automatically
-After every build, `pruneStaleAssets()` derives the exact expected filenames from `photo.url.*` values and deletes anything in `dist/photos/` not in that set. It also removes `photos-N.json` chunks beyond the current count. `dist/` stays accurate without manual cleanup or full rebuilds.
+`pruneStaleAssets()` derives expected filenames from `photo.url.*` and deletes anything in `dist/photos/` not in that set. Also removes `photos-N.json` chunks beyond the current count. `dist/` stays accurate without manual cleanup.
 
-### Glass cache stores raw API data
-`.cache/glass-raw.json` stores the raw Glass API response. `glassToUnified()` runs on every build from this raw data. Changing slug logic, ID generation, or field mapping takes effect immediately without `--fresh`. The cache has a 1-hour TTL — use `npm run build:fresh` or `npm run sync:glass` to bypass it.
+### Glass cache
+`.cache/glass-raw.json` stores the raw Glass API response. `glassToUnified()` runs on every build from this cache — changing slug logic or field mapping takes effect immediately without `--fresh`. The cache has a 1-hour TTL; use `npm run build:fresh` or `npm run sync:glass` to bypass it.
 
 ### Weekly Glass sync via launchd
 `launchd/com.thedataareclean.photos-sync.plist` runs `scripts/glass-sync.sh` every Sunday at 08:00. The shell wrapper resolves node via nvm → Homebrew (Apple Silicon) → Homebrew (Intel) → system PATH, since launchd runs with a minimal PATH. Logs to `~/Library/Logs/photos-sync.log`.
 
-To install/uninstall the agent:
 ```sh
 cp launchd/com.thedataareclean.photos-sync.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
@@ -108,33 +111,53 @@ launchctl load ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
 launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
 ```
 
-### URL slugs are derived, not stored
-Glass photo IDs: `YYYY-MM-DD-glass-{slug}` — derived from date + first six words of description. Local photo IDs: `YYYY-MM-DD-local-{slug}` — derived from filename. **Changing a Glass description or local filename changes the URL.** Avoid editing the slug-contributing portion of a Glass description once deployed.
+### URL slugs
+Glass IDs: `YYYY-MM-DD-glass-{slug}` — derived from date + first six words of description. Local IDs: `YYYY-MM-DD-local-{slug}` — derived from filename. **Changing a Glass description or local filename changes the URL.** Edit the sidecar body (not the Glass description) to update display text without breaking links.
 
-### Glass sidecar renaming with glassAutoId
-`rename-glass.js` renames sidecar files to match their `title:` field. Before renaming, it injects `glassAutoId: "original-stem"` into the frontmatter. On the next build, `glass.js` builds an ID map from all `glassAutoId` values, so it still matches the sidecar to the correct Glass photo after the rename. The build never depends on the sidecar filename for Glass photos.
+### Glass sidecar renaming
+`rename-glass.js` renames sidecars to match their `title:` field. Before renaming it injects `glassAutoId: "original-stem"` into the frontmatter. On the next build, `glass.js` builds an ID map from all `glassAutoId` values so it can still match the sidecar after the rename. The build never depends on the sidecar filename.
 
 ### Sidecar override semantics
-Empty string `""` in a sidecar field falls back to the Glass/EXIF source value — not the override. This is intentional: clearing a field restores the original. Implemented via the `ov(override, fallback)` helper in `glass.js` and `local.js`.
+Empty string `""` in a sidecar field falls back to the Glass/EXIF source value — not the override. Clearing a field restores the original. Implemented via the `ov(override, fallback)` helper in `glass.js` and `local.js`.
 
-### Infinite scroll via pre-built JSON chunks
-Photos split into 60-photo chunks at `dist/data/photos-N.json`. Index page inlines chunk 1 for instant first paint; `gallery.js` fetches subsequent chunks via `IntersectionObserver` on `#scroll-sentinel`. Total chunk count passed via `data-total-chunks` on `#gallery-root`.
+### Infinite scroll
+Photos split into 60-photo chunks at `dist/data/photos-N.json`. The index page inlines chunk 1 for instant first paint; `gallery.js` fetches subsequent chunks via `IntersectionObserver` on `#scroll-sentinel`. `window.GalleryPhotos` is the live array — `lightbox.js` and `stack.js` hold a reference (not a copy) so they automatically cover newly loaded photos.
 
-### Lightbox reads a live array
-`window.GalleryPhotos` is the single source of truth for photo data at runtime. `gallery.js` initialises it from the inlined chunk and pushes new photos as chunks load. `lightbox.js` holds a reference — not a copy — so navigation covers newly loaded photos automatically.
-
-### CSS design tokens are in base.css only
+### CSS design tokens
 All design values live in `base.css` as `:root` custom properties. Token categories:
-- **Colours:** `--bg`, `--paper`, `--accent`, `--ink-paper`, `--stamp`, `--overlay`, `--on-dark`
-- **RGB components:** `--accent-rgb`, `--paper-rgb`, etc. — enables `rgba(var(--accent-rgb), 0.3)` composition
-- **Named opacity steps:** `--accent-faint` (0.12) through `--accent-body` (0.9); `--paper-faint` through `--paper-strong`
+- **Colours:** `--bg`, `--paper`, `--paper-aged`, `--accent`, `--ink-paper`, `--stamp`, `--overlay`, `--on-dark`
+- **RGB components:** `--accent-rgb`, `--ink-paper-rgb`, `--sepia-rgb`, `--stamp-rgb` — enables `rgba(var(--accent-rgb), 0.3)` composition
+- **Accent opacity steps:** `--accent-faint` (0.12) through `--accent-body` (0.9)
+- **On-dark opacity steps:** `--paper-faint` (0.5) through `--paper-strong` (0.92) — lightbox/overlay context only
 - **Type scale:** `--text-2xs` (0.6rem) through `--text-2xl` (1.9rem)
-- **Fonts:** `--font-serif` (Schoolbell), `--font-ibm-sans` (IBM Plex Sans), `--font-mono`
+- **Fonts:** `--font-serif` (Schoolbell), `--font-ibm-sans` (IBM Plex Sans), `--font-mono` (VT323), `--font-mono-read` (IBM Plex Mono)
 - **Durations:** `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s)
 
-Never hardcode a value that has a token. The grain gradients in `desk.css` use raw rgba intentionally — they are texture-specific.
+Never hardcode a value that has a token. The grain gradients in `desk.css` use raw rgba intentionally — they are texture-specific. Shadow layers in `photo-card.css`, `lightbox.css`, and `stack.css` use raw rgba intentionally — each has a distinct visual weight.
 
-### Local photo renaming is automatic
+### View toggle and localStorage persistence
+
+A three-button widget (`#view-toggle`) in the gallery header switches between grid/stack views and controls shuffle.
+
+- `gallery-view` (`'grid'`|`'stack'`) and `gallery-shuffle` (`'on'`|`'off'`) are persisted in localStorage.
+- `window.ViewState` reads/writes both keys. `gallery.js` calls `ViewState.applyShuffle()` before first render so order is consistent across both views.
+- Toggling shuffle calls `location.reload()` — avoids ordering inconsistencies when partial chunks are already loaded.
+- Grid/stack buttons: mutually exclusive, `aria-pressed` + `is-active`. Shuffle: independent toggle, amber `--stamp` family when active.
+
+Script load order in `index.njk`: `gallery-core.js → view-toggle.js → gallery.js → stack.js → lightbox.js`
+
+### Stack view
+
+One photo at a time, two CSS-only shadow layers (`div.stack-layer`) behind the card for depth. Navigate via prev/next buttons, keyboard ← →, or horizontal swipe.
+
+- Only **one `.photo-card`** lives in the DOM at a time — built by `GalleryCore.makeCard()`, discarded on navigation. Card flip and lightbox work identically to grid view.
+- Stack-specific card overrides (width, position, hover) use `#stack-stage .photo-card { }` — `photo-card.css` is not view-aware. View switching is a DOM show/hide (`hidden` on `#gallery-root` / `#stack-root`).
+- **Animations (WAAPI):** exit slides off with rotation arc + fade (~350ms); enter rises from depth (scale 0.93→1, translateY 32→0, 80ms delay).
+- **Chunk loading:** within 5 photos of the loaded count, `checkChunkProximity()` scrolls `#scroll-sentinel` into view, triggering the existing `IntersectionObserver` in `gallery.js`. `gallery.js` calls `window.StackView.onChunkLoaded()` after each chunk.
+- **Lightbox:** `originCardEl` is stored at `open()` time for FLIP close — `cardEls[currentIndex]` would be wrong after lightbox-internal navigation since only one card exists in the DOM.
+- **Swipe:** `pointerdown`/`pointerup` on `#stack-stage`; horizontal dominance check and 30px minimum threshold prevent accidental triggers.
+
+### Local photo renaming
 `processLocal()` calls `autoRename()` before processing. Any file whose stem doesn't start with `YYYY-MM-DD` is renamed in-place (image + sidecar) using EXIF date + sidecar title. **The build mutates `local/` on disk.** Files already starting with a date are never touched.
 
 ---
@@ -192,6 +215,24 @@ Local photo URLs are root-relative (`/photos/filename.jpg`) so they resolve corr
 
 ---
 
+## Keeping docs updated
+
+Update **CLAUDE.md** whenever:
+- A new build script, npm command, or pipeline step is added or removed
+- The file structure changes (new directories, renamed files)
+- Architecture decisions change (e.g. slug logic, sidecar semantics, chunk size, cache TTL)
+- A new "known trap" is discovered
+- CSS token conventions change (new token categories, new naming patterns)
+
+Update **README.md** whenever:
+- User-facing commands change (`npm run *`)
+- The photo metadata schema changes (sidecar fields, frontmatter format)
+- Setup steps change (launchd, dependencies)
+
+Neither file needs updating for: bug fixes, content edits, style tweaks, or refactors that don't change observable behaviour or mental models.
+
+---
+
 ## Pre-push checklist
 
 - [ ] `npm run build` — zero errors, zero warnings
@@ -203,6 +244,15 @@ Local photo URLs are root-relative (`/photos/filename.jpg`) so they resolve corr
 - [ ] Lightbox opens, FLIP animation, prev/next/close, keyboard nav
 - [ ] Infinite scroll loads next chunk when > 60 photos
 - [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{source}-{slug}/`
+- [ ] View toggle widget visible top-right of gallery, all three buttons functional
+- [ ] Grid ↔ stack switch persists across page reload
+- [ ] Shuffle toggle randomises order on reload; toggling off restores date order
+- [ ] Stack view: prev/next buttons, keyboard ← →, and swipe all navigate
+- [ ] Stack counter reads `N / Total` and updates as chunks load
+- [ ] Stack lightbox: opens from visible card, FLIP animation correct, closes back to card
+- [ ] Stack chunk loading: new chunk fetches when within 5 photos of loaded count
+- [ ] Card flip (postcard back) works in both grid and stack view
+- [ ] Mobile: touch targets ≥ 44px, flip button visible without hover, swipe works
 
 ---
 

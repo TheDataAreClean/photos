@@ -34,6 +34,10 @@ body::after {
   position: relative;
   z-index: 1;
   padding: 52px 44px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .site-title {
@@ -49,7 +53,7 @@ body::after {
   font-size: var(--text-sub);
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--accent-dim);
+  color: var(--accent-readable);
   font-family: var(--font-serif);
 }
 
@@ -87,7 +91,8 @@ body::after {
   }
 
   .site-header {
-    padding: 36px 14px 20px;
+    padding: 28px 14px 16px;
+    align-items: flex-start;
   }
 }
 
@@ -98,7 +103,7 @@ body::after {
   padding: 32px 44px;
   text-align: center;
   font-size: var(--text-xl);
-  color: rgba(var(--accent-rgb), 0.25);
+  color: var(--accent-dim);
   font-family: var(--font-serif);
   letter-spacing: 0.04em;
 }
@@ -110,5 +115,5 @@ body::after {
 }
 
 .site-footer a:hover {
-  color: rgba(var(--accent-rgb), 0.55);
+  color: var(--accent-readable);
 }
