@@ -160,8 +160,8 @@
 
     // Exit: old card slides off to the side
     if (oldCard) {
-      const dx  = direction === 'next' ? '-115%' : '115%';
-      const rot = direction === 'next' ? '-6deg'  : '6deg';
+      const dx  = direction === 'next' ? '115%' : '-115%';
+      const rot = direction === 'next' ? '6deg'  : '-6deg';
       const anim = oldCard.animate(
         [
           { transform: 'translateX(0) rotate(0deg)', opacity: 1 },

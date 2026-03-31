@@ -50,11 +50,11 @@ body::after {
 
 .site-subtitle {
   margin-top: 5px;
-  font-size: var(--text-sub);
+  font-size: var(--text-base);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--accent-readable);
-  font-family: var(--font-serif);
+  font-family: var(--font-ibm-sans);
 }
 
 @media (max-width: 560px) {

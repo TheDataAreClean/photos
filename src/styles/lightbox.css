@@ -273,6 +273,68 @@
   color: var(--paper-strong);
 }
 
+/* ── Meta panel toggle ──────────────────────────────── */
+/* Desktop: vertical strip (collapsed) / header row (open). Mobile: horizontal bar. */
+.lightbox__meta-toggle {
+  display: none;
+}
+
+/* Icon fill state — applies at all breakpoints */
+.lightbox__meta-toggle .material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
+  display: block;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
+  transition: font-variation-settings var(--dur-fast);
+}
+
+#lightbox.is-meta-open .lightbox__meta-toggle .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+}
+
+@media (min-width: 681px) {
+  /* Toggle: thin vertical strip when meta is closed; compact header row when open */
+  .lightbox__meta-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-left: 1px solid var(--accent-faint);
+    color: var(--accent-dim);
+    cursor: pointer;
+    padding: 0 10px;
+    align-self: stretch;
+    transition: color var(--dur-fast), border-color var(--dur-fast);
+  }
+
+  .lightbox__meta-toggle:hover {
+    color: var(--paper-body);
+    border-left-color: var(--accent-border);
+  }
+
+  /* Collapsed (default): meta col shrinks to toggle width, content hidden */
+  #lightbox:not(.is-meta-open) .lightbox__meta-col {
+    width: auto;
+  }
+
+  #lightbox:not(.is-meta-open) .lightbox__meta-panels,
+  #lightbox:not(.is-meta-open) .lightbox__nav {
+    display: none;
+  }
+
+  /* Open: toggle sits at top of panel as a compact row */
+  #lightbox.is-meta-open .lightbox__meta-toggle {
+    align-self: auto;
+    border-left: none;
+    border-bottom: 1px solid var(--accent-faint);
+    justify-content: flex-end;
+    padding: 0 0 10px;
+    margin-bottom: 8px;
+  }
+}
+
 /* ── Tabs (mobile only) ─────────────────────────────── */
 .lightbox__tabs {
   display: none;
@@ -393,5 +455,38 @@
     margin-top: 0;
     padding: 10px 0 14px;
     border-top: 1px solid var(--accent-faint);
+  }
+
+  /* ── Info toggle ── */
+  .lightbox__meta-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--accent-faint);
+    color: var(--accent-dim);
+    cursor: pointer;
+    padding: 10px 0;
+    transition: color var(--dur-fast);
+  }
+
+  .lightbox__meta-toggle:hover {
+    color: var(--paper-body);
+  }
+
+  /* Collapsed on mobile: hide tabs and panels; nav stays visible */
+  #lightbox:not(.is-meta-open) .lightbox__tabs,
+  #lightbox:not(.is-meta-open) .lightbox__meta-panels {
+    display: none;
+  }
+
+  /* When open, tabs provide their own top border — remove duplicate from toggle */
+  #lightbox.is-meta-open .lightbox__meta-toggle {
+    border-top: none;
+    border-bottom: 1px solid var(--accent-faint);
+    padding: 0 0 9px;
+    margin-bottom: 0;
   }
 }

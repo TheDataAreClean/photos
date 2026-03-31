@@ -9,6 +9,7 @@
   let currentIndex = 0;
   let cardEls = [];      // live NodeList snapshot, refreshed on open
   let originCardEl = null; // card that opened the lightbox — used by flipClose in stack mode
+  let metaOpen = false;  // resets to false each time lightbox opens
 
   // ── Elements ──────────────────────────────────────────
   const lightboxEl  = document.getElementById('lightbox');
@@ -23,14 +24,15 @@
   const shareBtn    = document.getElementById('lightbox-share');
   const downloadBtn = document.getElementById('lightbox-download');
   const glassBtn    = document.getElementById('lightbox-glass');
-  const closeBtn    = lightboxEl.querySelector('.lightbox__close');
-  const prevBtn     = lightboxEl.querySelector('.lightbox__prev');
-  const nextBtn     = lightboxEl.querySelector('.lightbox__next');
-  const backdropEl  = lightboxEl.querySelector('.lightbox__backdrop');
-  const printEl     = lightboxEl.querySelector('.lightbox__print');
-  const metaTopEl   = lightboxEl.querySelector('.lightbox__meta-top');
-  const metaBotEl   = lightboxEl.querySelector('.lightbox__meta-bottom');
-  const tabBtns     = Array.from(lightboxEl.querySelectorAll('.lightbox__tab-btn'));
+  const closeBtn      = lightboxEl.querySelector('.lightbox__close');
+  const prevBtn       = lightboxEl.querySelector('.lightbox__prev');
+  const nextBtn       = lightboxEl.querySelector('.lightbox__next');
+  const backdropEl    = lightboxEl.querySelector('.lightbox__backdrop');
+  const printEl       = lightboxEl.querySelector('.lightbox__print');
+  const metaTopEl     = lightboxEl.querySelector('.lightbox__meta-top');
+  const metaBotEl     = lightboxEl.querySelector('.lightbox__meta-bottom');
+  const metaToggleBtn = lightboxEl.querySelector('.lightbox__meta-toggle');
+  const tabBtns       = Array.from(lightboxEl.querySelectorAll('.lightbox__tab-btn'));
 
   // Block right-click on lightbox image
   if (imgEl) imgEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -42,11 +44,25 @@
   // Total from build-time data — ensures counter is correct before all chunks load
   const totalPhotos = parseInt(lightboxEl.dataset.totalPhotos || '0', 10);
 
+  // ── Meta panel toggle (desktop only) ─────────────────
+  function setMetaOpen(open) {
+    metaOpen = open;
+    lightboxEl.classList.toggle('is-meta-open', open);
+    if (metaToggleBtn) {
+      metaToggleBtn.setAttribute('aria-expanded', String(open));
+      metaToggleBtn.setAttribute('aria-label', open ? 'Close photo info' : 'Open photo info');
+    }
+  }
+
+  if (metaToggleBtn) {
+    metaToggleBtn.addEventListener('click', () => setMetaOpen(!metaOpen));
+  }
+
   // ── Tab toggle (mobile only) ──────────────────────────
   function setTab(tab) {
     tabBtns.forEach(btn => btn.classList.toggle('is-active', btn.dataset.tab === tab));
-    metaTopEl.classList.toggle('is-hidden', tab !== 'info');
-    metaBotEl.classList.toggle('is-hidden', tab !== 'exif');
+    metaTopEl.classList.toggle('is-hidden', tab !== 'about');
+    metaBotEl.classList.toggle('is-hidden', tab !== 'info');
   }
 
   tabBtns.forEach(btn => {
@@ -89,8 +105,8 @@
     if (!photo) return;
     currentIndex = index;
 
-    // Reset to Info tab on every photo change
-    setTab('info');
+    // Reset to About tab on every photo change
+    setTab('about');
 
     // Image — fade out then swap src
     imgEl.style.opacity = '0';
@@ -207,6 +223,7 @@
     originCardEl = cardEl; // stored for flipClose — stack mode has only one card in DOM
 
     loadPhoto(index);
+    setMetaOpen(window.innerWidth > 680);
 
     lightboxEl.hidden = false;
     // Lock page scroll on desktop; on mobile the lightbox itself scrolls

@@ -1,5 +1,5 @@
 // gallery-core.js — shared card factory and utilities
-// Exposes window.GalleryCore: { makeCard, seedRotation, formatDateStamp, buildBackExif }
+// Exposes window.GalleryCore: { makeCard, formatDateStamp, buildBackExif }
 // Consumed by gallery.js (grid), stack.js (stack view), and lightbox.js (action buttons).
 (function () {
   'use strict';
@@ -8,16 +8,6 @@
   const ICON_LINK = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
   const ICON_DOWN = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
   const ICON_EXT  = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
-
-  // ── Stable rotation per photo ─────────────────────────
-  function seedRotation(id) {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) {
-      h = Math.imul(31, h) + id.charCodeAt(i) | 0;
-    }
-    const deg = ((Math.abs(h) % 640) / 100) - 3.2;
-    return deg.toFixed(2);
-  }
 
   // ── Date formatter — camera-style "MM DD 'YY" ─────────
   function formatDateStamp(iso) {
@@ -58,7 +48,7 @@
   // ── Build one card element ─────────────────────────────
   // Pure factory — no masonry, no DOM side effects outside the card.
   function makeCard(photo, index) {
-    const rotation = seedRotation(photo.id);
+    const rotation = (Math.random() * 6.4 - 3.2).toFixed(2);
 
     const article = document.createElement('article');
     article.className = 'photo-card';
@@ -211,5 +201,5 @@
     return article;
   }
 
-  window.GalleryCore = { makeCard, seedRotation, formatDateStamp, buildBackExif };
+  window.GalleryCore = { makeCard, formatDateStamp, buildBackExif };
 })();
