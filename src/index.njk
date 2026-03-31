@@ -8,17 +8,7 @@ permalink: /
     <h1 class="site-title">{{ siteConfig.displayTitle }}</h1>
     <p class="site-subtitle">{{ photos | length }} and counting..</p>
   </div>
-  <div id="view-toggle" role="group" aria-label="Gallery view controls">
-    <button id="toggle-grid"    class="view-toggle__btn is-active" aria-pressed="true"  aria-label="Grid view"    title="Grid view">
-      <span class="material-symbols-outlined" aria-hidden="true">dashboard_2</span>
-    </button>
-    <button id="toggle-stack"   class="view-toggle__btn"           aria-pressed="false" aria-label="Stack view"   title="Stack view">
-      <span class="material-symbols-outlined" aria-hidden="true">photo_prints</span>
-    </button>
-    <button id="toggle-shuffle" class="view-toggle__btn view-toggle__btn--shuffle" aria-pressed="false" aria-label="Shuffle order" title="Shuffle order">
-      <span class="material-symbols-outlined" aria-hidden="true">shuffle</span>
-    </button>
-  </div>
+  <a href="https://thedataareclean.com" class="site-attribution" target="_blank" rel="noopener noreferrer">@thedataareclean</a>
 </header>
 
 <main>
@@ -43,13 +33,11 @@ permalink: /
     </div>
 
     <div id="stack-controls">
-      <div class="stack-nav-start" aria-hidden="true"></div>
       <div class="stack-nav-group">
         <button id="stack-prev" class="stack-nav-btn" aria-label="Previous photo" disabled>&#8249;</button>
         <span   id="stack-counter" class="stack-counter"></span>
         <button id="stack-next" class="stack-nav-btn" aria-label="Next photo">&#8250;</button>
       </div>
-      <a href="https://thedataareclean.com" class="stack-attribution">@thedataareclean</a>
     </div>
 
   </div>
@@ -58,7 +46,20 @@ permalink: /
 
 </main>
 
-<footer class="site-footer"><a href="https://thedataareclean.com">@thedataareclean</a></footer>
+<footer class="site-footer"><a href="https://thedataareclean.com" target="_blank" rel="noopener noreferrer">@thedataareclean</a></footer>
+
+{# ── View toggle FAB ──────────────────────────────────── #}
+<div id="view-toggle" role="group" aria-label="Gallery view controls">
+  <button id="toggle-grid"    class="view-toggle__btn is-active" aria-pressed="true"  aria-label="Grid view"    title="Grid view">
+    <span class="material-symbols-outlined" aria-hidden="true">dashboard_2</span>
+  </button>
+  <button id="toggle-stack"   class="view-toggle__btn"           aria-pressed="false" aria-label="Stack view"   title="Stack view">
+    <span class="material-symbols-outlined" aria-hidden="true">photo_prints</span>
+  </button>
+  <button id="toggle-shuffle" class="view-toggle__btn view-toggle__btn--shuffle" aria-pressed="false" aria-label="Shuffle order" title="Shuffle order">
+    <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+  </button>
+</div>
 
 {# ── Lightbox ─────────────────────────────────────────── #}
 <div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo viewer" data-total-photos="{{ photos | length }}">

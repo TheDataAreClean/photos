@@ -218,8 +218,8 @@
       const dy = e.clientY - startY;
       if (Math.abs(dx) < 30) return;
       if (Math.abs(dx) < Math.abs(dy)) return;
-      if (dx < 0) next();
-      else prev();
+      if (dx < 0) prev();
+      else next();
     });
 
     document.addEventListener('pointercancel', () => { tracking = false; });

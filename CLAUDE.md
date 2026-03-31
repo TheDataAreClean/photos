@@ -137,12 +137,13 @@ Never hardcode a value that has a token. The grain gradients in `desk.css` use r
 
 ### View toggle and localStorage persistence
 
-A three-button widget (`#view-toggle`) in the gallery header switches between grid/stack views and controls shuffle.
+A three-button FAB (`#view-toggle`, `position: fixed; bottom: 24px; right: 20px`) switches between grid/stack views and controls shuffle. Bare icon buttons — no labels, no background, no border.
 
 - `gallery-view` (`'grid'`|`'stack'`) and `gallery-shuffle` (`'on'`|`'off'`) are persisted in localStorage.
 - `window.ViewState` reads/writes both keys. `gallery.js` calls `ViewState.applyShuffle()` before first render so order is consistent across both views.
 - Toggling shuffle calls `location.reload()` — avoids ordering inconsistencies when partial chunks are already loaded.
-- Grid/stack buttons: mutually exclusive, `aria-pressed` + `is-active`. Shuffle: independent toggle, amber `--stamp` family when active.
+- Grid/stack buttons: mutually exclusive, `aria-pressed` + `is-active` (filled icon). Shuffle: independent toggle, amber `--stamp` family when active.
+- Attribution (`@thedataareclean`) lives in the site header for all layouts; also duplicated in the footer for the masonry grid layout.
 
 Script load order in `index.njk`: `gallery-core.js → view-toggle.js → gallery.js → stack.js → lightbox.js`
 
@@ -244,7 +245,7 @@ Neither file needs updating for: bug fixes, content edits, style tweaks, or refa
 - [ ] Lightbox opens, FLIP animation, prev/next/close, keyboard nav
 - [ ] Infinite scroll loads next chunk when > 60 photos
 - [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{source}-{slug}/`
-- [ ] View toggle widget visible top-right of gallery, all three buttons functional
+- [ ] View toggle widget visible bottom-right of gallery, all three buttons functional
 - [ ] Grid ↔ stack switch persists across page reload
 - [ ] Shuffle toggle randomises order on reload; toggling off restores date order
 - [ ] Stack view: prev/next buttons, keyboard ← →, and swipe all navigate

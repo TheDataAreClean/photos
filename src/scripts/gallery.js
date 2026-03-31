@@ -66,10 +66,10 @@
   }
 
   let resizeTimer;
-  window.addEventListener('resize', () => {
+  new ResizeObserver(() => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(masonry, 80);
-  });
+  }).observe(gridEl);
 
   // ── Attach click + keyboard events to a card ──────────
   function attachEvents(card, index) {

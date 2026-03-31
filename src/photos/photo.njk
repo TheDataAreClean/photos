@@ -26,8 +26,8 @@ layout: layouts/base.njk
   <div class="lightbox__meta-col">
 
     <div class="lightbox__tabs">
-      <button class="lightbox__tab-btn is-active" data-tab="info">Info</button>
-      <button class="lightbox__tab-btn" data-tab="exif">EXIF</button>
+      <button class="lightbox__tab-btn is-active" data-tab="about">About</button>
+      <button class="lightbox__tab-btn" data-tab="info">Info</button>
     </div>
 
     <div class="lightbox__meta-panels">
@@ -111,9 +111,9 @@ layout: layouts/base.njk
     btn.addEventListener('click', function () {
       tabs.forEach(function (b) { b.classList.remove('is-active'); });
       btn.classList.add('is-active');
-      var isExif = btn.dataset.tab === 'exif';
-      if (top) top.classList.toggle('is-hidden', isExif);
-      if (bot) bot.classList.toggle('is-hidden', !isExif);
+      var isInfo = btn.dataset.tab === 'info';
+      if (top) top.classList.toggle('is-hidden', isInfo);
+      if (bot) bot.classList.toggle('is-hidden', !isInfo);
     });
   });
 })();
