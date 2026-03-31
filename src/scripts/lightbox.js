@@ -10,6 +10,7 @@
   let cardEls = [];      // live NodeList snapshot, refreshed on open
   let originCardEl = null; // card that opened the lightbox — used by flipClose in stack mode
   let metaOpen = false;  // resets to false each time lightbox opens
+  let pendingWrap = false;
 
   // ── Elements ──────────────────────────────────────────
   const lightboxEl  = document.getElementById('lightbox');
@@ -153,9 +154,15 @@
     const knownTotal = Math.max(totalPhotos, photos.length);
     counterEl.textContent = `${index + 1} / ${knownTotal}`;
 
-    // Nav buttons
-    prevBtn.disabled = index === 0;
-    nextBtn.disabled = index === photos.length - 1;
+    // Nav buttons — always enabled (wrapping navigation)
+    prevBtn.disabled = false;
+    nextBtn.disabled = false;
+
+    // Preload adjacent photos so next/prev feel instant
+    [index - 1, index + 1].forEach(i => {
+      const p = photos[i];
+      if (p && p.url && p.url.display) new Image().src = p.url.display;
+    });
   }
 
   // ── FLIP open animation ───────────────────────────────
@@ -205,7 +212,7 @@
         { transform: 'translate(0, 0) scale(1)',                                  opacity: 1   },
         { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0   },
       ],
-      { duration: 300, easing: 'cubic-bezier(0.55, 0, 1, 0.45)', fill: 'forwards' }
+      { duration: 300, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
     );
 
     anim.onfinish = () => {
@@ -250,12 +257,30 @@
     });
   }
 
+  function triggerChunkLoad() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    if (sentinel) sentinel.scrollIntoView({ block: 'end', behavior: 'instant' });
+  }
+
   function prev() {
-    if (currentIndex > 0) loadPhoto(currentIndex - 1);
+    if (currentIndex === 0) {
+      if (photos.length >= totalPhotos) {
+        loadPhoto(photos.length - 1);
+      } else {
+        pendingWrap = true;
+        triggerChunkLoad();
+      }
+    } else {
+      loadPhoto(currentIndex - 1);
+    }
   }
 
   function next() {
-    if (currentIndex < photos.length - 1) loadPhoto(currentIndex + 1);
+    if (currentIndex === photos.length - 1) {
+      if (photos.length >= totalPhotos) loadPhoto(0);
+    } else {
+      loadPhoto(currentIndex + 1);
+    }
   }
 
   // ── Event listeners ───────────────────────────────────
@@ -291,6 +316,17 @@
   }
 
   // Expose for gallery.js
-  window.Lightbox = { open, close, prev, next };
+  function onChunkLoaded() {
+    if (pendingWrap) {
+      if (photos.length >= totalPhotos) {
+        pendingWrap = false;
+        loadPhoto(photos.length - 1);
+      } else {
+        triggerChunkLoad();
+      }
+    }
+  }
+
+  window.Lightbox = { open, close, prev, next, onChunkLoaded };
 
 })();

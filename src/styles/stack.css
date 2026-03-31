@@ -156,7 +156,7 @@ body.stack-mode main {
   font-size: var(--text-2xl);
   line-height: 1;
   padding: 4px 6px;
-  transition: color var(--dur-fast);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .stack-nav-btn:hover {

@@ -57,7 +57,7 @@
   max-height: calc(100vh - 128px);
   width: auto;
   height: auto;
-  transition: opacity var(--dur-med) ease;
+  transition: opacity var(--dur-med) var(--ease-out);
   -webkit-touch-callout: none;
 }
 
@@ -77,6 +77,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;           /* contains child overflow so photo is never affected */
+  transition: width var(--dur-med) var(--ease-out);
 }
 
 /* Panels wrapper — flex column so meta-top can grow and push meta-bottom down */
@@ -173,7 +174,7 @@
   text-decoration: none;
   border-bottom: 1px solid var(--accent-border);
   align-self: flex-start;
-  transition: color var(--dur-fast), border-color var(--dur-fast);
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .lightbox__footer a:hover {
@@ -208,7 +209,7 @@
   font-size: var(--text-2xl);
   line-height: 1;
   padding: 4px 6px;
-  transition: color var(--dur-fast) ease;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .lightbox__prev:hover,
@@ -244,7 +245,7 @@
   padding: 4px 10px;
   cursor: pointer;
   text-decoration: none;
-  transition: color var(--dur-fast), border-color var(--dur-fast);
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   line-height: 1.6;
 }
 
@@ -266,7 +267,7 @@
   line-height: 1;
   padding: 10px;
   cursor: pointer;
-  transition: color var(--dur-fast) ease;
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .lightbox__close:hover {
@@ -285,7 +286,7 @@
   line-height: 1;
   display: block;
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-  transition: font-variation-settings var(--dur-fast);
+  transition: font-variation-settings var(--dur-fast) var(--ease-out);
 }
 
 #lightbox.is-meta-open .lightbox__meta-toggle .material-symbols-outlined {
@@ -306,7 +307,7 @@
     cursor: pointer;
     padding: 0 10px;
     align-self: stretch;
-    transition: color var(--dur-fast), border-color var(--dur-fast);
+    transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   }
 
   .lightbox__meta-toggle:hover {
@@ -314,9 +315,9 @@
     border-left-color: var(--accent-border);
   }
 
-  /* Collapsed (default): meta col shrinks to toggle width, content hidden */
+  /* Collapsed (default): meta col shrinks to toggle width (icon 22px + padding 10px×2) */
   #lightbox:not(.is-meta-open) .lightbox__meta-col {
-    width: auto;
+    width: 42px;
   }
 
   #lightbox:not(.is-meta-open) .lightbox__meta-panels,
@@ -399,7 +400,7 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: color var(--dur-fast), border-color var(--dur-fast);
+    transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   }
 
   .lightbox__tab-btn.is-active {
@@ -469,7 +470,7 @@
     color: var(--accent-dim);
     cursor: pointer;
     padding: 10px 0;
-    transition: color var(--dur-fast);
+    transition: color var(--dur-fast) var(--ease-out);
   }
 
   .lightbox__meta-toggle:hover {
@@ -480,6 +481,17 @@
   #lightbox:not(.is-meta-open) .lightbox__tabs,
   #lightbox:not(.is-meta-open) .lightbox__meta-panels {
     display: none;
+  }
+
+  /* Fade in when panels open on mobile */
+  #lightbox.is-meta-open .lightbox__tabs,
+  #lightbox.is-meta-open .lightbox__meta-panels {
+    animation: lb-panel-in var(--dur-med) var(--ease-out);
+  }
+
+  @keyframes lb-panel-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   /* When open, tabs provide their own top border — remove duplicate from toggle */

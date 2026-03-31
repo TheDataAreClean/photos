@@ -21,7 +21,7 @@
   color: var(--accent-dim);
   cursor: pointer;
   padding: 10px;
-  transition: color var(--dur-fast);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .view-toggle__btn:hover,
@@ -45,7 +45,7 @@
   line-height: 1;
   display: block;
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
-  transition: font-variation-settings var(--dur-fast);
+  transition: font-variation-settings var(--dur-fast) var(--ease-out);
 }
 
 .view-toggle__btn.is-active .material-symbols-outlined {

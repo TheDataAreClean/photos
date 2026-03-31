@@ -17,6 +17,10 @@
   // Live photo array — lightbox.js and stack.js read from this reference
   window.GalleryPhotos = JSON.parse(dataEl.textContent);
 
+  // Shuffle immediately — stack.js self-inits before DOMContentLoaded fires,
+  // so applyShuffle() must run at parse time, not inside the deferred init().
+  window.ViewState && window.ViewState.applyShuffle();
+
   // Infinite scroll state
   let loadedChunks = 1;
   const totalChunks = parseInt(gridEl.dataset.totalChunks || '1', 10);
@@ -91,7 +95,7 @@
     const fragment = document.createDocumentFragment();
     newPhotos.forEach((photo, i) => {
       const index = startIndex + i;
-      const card  = window.GalleryCore.makeCard(photo, index);
+      const card  = window.GalleryCore.makeCard(photo, index, startIndex === 0 && i < 4);
       // Re-attach masonry trigger — GalleryCore.makeCard is masonry-agnostic
       const img = card.querySelector('img');
       if (img) {
@@ -133,7 +137,8 @@
           const startIndex = window.GalleryPhotos.length;
           window.GalleryPhotos.push(...newPhotos);
           appendCards(newPhotos, startIndex);
-          window.StackView && window.StackView.onChunkLoaded();
+          window.StackView   && window.StackView.onChunkLoaded();
+          window.Lightbox    && window.Lightbox.onChunkLoaded();
           fetching = false;
           if (loadedChunks >= totalChunks) observer.disconnect();
         })
@@ -149,8 +154,6 @@
 
   // ── Initial render ─────────────────────────────────────
   function init() {
-    window.ViewState && window.ViewState.applyShuffle();
-
     if (window.GalleryPhotos.length === 0) {
       gridEl.classList.remove('is-loading');
       const empty = document.createElement('p');

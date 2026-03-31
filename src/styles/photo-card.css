@@ -10,8 +10,8 @@
   transform-origin: center center;
 
   transition:
-    transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out);
 
   /* Three shadow layers: contact edge, mid lift, ambient spread */
   box-shadow:
@@ -70,7 +70,7 @@
   width: 100%;
   height: auto;
   display: block;
-  transition: opacity var(--dur-slow) ease;
+  transition: opacity var(--dur-slow) var(--ease-out);
   -webkit-touch-callout: none;
 }
 
@@ -203,7 +203,7 @@
   padding: 3px 8px;
   cursor: pointer;
   text-decoration: none;
-  transition: color var(--dur-fast), border-color var(--dur-fast);
+  transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
   line-height: 1.6;
 }
 
@@ -226,7 +226,7 @@
   z-index: 6;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--dur-fast), color var(--dur-fast);
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .photo-card.is-flipped .photo-card__flip-back {
@@ -267,7 +267,7 @@
   pointer-events: none;
   user-select: none;
   line-height: 1;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s var(--ease-out);
 }
 
 /* ── Flip trigger — bottom-right corner ─────────────── */
@@ -283,7 +283,7 @@
   line-height: 1;
   padding: 3px 4px;
   opacity: 0;
-  transition: opacity var(--dur-fast), color var(--dur-fast);
+  transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
   z-index: 6;
   text-shadow:
     0 0 6px rgba(232, 130, 10, 0.6),

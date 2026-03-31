@@ -18,6 +18,7 @@
 
   let currentIndex  = 0;
   let currentCardEl = null;
+  let pendingWrap   = false;
 
   function photos() {
     return window.GalleryPhotos || [];
@@ -77,8 +78,8 @@
   }
 
   function updateNavButtons() {
-    if (prevBtn) prevBtn.disabled = currentIndex === 0;
-    if (nextBtn) nextBtn.disabled = currentIndex >= photos().length - 1;
+    if (prevBtn) prevBtn.disabled = false;
+    if (nextBtn) nextBtn.disabled = false;
   }
 
   function checkChunkProximity() {
@@ -176,12 +177,33 @@
     updateNavButtons();
   }
 
+  function triggerChunkLoad() {
+    const sentinel = document.getElementById('scroll-sentinel');
+    if (sentinel) sentinel.scrollIntoView({ block: 'end', behavior: 'instant' });
+  }
+
   function prev() {
-    if (currentIndex > 0) navigate(currentIndex - 1, 'prev');
+    const loaded = photos().length;
+    if (!loaded) return;
+    if (currentIndex === 0) {
+      if (loaded >= getTotal()) {
+        navigate(loaded - 1, 'prev');
+      } else {
+        pendingWrap = true;
+        triggerChunkLoad();
+      }
+    } else {
+      navigate(currentIndex - 1, 'prev');
+    }
   }
 
   function next() {
-    if (currentIndex < photos().length - 1) {
+    const loaded = photos().length;
+    if (!loaded) return;
+    if (currentIndex === loaded - 1) {
+      if (loaded >= getTotal()) navigate(0, 'next');
+      else checkChunkProximity();
+    } else {
       navigate(currentIndex + 1, 'next');
       checkChunkProximity();
     }
@@ -240,6 +262,14 @@
   function onChunkLoaded() {
     updateCounter();
     updateNavButtons();
+    if (pendingWrap) {
+      if (photos().length >= getTotal()) {
+        pendingWrap = false;
+        navigate(photos().length - 1, 'prev');
+      } else {
+        triggerChunkLoad();
+      }
+    }
   }
 
   window.StackView = { init, prev, next, onChunkLoaded, isInitialised: false };

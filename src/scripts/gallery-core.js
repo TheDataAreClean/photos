@@ -47,7 +47,7 @@
 
   // ── Build one card element ─────────────────────────────
   // Pure factory — no masonry, no DOM side effects outside the card.
-  function makeCard(photo, index) {
+  function makeCard(photo, index, eager) {
     const rotation = (Math.random() * 6.4 - 3.2).toFixed(2);
 
     const article = document.createElement('article');
@@ -74,7 +74,7 @@
     const img = document.createElement('img');
     img.className = 'is-loading';
     img.alt = photo.altText || photo.title || '';
-    img.loading = 'lazy';
+    img.loading = eager ? 'eager' : 'lazy';
     if (photo.aspectRatio) img.style.aspectRatio = String(photo.aspectRatio);
     img.addEventListener('load',  () => img.classList.remove('is-loading'), { once: true });
     img.addEventListener('error', () => img.classList.remove('is-loading'), { once: true });

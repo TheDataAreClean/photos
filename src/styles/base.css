@@ -57,6 +57,7 @@
   --dur-fast:  0.15s;
   --dur-med:   0.22s;
   --dur-slow:  0.35s;
+  --ease-out:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 *, *::before, *::after {
@@ -69,6 +70,7 @@ html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-gutter: stable;
 }
 
 body {
