@@ -1,7 +1,7 @@
 /* ── View toggle — fixed bare-icon FAB, bottom-right ── */
 #view-toggle {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom));
   right: 20px;
   z-index: 50;
   display: flex;

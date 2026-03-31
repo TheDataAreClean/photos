@@ -8,10 +8,7 @@ A holding area for things worth doing but not yet prioritised.
 
 Currently the image fades to black while the next photo downloads, which reads as a loading glitch rather than a deliberate transition.
 
-**Cross-fade** (recommended first step)
-- Keep the old image visible at full opacity until the new image has loaded
-- Swap atomically — old fades out as new fades in simultaneously
-- Eliminates the dark gap, low complexity (~15 lines in `lightbox.js`)
+**~~Cross-fade~~** ✓ Done — outgoing image stays visible as an overlay while the new one loads; both fade simultaneously on load.
 
 **Directional slide** (complements cross-fade)
 - Slide old image left on next, right on prev (and vice-versa for incoming)

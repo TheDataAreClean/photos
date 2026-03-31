@@ -365,12 +365,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 60px 16px 12px;  /* 60px top clears the close button */
+    padding: 60px 16px 10px;  /* 60px top clears the close button */
     overflow: hidden;
   }
 
   .lightbox__print {
-    max-height: 100%;
+    height: 100%;  /* definite height = photo-col content box; img max-height: 100% resolves against this */
     display: flex;
     align-items: center;
   }
@@ -415,7 +415,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 0 20px;
+    padding: 0 20px env(safe-area-inset-bottom);
   }
 
   /* Panels container: height driven by EXIF content (in flow).
@@ -469,7 +469,7 @@
     border-top: 1px solid var(--accent-faint);
     color: var(--accent-dim);
     cursor: pointer;
-    padding: 10px 0;
+    padding: 16px 0;
     transition: color var(--dur-fast) var(--ease-out);
   }
 

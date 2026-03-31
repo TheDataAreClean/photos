@@ -109,10 +109,29 @@
     // Reset to About tab on every photo change
     setTab('about');
 
-    // Image — fade out then swap src
+    // Image — cross-fade: keep old visible while new loads
+    const prevOutgoing = printEl && printEl.querySelector('.lb-outgoing');
+    if (prevOutgoing) prevOutgoing.remove();
+
+    if (imgEl.src && imgEl.src !== window.location.href && printEl) {
+      const outgoing = document.createElement('img');
+      outgoing.src = imgEl.src;
+      outgoing.className = 'lb-outgoing';
+      outgoing.setAttribute('aria-hidden', 'true');
+      outgoing.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;transition:opacity 0.22s cubic-bezier(0.25,0.46,0.45,0.94)';
+      printEl.appendChild(outgoing);
+    }
+
     imgEl.style.opacity = '0';
     imgEl.alt = photo.altText || photo.title || '';
-    imgEl.onload = () => { imgEl.style.opacity = '1'; };
+    imgEl.onload = () => {
+      imgEl.style.opacity = '1';
+      const outgoing = printEl && printEl.querySelector('.lb-outgoing');
+      if (outgoing) {
+        outgoing.style.opacity = '0';
+        outgoing.addEventListener('transitionend', () => outgoing.remove(), { once: true });
+      }
+    };
     imgEl.src = photo.url.display;
 
     // Title
