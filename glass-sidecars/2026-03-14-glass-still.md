@@ -1,5 +1,6 @@
 ---
 title: "still."
+glassAutoId: "2026-03-14-glass-still-there-are-some-subjects-that"
 tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides

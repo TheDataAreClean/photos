@@ -234,6 +234,21 @@ Neither file needs updating for: bug fixes, content edits, style tweaks, or refa
 
 ---
 
+## Glass sync workflow
+
+When pulling new Glass data and pushing to the repo, always run steps in this order:
+
+1. `npm run sync:glass` — fetch latest Glass API data
+2. `npm run build` — generates new sidecar stubs with auto-slugs from the Glass description
+3. `npm run rename:glass -- --apply` — renames stubs to title-based slugs, injects `glassAutoId`
+4. Fix any "target already exists" skips: inject `glassAutoId` into the existing short-named sidecar (using the long stub's stem as the value), then delete the duplicate long-named stub
+5. `npm run build` — verify clean, zero errors
+6. Commit sidecar files and push
+
+**Why step 4 matters:** The build matches sidecars to Glass photos by `glassAutoId` (or by filename if no `glassAutoId` is present). If an existing sidecar was already renamed (short slug) but lacks `glassAutoId`, the build won't recognise it and creates a new duplicate stub with the full auto-slug. Adding `glassAutoId` to the existing sidecar fixes the link and prevents the duplicate from reappearing on future syncs.
+
+---
+
 ## Pre-push checklist
 
 - [ ] `npm run build` — zero errors, zero warnings

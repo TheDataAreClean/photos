@@ -1,5 +1,6 @@
 ---
 title: "bougainvillea."
+glassAutoId: "2026-03-09-glass-bougainvillea-the-yearly-cycle-of-flowers"
 tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
