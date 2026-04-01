@@ -1,5 +1,5 @@
 ---
-title: "bougainvillea."
+title: "Bougainvillea."
 glassAutoId: "2026-03-09-glass-bougainvillea-the-yearly-cycle-of-flowers"
 tags: []
 
@@ -16,4 +16,4 @@ overrideExif:
 dateTaken: "2026-03-09T08:57:02Z"
 ---
 
-bougainvillea.
+The yearly cycle of flowers colouring Bengaluru never ceases to amaze me even after all these years. And the summers are for bougainvilleas (amongst some others). Apparently the British and German horticulturalists, who were in charge of Bengaluru during the 19th century, planted trees imported from around the world across the city so that Bengaluru blooms throughout the year.

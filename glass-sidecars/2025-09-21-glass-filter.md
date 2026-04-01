@@ -16,6 +16,4 @@ overrideExif:
 dateTaken: "2025-09-21T07:19:01Z"
 ---
 
-Filter.
-
 I have had this set of curtains with me for nearly a decade now. Even today how the light filters through them throughout the day still brings me immense joy.

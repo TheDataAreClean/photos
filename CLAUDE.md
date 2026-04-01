@@ -239,13 +239,14 @@ Neither file needs updating for: bug fixes, content edits, style tweaks, or refa
 When pulling new Glass data and pushing to the repo, always run steps in this order:
 
 1. `npm run sync:glass` — fetch latest Glass API data
-2. `npm run build` — generates new sidecar stubs with auto-slugs from the Glass description
-3. `npm run rename:glass -- --apply` — renames stubs to title-based slugs, injects `glassAutoId`
-4. Fix any "target already exists" skips: inject `glassAutoId` into the existing short-named sidecar (using the long stub's stem as the value), then delete the duplicate long-named stub
-5. `npm run build` — verify clean, zero errors
-6. Commit sidecar files and push
+2. `npm run build` — generates new sidecar stubs; slugs are now `YYYY-MM-DD-glass-{first-word}` automatically
+3. Fill in descriptions and tags in any new sidecar stubs (`glass-sidecars/`)
+4. `npm run build` — verify clean, zero errors
+5. Commit sidecar files and push
 
-**Why step 4 matters:** The build matches sidecars to Glass photos by `glassAutoId` (or by filename if no `glassAutoId` is present). If an existing sidecar was already renamed (short slug) but lacks `glassAutoId`, the build won't recognise it and creates a new duplicate stub with the full auto-slug. Adding `glassAutoId` to the existing sidecar fixes the link and prevents the duplicate from reappearing on future syncs.
+**Slug generation:** The build derives the slug from the first word of the Glass description only (e.g. `"Mornings. One thing…"` → `2026-03-21-glass-mornings`). No rename step needed — stubs are created with the correct short slug from the start. The sidecar body is pre-filled with everything after the first word.
+
+**Photos with no Glass description** fall back to a time-of-day slug (e.g. `2024-08-15-glass-104137`). Set a `title:` in the sidecar to give them a human-readable label without changing the URL.
 
 ---
 

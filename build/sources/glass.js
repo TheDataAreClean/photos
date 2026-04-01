@@ -92,7 +92,7 @@ function glassToUnified(p) {
   // Build a stable, human-readable ID from date + description snippet
   const dateStr     = exif.dateTaken || p.created_at || null;
   const date        = dateStr ? new Date(dateStr) : null;
-  const descSnippet = (p.description || '').trim().split(/\s+/).slice(0, 6).join(' ');
+  const descSnippet = (p.description || '').trim().split(/\s+/).slice(0, 1).join(' ');
   const stem        = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
   const datePart    = stem.slice(0, 10);
   const rest        = stem.slice(11);
@@ -196,6 +196,9 @@ async function findSidecarPath(photoId, autoIdMap) {
 // ── Sidecar management ────────────────────────────────
 const SIDECAR_STUB = (photo) => {
   const e = photo.exif || {};
+  const body = photo.description
+    ? photo.description.trim().split(/\s+/).slice(1).join(' ')
+    : '';
   return `---
 title:${ymlStr(photo.title)}
 tags: []
@@ -213,7 +216,7 @@ overrideExif:
 dateTaken:${ymlStr(photo.dateTaken)}
 ---
 
-${photo.description || ''}
+${body}
 `.trimEnd() + '\n';
 };
 
