@@ -197,7 +197,7 @@ async function findSidecarPath(photoId, autoIdMap) {
 const SIDECAR_STUB = (photo) => {
   const e = photo.exif || {};
   const body = photo.description
-    ? photo.description.trim().split(/\s+/).slice(1).join(' ')
+    ? photo.description.trim().replace(/^\S+\s*/, '')
     : '';
   return `---
 title:${ymlStr(photo.title)}

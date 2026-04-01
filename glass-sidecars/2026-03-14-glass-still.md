@@ -16,4 +16,6 @@ overrideExif:
 dateTaken: "2026-03-14T05:04:39Z"
 ---
 
-There are some subjects that will always be hard for me to photograph, mainly because my jumpy personality scares them away instantly. The butterfly is one such specimen, but this particular creature was still through all of my shenanigans. Maybe I interrupted its afternoon nap.
+There are some subjects that will always be hard for me to photograph, mainly because my jumpy personality scares them away instantly.
+
+The butterfly is one such specimen, but this particular creature was still through all of my shenanigans. Maybe I interrupted its afternoon nap.

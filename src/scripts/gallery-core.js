@@ -172,17 +172,29 @@
       article.appendChild(ds);
     }
 
-    // Flip trigger
+    // Flip trigger (front → back)
     const flipBtn = document.createElement('button');
     flipBtn.className = 'photo-card__flip-btn';
     flipBtn.innerHTML = '&#8635;';
     flipBtn.setAttribute('aria-label', 'Show photo details');
     article.appendChild(flipBtn);
 
+    // Flip back trigger (back → front)
+    const flipBackBtn = document.createElement('button');
+    flipBackBtn.className = 'photo-card__flip-back';
+    flipBackBtn.innerHTML = '&#8635;';
+    flipBackBtn.setAttribute('aria-label', 'Show photo');
+    article.appendChild(flipBackBtn);
+
     // ── Flip events ────────────────────────────────────
     flipBtn.addEventListener('click', e => {
       e.stopPropagation();
       article.classList.add('is-flipped');
+    });
+
+    flipBackBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      article.classList.remove('is-flipped');
     });
 
     shareBtn.addEventListener('click', e => {

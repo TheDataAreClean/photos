@@ -243,6 +243,7 @@
 .photo-card.is-flipped .photo-card__date-stamp,
 .photo-card.is-flipped .photo-card__flip-btn {
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -298,9 +299,3 @@
   color: var(--stamp-bright);
 }
 
-/* Always-visible flip button on touch devices (no hover available) */
-@media (hover: none) {
-  .photo-card__flip-btn {
-    opacity: 0.7;
-  }
-}
