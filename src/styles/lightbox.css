@@ -45,6 +45,7 @@
 .lightbox__print {
   position: relative;
   transform-origin: center center;
+  overflow: hidden; /* clips directional slide animations; does not affect box-shadow */
   box-shadow:
     0 4px 14px   rgba(0, 0, 0, 0.65),
     0 24px 64px  rgba(0, 0, 0, 0.55),
@@ -272,6 +273,13 @@
 
 .lightbox__close:hover {
   color: var(--paper-strong);
+}
+
+.lightbox__close:focus-visible,
+.lightbox__prev:focus-visible,
+.lightbox__next:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 2px;
 }
 
 /* ── Meta panel toggle ──────────────────────────────── */

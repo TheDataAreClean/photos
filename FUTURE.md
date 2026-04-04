@@ -10,15 +10,9 @@ Currently the image fades to black while the next photo downloads, which reads a
 
 **~~Cross-fade~~** ✓ Done — outgoing image stays visible as an overlay while the new one loads; both fade simultaneously on load.
 
-**Directional slide** (complements cross-fade)
-- Slide old image left on next, right on prev (and vice-versa for incoming)
-- Makes navigation feel spatial and directional
-- WAAPI, medium complexity — needs direction tracking in `loadPhoto()`
+**~~Directional slide~~** ✓ Done — outgoing slides left on next / right on prev (WAAPI, 260ms); incoming slides in from the opposite side on load (300ms). Falls back to cross-fade when no direction (initial open).
 
-**Zoom-from-thumbnail** (high effort, high reward)
-- FLIP-style animation from the grid card's position, same pattern as open/close
-- Most cinematic option, consistent with the existing open/close FLIP
-- Requires storing card rect at navigate time, not just at open time
+**~~Zoom-from-thumbnail~~** ✓ Done — when the target card is visible in the viewport, `loadPhoto` calls `flipOpen(targetCard)` on load instead of sliding; same FLIP animation as initial open. Falls back to directional slide when card is off-screen (stack view, scrolled away, chunked).
 
 ---
 
@@ -28,31 +22,29 @@ The display-size image for the next/prev photo isn't fetched until navigation.
 
 **~~Preload adjacent images~~** ✓ Done — `lightbox.js` preloads N−1 and N+1 on every navigation.
 
-**Preload on grid card hover**
-- When hovering a `.photo-card`, preload its `photo.url.display` into the browser cache
-- Helps only when the user pauses before clicking; minimal benefit for fast taps
-- ~5 lines in `gallery.js`
+**~~Preload on grid card hover~~** ✓ Done — `pointerenter` on each card fires a single `new Image()` load; `{ once: true }` so it only runs once per card.
 
 **~~`loading="eager"` on first N cards~~** ✓ Done — first 4 cards in the initial render use `loading="eager"`.
 
 **Smaller chunk size**
 - Drop from 60 to 30 photos per chunk in `config.js`
 - Faster first-chunk inline paint, but doubles JSON requests for the same total
-- Mixed trade-off — evaluate once photo count grows significantly
+- Mixed trade-off — evaluate once photo count grows significantly (currently under 60, so single chunk)
 
-**WebP conversion in the build pipeline**
-- Add WebP output to `build/sources/local.js` via sharp
-- 30–50% smaller file sizes, major impact on mobile and slower connections
-- Requires build pipeline changes and serving both WebP + JPEG fallback
+**~~WebP conversion in the build pipeline~~** ✓ Done — local thumbnails (`@800.webp`) and display/download images already output as WebP via sharp. Glass display images are served from the CDN as-is.
+
+**~~`decoding="async"` on card images~~** ✓ Done — offloads image decode to a background thread; main thread stays free during scroll.
+
+**~~`fetchpriority="high"` on first 4 cards~~** ✓ Done — complements `loading="eager"`; hints the browser to prioritise the first visible images in the fetch queue.
+
+**~~`<link rel="preconnect">` to Glass image CDN~~** ✓ Done — warms TCP/TLS to `cdn.glass.photo` before any Glass image requests.
+
+**~~`contain: layout style` on `.photo-card`~~** ✓ Done — scopes layout and style recalcs to the card; safe since masonry positions cards via explicit JS.
+
+**~~Dynamic `will-change: transform` on hover~~** ✓ Done — `pointerenter` sets `will-change: transform` to promote the card to its own GPU layer just before the hover transform starts; `pointerleave` clears it.
 
 ---
 
 ## Box-shadow animation (photo card hover)
 
-`box-shadow` causes a repaint on every frame and cannot be GPU-accelerated.
-
-**Pseudo-element shadow technique**
-- Add a `::after` pseudo-element to `.photo-card` with the hovered shadow pre-painted at `opacity: 0`
-- On hover, transition `opacity: 0 → 1` on the pseudo-element (compositor-only, no repaint)
-- The base `box-shadow` remains always painted and never transitions
-- Moderate refactor of `photo-card.css`; most visible benefit on low-end devices with many cards in view
+**~~Pseudo-element shadow technique~~** ✓ Done — `.photo-card::before` holds the hover shadow pre-painted at `opacity: 0`; hover transitions opacity only (compositor-only, no repaint). Base `box-shadow` on the card is static and never transitions.

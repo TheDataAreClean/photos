@@ -82,6 +82,10 @@
     if (nextBtn) nextBtn.disabled = false;
   }
 
+  // Trigger the next chunk fetch when the user is within 5 photos of the loaded count.
+  // The sentinel scroll kicks the IntersectionObserver in gallery.js — stack.js has no
+  // fetch logic of its own. 5 photos gives enough lead time for a network round-trip
+  // before the user reaches the boundary, even on a slow connection.
   function checkChunkProximity() {
     const loaded = photos().length;
     if (loaded > 0 && currentIndex >= loaded - 5) {

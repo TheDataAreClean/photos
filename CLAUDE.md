@@ -54,7 +54,7 @@ src/
     stack.css          Stack view: stage, shadow layers, nav buttons, card animations
     view-toggle.css    View toggle widget: grid/stack buttons + shuffle toggle
   scripts/
-    gallery-core.js    Shared card factory (makeCard, seedRotation, formatDateStamp, buildBackExif, SVG icons) — exposed as window.GalleryCore
+    gallery-core.js    Shared card factory (makeCard, formatDateStamp, buildBackExif, SVG icons) — exposed as window.GalleryCore
     gallery.js         Grid rendering, JS masonry, infinite scroll — consumes GalleryCore
     lightbox.js        Lightbox open/close FLIP animation, keyboard nav
     stack.js           Stack view: navigation, WAAPI card transitions, swipe, chunk proximity trigger — exposed as window.StackView
@@ -112,7 +112,7 @@ launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
 ```
 
 ### URL slugs
-Glass IDs: `YYYY-MM-DD-glass-{slug}` — derived from date + first six words of description. Local IDs: `YYYY-MM-DD-local-{slug}` — derived from filename. **Changing a Glass description or local filename changes the URL.** Edit the sidecar body (not the Glass description) to update display text without breaking links.
+Glass IDs: `YYYY-MM-DD-glass-{slug}` — derived from date + first word of description. Local IDs: `YYYY-MM-DD-local-{slug}` — derived from filename. **Changing a Glass description or local filename changes the URL.** Edit the sidecar body (not the Glass description) to update display text without breaking links.
 
 ### Glass sidecar renaming
 `rename-glass.js` renames sidecars to match their `title:` field. Before renaming it injects `glassAutoId: "original-stem"` into the frontmatter. On the next build, `glass.js` builds an ID map from all `glassAutoId` values so it can still match the sidecar after the rename. The build never depends on the sidecar filename.
@@ -200,7 +200,7 @@ Description in the lightbox + photo permalink page. Supports multiple paragraphs
 ## Known traps
 
 ### Changing a slug breaks the URL
-The Glass slug uses the first six words of the description. Change it → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body (not the Glass description).
+The Glass slug uses the first word of the description. Change it → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body (not the Glass description).
 
 ### Empty overrideExif fields fall back to source
 `overrideExif: { camera: "" }` falls back to the EXIF source value (empty string = not set). `iso: 0` would override with 0 — be explicit with numeric zeros.

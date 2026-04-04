@@ -37,7 +37,7 @@ Drop image files into `local/`. Supported formats: `.jpg` `.jpeg` `.png` `.webp`
 On the next build the file is:
 1. Auto-renamed to `YYYY-MM-DD-local.ext` using EXIF date
 2. A matching sidecar `YYYY-MM-DD-local.md` is auto-created with EXIF values pre-filled
-3. An 800px thumbnail is generated for the grid; the original is served in the lightbox
+3. An 800px WebP thumbnail is generated for the grid; a 2400px WebP is generated for the lightbox; a watermarked copy is generated for download
 
 If you add a `title` to the sidecar, the file is renamed to `YYYY-MM-DD-local-your-title.ext` on the next build.
 

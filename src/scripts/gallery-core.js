@@ -74,7 +74,9 @@
     const img = document.createElement('img');
     img.className = 'is-loading';
     img.alt = photo.altText || photo.title || '';
-    img.loading = eager ? 'eager' : 'lazy';
+    img.loading  = eager ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    if (eager) img.fetchPriority = 'high';
     if (photo.aspectRatio) img.style.aspectRatio = String(photo.aspectRatio);
     img.addEventListener('load',  () => img.classList.remove('is-loading'), { once: true });
     img.addEventListener('error', () => img.classList.remove('is-loading'), { once: true });
@@ -131,6 +133,8 @@
     const actions = document.createElement('div');
     actions.className = 'photo-card__back-actions';
 
+    // innerHTML is intentional here — ICON_* are hardcoded trusted SVG constants,
+    // not user data. All user-visible text uses textContent elsewhere in this function.
     const shareBtn = document.createElement('button');
     shareBtn.className = 'photo-card__action-btn';
     shareBtn.innerHTML = `<span>Share</span>${ICON_LINK}`;
@@ -162,6 +166,10 @@
     inner.appendChild(front);
     inner.appendChild(back);
     article.appendChild(inner);
+
+    // Date stamp and flip buttons are appended to article (outside inner) so they sit
+    // on the paper mat border rather than inside the 3D-transformed inner element.
+    // Placing them inside inner would cause them to rotate with the card on flip.
 
     // Date stamp — outside inner so it sits on the paper border
     const stamp = formatDateStamp(photo.dateTaken);

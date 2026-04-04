@@ -11,6 +11,7 @@
   let originCardEl = null; // card that opened the lightbox — used by flipClose in stack mode
   let metaOpen = false;  // resets to false each time lightbox opens
   let pendingWrap = false;
+  let pendingDirection = -1; // direction queued while waiting for a chunk
 
   // ── Elements ──────────────────────────────────────────
   const lightboxEl  = document.getElementById('lightbox');
@@ -81,8 +82,8 @@
     });
   }
 
-  function buildExifHtml(exif) {
-    if (!exif) return '';
+  function buildExifEl(exif) {
+    if (!exif) return null;
     const dash = '—';
     const focal = exif.focalLength35
       ? `${exif.focalLength35}${exif.focalLength ? ' (' + exif.focalLength + ')' : ''}`
@@ -95,13 +96,32 @@
       ['Shutter',  exif.shutterSpeed || dash],
       ['ISO',      exif.iso != null  ? String(exif.iso) : dash],
     ];
-    return '<dl class="exif-grid">' +
-      rows.map(([l, v]) => `<dt>${l}</dt><dd>${v}</dd>`).join('') +
-      '</dl>';
+    const dl = document.createElement('dl');
+    dl.className = 'exif-grid';
+    rows.forEach(([l, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = l;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    });
+    return dl;
+  }
+
+  // ── Find a card visible in the viewport ──────────────
+  // Returns the card element at `index` only if it's currently on screen.
+  // Used to decide whether to zoom from the card or fall back to a slide.
+  function findVisibleCard(index) {
+    const cards = document.querySelectorAll('.photo-card');
+    const card  = cards[index];
+    if (!card) return null;
+    const r = card.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > window.innerHeight ||
+        r.right  < 0 || r.left > window.innerWidth) return null;
+    return card;
   }
 
   // ── Populate lightbox content ─────────────────────────
-  function loadPhoto(index) {
+  function loadPhoto(index, direction = 0, targetCard = null) {
     const photo = photos[index];
     if (!photo) return;
     currentIndex = index;
@@ -109,27 +129,67 @@
     // Reset to About tab on every photo change
     setTab('about');
 
-    // Image — cross-fade: keep old visible while new loads
+    // Image — three transition modes depending on how we're navigating:
+    //   direction=0, no targetCard  → cross-fade (initial open / wrap-around)
+    //   direction≠0, no targetCard  → directional slide (card off-screen or stack view)
+    //   direction≠0, targetCard set → zoom from card thumbnail (FLIP, same as open)
     const prevOutgoing = printEl && printEl.querySelector('.lb-outgoing');
     if (prevOutgoing) prevOutgoing.remove();
 
-    if (imgEl.src && imgEl.src !== window.location.href && printEl) {
+    const hasOldSrc = imgEl.src && imgEl.src !== window.location.href;
+
+    if (hasOldSrc && printEl && !targetCard) {
+      // Outgoing overlay — used for cross-fade and directional slide (not zoom)
       const outgoing = document.createElement('img');
       outgoing.src = imgEl.src;
       outgoing.className = 'lb-outgoing';
       outgoing.setAttribute('aria-hidden', 'true');
-      outgoing.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;transition:opacity 0.22s cubic-bezier(0.25,0.46,0.45,0.94)';
+      outgoing.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;';
       printEl.appendChild(outgoing);
+
+      if (direction !== 0) {
+        // Slide outgoing away immediately — incoming slides in on load
+        const xOut = direction > 0 ? '-100%' : '100%';
+        outgoing.animate(
+          [{ transform: 'translateX(0)' }, { transform: `translateX(${xOut})` }],
+          { duration: 260, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
+        ).onfinish = () => outgoing.remove();
+      } else {
+        // Cross-fade — outgoing fades when new image is ready
+        outgoing.style.transition = 'opacity 0.22s cubic-bezier(0.25,0.46,0.45,0.94)';
+      }
     }
 
     imgEl.style.opacity = '0';
+    // Position incoming off-screen for the slide (zoom and cross-fade start from natural position)
+    imgEl.style.transform = (direction !== 0 && !targetCard)
+      ? `translateX(${direction > 0 ? '100%' : '-100%'})`
+      : '';
+
     imgEl.alt = photo.altText || photo.title || '';
     imgEl.onload = () => {
       imgEl.style.opacity = '1';
-      const outgoing = printEl && printEl.querySelector('.lb-outgoing');
-      if (outgoing) {
-        outgoing.style.opacity = '0';
-        outgoing.addEventListener('transitionend', () => outgoing.remove(), { once: true });
+
+      if (targetCard) {
+        // Zoom from card: FLIP animation on printEl, same as initial open
+        flipOpen(targetCard);
+
+      } else if (direction !== 0) {
+        // Slide incoming from off-screen
+        const xIn = direction > 0 ? '100%' : '-100%';
+        const anim = imgEl.animate(
+          [{ transform: `translateX(${xIn})` }, { transform: 'translateX(0)' }],
+          { duration: 300, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' }
+        );
+        anim.onfinish = () => { anim.cancel(); imgEl.style.transform = ''; };
+
+      } else {
+        // Cross-fade: fade out the outgoing overlay
+        const outgoing = printEl && printEl.querySelector('.lb-outgoing');
+        if (outgoing) {
+          outgoing.style.opacity = '0';
+          outgoing.addEventListener('transitionend', () => outgoing.remove(), { once: true });
+        }
       }
     };
     imgEl.src = photo.url.display;
@@ -143,13 +203,18 @@
     descEl.hidden = !photo.description;
 
     // EXIF
-    const exifHtml = buildExifHtml(photo.exif);
-    exifEl.innerHTML = exifHtml;
-    exifEl.hidden = !exifHtml;
+    const exifNode = buildExifEl(photo.exif);
+    exifEl.replaceChildren(...(exifNode ? [exifNode] : []));
+    exifEl.hidden = !exifNode;
 
     // Footer: date only
     const dateStr = formatDate(photo.dateTaken);
-    footerEl.innerHTML = dateStr ? `<span>${dateStr}</span>` : '';
+    footerEl.replaceChildren();
+    if (dateStr) {
+      const span = document.createElement('span');
+      span.textContent = dateStr;
+      footerEl.appendChild(span);
+    }
 
     // Glass button — show only for Glass photos
     if (glassBtn) {
@@ -184,9 +249,16 @@
     });
   }
 
-  // ── FLIP open animation ───────────────────────────────
-  // The print animates from the card's exact position on the desk
-  // up to its final centered position — like picking a photo up.
+  // ── FLIP open / close animations ─────────────────────
+  // FLIP = First, Last, Invert, Play.
+  //   First:  record the card's rect before the lightbox opens (or after it closes).
+  //   Last:   the lightbox print is already in its final position when we read printRect.
+  //   Invert: compute the translate + scale needed to make the print sit exactly over
+  //           the card (the "First" position), then apply that as the animation start frame.
+  //   Play:   animate from the inverted start → natural end (translate 0, scale 1).
+  // This gives a physically grounded "pick up the photo" / "put it back" feel without
+  // any position:absolute hacks — the DOM layout stays unchanged throughout.
+
   function flipOpen(cardEl) {
     if (!cardEl || !printEl) return;
 
@@ -209,7 +281,10 @@
     );
   }
 
-  // ── FLIP close animation ──────────────────────────────
+  // flipClose is the reverse: start at the print's current natural position,
+  // end at the card's position. Uses originCardEl (captured at open time) instead of
+  // cardEls[currentIndex] because lightbox-internal navigation changes currentIndex
+  // while the origin card stays the same, and stack view has only one card in the DOM.
   function flipClose(onDone) {
     // originCardEl is used in stack mode: only one .photo-card exists in the DOM
     // and cardEls[currentIndex] is wrong after lightbox-internal navigation.
@@ -284,21 +359,23 @@
   function prev() {
     if (currentIndex === 0) {
       if (photos.length >= totalPhotos) {
-        loadPhoto(photos.length - 1);
+        const target = photos.length - 1;
+        loadPhoto(target, -1, findVisibleCard(target));
       } else {
         pendingWrap = true;
+        pendingDirection = -1;
         triggerChunkLoad();
       }
     } else {
-      loadPhoto(currentIndex - 1);
+      loadPhoto(currentIndex - 1, -1, findVisibleCard(currentIndex - 1));
     }
   }
 
   function next() {
     if (currentIndex === photos.length - 1) {
-      if (photos.length >= totalPhotos) loadPhoto(0);
+      if (photos.length >= totalPhotos) loadPhoto(0, 1, findVisibleCard(0));
     } else {
-      loadPhoto(currentIndex + 1);
+      loadPhoto(currentIndex + 1, 1, findVisibleCard(currentIndex + 1));
     }
   }
 
@@ -339,7 +416,8 @@
     if (pendingWrap) {
       if (photos.length >= totalPhotos) {
         pendingWrap = false;
-        loadPhoto(photos.length - 1);
+        const target = photos.length - 1;
+        loadPhoto(target, pendingDirection, findVisibleCard(target));
       } else {
         triggerChunkLoad();
       }

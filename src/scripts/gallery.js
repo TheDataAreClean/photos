@@ -76,7 +76,15 @@
   }).observe(gridEl);
 
   // ── Attach click + keyboard events to a card ──────────
-  function attachEvents(card, index) {
+  function attachEvents(card, photo, index) {
+    // Preload display-size image on first hover so lightbox opens instantly
+    card.addEventListener('pointerenter', () => {
+      const url = photo.url.display;
+      if (url) { const img = new Image(); img.src = url; }
+    }, { once: true });
+    // Promote card to its own GPU layer just before the hover transform starts
+    card.addEventListener('pointerenter', () => { card.style.willChange = 'transform'; });
+    card.addEventListener('pointerleave', () => { card.style.willChange = ''; });
     card.addEventListener('click', () => {
       if (card.classList.contains('is-flipped')) return;
       window.Lightbox && window.Lightbox.open(index, card);
@@ -104,7 +112,7 @@
           resizeTimer = setTimeout(masonry, 80);
         }, { once: true });
       }
-      attachEvents(card, index);
+      attachEvents(card, photo, index);
       fragment.appendChild(card);
     });
     gridEl.appendChild(fragment);

@@ -106,7 +106,7 @@ async function processOne(filename, photosDir, outputDir, config) {
   const rest     = stem.slice(11);
   const id       = rest ? `${datePart}-local-${rest}` : `${datePart}-local`;
 
-  const thumbName        = `${stem}@800.jpg`;
+  const thumbName        = `${stem}@800.webp`;
   const displayFilename  = `${stem}@2400.webp`;
   const downloadFilename = `${stem}@2400-wm.webp`;
 
@@ -225,7 +225,7 @@ async function resizeImage(src, dest, width) {
   try {
     await sharp(src)
       .resize({ width, withoutEnlargement: true })
-      .jpeg({ quality: 92, progressive: true })
+      .webp({ quality: 85 })
       .toFile(dest);
   } catch (err) {
     console.warn(`  Resize failed (${path.basename(src)} → ${width}px): ${err.message}`);
