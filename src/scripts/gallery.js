@@ -82,9 +82,13 @@
       const url = photo.url.display;
       if (url) { const img = new Image(); img.src = url; }
     }, { once: true });
-    // Promote card to its own GPU layer just before the hover transform starts
-    card.addEventListener('pointerenter', () => { card.style.willChange = 'transform'; });
-    card.addEventListener('pointerleave', () => { card.style.willChange = ''; });
+    // Promote card to its own GPU layer just before the hover transform starts.
+    // Skipped on touch devices — pointerenter fires during scroll there, which would
+    // create too many simultaneous compositing layers and cause visual artifacts on iOS.
+    if (window.matchMedia('(hover: hover)').matches) {
+      card.addEventListener('pointerenter', () => { card.style.willChange = 'transform'; });
+      card.addEventListener('pointerleave', () => { card.style.willChange = ''; });
+    }
     card.addEventListener('click', () => {
       if (card.classList.contains('is-flipped')) return;
       window.Lightbox && window.Lightbox.open(index, card);

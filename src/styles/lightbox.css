@@ -45,7 +45,6 @@
 .lightbox__print {
   position: relative;
   transform-origin: center center;
-  overflow: hidden; /* clips directional slide animations; does not affect box-shadow */
   box-shadow:
     0 4px 14px   rgba(0, 0, 0, 0.65),
     0 24px 64px  rgba(0, 0, 0, 0.55),
@@ -302,6 +301,13 @@
 }
 
 @media (min-width: 681px) {
+  /* Clip directional slide animations to the print area.
+     Not applied on mobile — .lightbox__photo-col already has overflow: hidden there,
+     and applying it to .lightbox__print on mobile breaks horizontal centering. */
+  .lightbox__print {
+    overflow: hidden;
+  }
+
   /* Toggle: thin vertical strip when meta is closed; compact header row when open */
   .lightbox__meta-toggle {
     display: flex;
