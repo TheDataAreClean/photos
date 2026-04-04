@@ -387,6 +387,7 @@
     height: 100%;  /* definite height = photo-col content box; img max-height: 100% resolves against this */
     display: flex;
     align-items: center;
+    margin: auto;  /* robust centering — more reliable than justify-content: center on parent for iOS Safari */
   }
 
   .lightbox__print img {

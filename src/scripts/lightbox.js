@@ -272,13 +272,18 @@
     const ty = (cardRect.top  + cardRect.height / 2) -
                (printRect.top  + printRect.height / 2);
 
-    printEl.animate(
+    const anim = printEl.animate(
       [
         { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0.5 },
         { transform: 'translate(0, 0) scale(1)',                                  opacity: 1   },
       ],
       { duration: 360, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' }
     );
+    // Cancel after finishing so the WAAPI fill doesn't persist. The final value
+    // (translate(0,0) scale(1)) is identical to the natural CSS state, so there
+    // is no visual snap. Leaving the fill active causes iOS Safari to misplace
+    // the print when the flex layout reflows (e.g. info panel opening).
+    anim.onfinish = () => anim.cancel();
   }
 
   // flipClose is the reverse: start at the print's current natural position,

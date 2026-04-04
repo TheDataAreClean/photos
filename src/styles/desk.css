@@ -91,14 +91,13 @@ body::after {
     inset: 0;
     background-color: var(--bg);
     background-image:
-      linear-gradient(to bottom, var(--bg) 0%, transparent 80px),
       radial-gradient(
         ellipse 160% 90% at 50% 45%,
         rgba(165, 82, 18, 0.28) 0%,
         transparent 65%
       ),
       url('/images/wood-grain.svg');
-    background-size: auto, cover, cover;
+    background-size: cover, cover;
     background-repeat: no-repeat, no-repeat, no-repeat;
     background-position: center center, center center, center center;
     pointer-events: none;
@@ -106,7 +105,8 @@ body::after {
   }
 
   .site-header {
-    padding: 28px 14px 16px;
+    /* Push header content below the Dynamic Island / notch safe area */
+    padding: calc(28px + env(safe-area-inset-top, 0px)) 14px 16px;
   }
 
   .site-subtitle {
