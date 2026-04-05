@@ -122,52 +122,67 @@ async function ensureFonts() {
   const schoolbellPath = path.join(CACHE_DIR, 'schoolbell.ttf');
   const ibmPath        = path.join(CACHE_DIR, 'ibm-plex-sans-500.ttf');
 
-  // Download IBM Plex Sans 500 if not cached
+  // Download IBM Plex Sans Medium 500 if not cached
+  // Primary: tagged GitHub release (stable). Fallback: Google Fonts gstatic.
   if (!(await fileExists(ibmPath))) {
     let downloaded = false;
-
-    // Primary: Google Fonts CSS v1 — returns TTF for unrecognised UA
     try {
-      const css = (await fetchBuf(
-        'https://fonts.googleapis.com/css?family=IBM+Plex+Sans:500',
-        { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
-      )).toString();
-      const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/);
-      if (match) {
-        const buf = await fetchBuf(match[1]);
-        await fs.writeFile(ibmPath, buf);
-        downloaded = true;
-      }
-    } catch { /* fall through to backup */ }
+      const buf = await fetchBuf(
+        'https://github.com/IBM/plex/raw/v6.4.0/IBM-Plex-Sans/fonts/complete/ttf/IBMPlexSans-Medium.ttf'
+      );
+      await fs.writeFile(ibmPath, buf);
+      downloaded = true;
+    } catch { /* fall through */ }
 
-    // Fallback: IBM Plex GitHub release (stable tagged URL)
     if (!downloaded) {
       try {
-        const buf = await fetchBuf(
-          'https://github.com/IBM/plex/raw/v6.4.0/packages/ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-Medium.ttf'
-        );
-        await fs.writeFile(ibmPath, buf);
-        downloaded = true;
-      } catch (e) {
-        console.warn('  OG image: IBM Plex Sans download failed —', e.message, '(will use system font)');
-      }
+        const css = (await fetchBuf(
+          'https://fonts.googleapis.com/css?family=IBM+Plex+Sans:500',
+          { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
+        )).toString();
+        const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
+        if (match) {
+          const buf = await fetchBuf(match[1]);
+          await fs.writeFile(ibmPath, buf);
+          downloaded = true;
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!downloaded) {
+      console.warn('  OG image: IBM Plex Sans download failed — will use system font');
     }
   }
 
   // Download Schoolbell if not cached
+  // Primary: google/fonts GitHub (stable main branch). Fallback: Google Fonts gstatic.
   if (!(await fileExists(schoolbellPath))) {
+    let downloaded = false;
     try {
-      const css = (await fetchBuf(
-        'https://fonts.googleapis.com/css?family=Schoolbell',
-        { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
-      )).toString();
-      const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/);
-      if (match) {
-        const buf = await fetchBuf(match[1]);
-        await fs.writeFile(schoolbellPath, buf);
-      }
-    } catch (e) {
-      console.warn('  OG image: Schoolbell download failed —', e.message, '(attribution will use cursive fallback)');
+      const buf = await fetchBuf(
+        'https://github.com/google/fonts/raw/main/apache/schoolbell/Schoolbell-Regular.ttf'
+      );
+      await fs.writeFile(schoolbellPath, buf);
+      downloaded = true;
+    } catch { /* fall through */ }
+
+    if (!downloaded) {
+      try {
+        const css = (await fetchBuf(
+          'https://fonts.googleapis.com/css?family=Schoolbell',
+          { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
+        )).toString();
+        const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
+        if (match) {
+          const buf = await fetchBuf(match[1]);
+          await fs.writeFile(schoolbellPath, buf);
+          downloaded = true;
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!downloaded) {
+      console.warn('  OG image: Schoolbell download failed — attribution will use cursive fallback');
     }
   }
 
@@ -302,25 +317,35 @@ function drawText(ctx) {
   ctx.textBaseline = 'alphabetic';
 
   // Title: "Memories"
-  ctx.font         = '500 34px "IBM Plex Sans", sans-serif';
-  ctx.fillStyle    = '#e8d5b8';
-  ctx.globalAlpha  = 1;
-  ctx.fillText(TITLE, W * 0.035, H * 0.92);
+  ctx.font          = '500 50px "IBM Plex Sans", sans-serif';
+  ctx.letterSpacing = '6px';
+  ctx.fillStyle     = '#e8d5b8';
+  ctx.globalAlpha   = 1;
+  ctx.shadowColor   = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur    = 12;
+  ctx.shadowOffsetY = 1;
+  ctx.fillText(TITLE, W * 0.035, H * 0.882);
+  ctx.shadowColor   = 'transparent';
+  ctx.shadowBlur    = 0;
+  ctx.shadowOffsetY = 0;
 
   // Subtitle
-  ctx.font         = '400 12px "IBM Plex Sans", sans-serif';
-  ctx.fillStyle    = '#c4a882';
-  ctx.globalAlpha  = 0.72;
-  ctx.fillText(SUBTITLE, W * 0.037, H * 0.955);
+  ctx.font          = '400 20px "IBM Plex Sans", sans-serif';
+  ctx.letterSpacing = '3px';
+  ctx.fillStyle     = '#c4a882';
+  ctx.globalAlpha   = 0.72;
+  ctx.fillText(SUBTITLE, W * 0.037, H * 0.938);
 
   // Attribution — right-aligned, baseline flush with subtitle
-  ctx.font         = '400 20px "Schoolbell", cursive';
-  ctx.fillStyle    = '#e8d5b8';
-  ctx.globalAlpha  = 0.78;
+  ctx.font          = '400 38px "Schoolbell", cursive';
+  ctx.letterSpacing = '2px';
+  ctx.fillStyle     = '#e8d5b8';
+  ctx.globalAlpha   = 0.78;
   const attrW = ctx.measureText(ATTR).width;
-  ctx.fillText(ATTR, W - W * 0.035 - attrW, H * 0.955);
+  ctx.fillText(ATTR, W - W * 0.035 - attrW, H * 0.938);
 
-  ctx.globalAlpha = 1;
+  ctx.letterSpacing = '0px';
+  ctx.globalAlpha   = 1;
 }
 
 // ── Fisher-Yates shuffle (seeded) ─────────────────────────────────────────
