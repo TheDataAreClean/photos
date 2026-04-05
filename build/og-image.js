@@ -124,8 +124,10 @@ async function ensureFonts() {
 
   // Download IBM Plex Sans 500 if not cached
   if (!(await fileExists(ibmPath))) {
+    let downloaded = false;
+
+    // Primary: Google Fonts CSS v1 — returns TTF for unrecognised UA
     try {
-      // Use the older Google Fonts API endpoint — returns TTF for unrecognised UA
       const css = (await fetchBuf(
         'https://fonts.googleapis.com/css?family=IBM+Plex+Sans:500',
         { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
@@ -134,9 +136,38 @@ async function ensureFonts() {
       if (match) {
         const buf = await fetchBuf(match[1]);
         await fs.writeFile(ibmPath, buf);
+        downloaded = true;
+      }
+    } catch { /* fall through to backup */ }
+
+    // Fallback: IBM Plex GitHub release (stable tagged URL)
+    if (!downloaded) {
+      try {
+        const buf = await fetchBuf(
+          'https://github.com/IBM/plex/raw/v6.4.0/packages/ibm-plex-sans/fonts/complete/ttf/IBMPlexSans-Medium.ttf'
+        );
+        await fs.writeFile(ibmPath, buf);
+        downloaded = true;
+      } catch (e) {
+        console.warn('  OG image: IBM Plex Sans download failed —', e.message, '(will use system font)');
+      }
+    }
+  }
+
+  // Download Schoolbell if not cached
+  if (!(await fileExists(schoolbellPath))) {
+    try {
+      const css = (await fetchBuf(
+        'https://fonts.googleapis.com/css?family=Schoolbell',
+        { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
+      )).toString();
+      const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/);
+      if (match) {
+        const buf = await fetchBuf(match[1]);
+        await fs.writeFile(schoolbellPath, buf);
       }
     } catch (e) {
-      console.warn('  OG image: IBM Plex Sans download failed —', e.message, '(will use system font)');
+      console.warn('  OG image: Schoolbell download failed —', e.message, '(attribution will use cursive fallback)');
     }
   }
 
