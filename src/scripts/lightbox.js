@@ -107,19 +107,6 @@
     return dl;
   }
 
-  // ── Find a card visible in the viewport ──────────────
-  // Returns the card element at `index` only if it's currently on screen.
-  // Used to decide whether to zoom from the card or fall back to a slide.
-  function findVisibleCard(index) {
-    const cards = document.querySelectorAll('.photo-card');
-    const card  = cards[index];
-    if (!card) return null;
-    const r = card.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > window.innerHeight ||
-        r.right  < 0 || r.left > window.innerWidth) return null;
-    return card;
-  }
-
   // ── Populate lightbox content ─────────────────────────
   function loadPhoto(index, direction = 0, targetCard = null) {
     const photo = photos[index];
@@ -129,10 +116,9 @@
     // Reset to About tab on every photo change
     setTab('about');
 
-    // Image — three transition modes depending on how we're navigating:
-    //   direction=0, no targetCard  → cross-fade (initial open / wrap-around)
-    //   direction≠0, no targetCard  → directional slide (card off-screen or stack view)
-    //   direction≠0, targetCard set → zoom from card thumbnail (FLIP, same as open)
+    // Image — two transition modes depending on how we're navigating:
+    //   direction=0  → cross-fade (initial open)
+    //   direction≠0  → directional slide (prev/next)
     const prevOutgoing = printEl && printEl.querySelector('.lb-outgoing');
     if (prevOutgoing) prevOutgoing.remove();
 
@@ -272,29 +258,58 @@
     const ty = (cardRect.top  + cardRect.height / 2) -
                (printRect.top  + printRect.height / 2);
 
-    const anim = printEl.animate(
+    // fill: 'none' — when the animation ends the CSS natural state (no transform) takes over
+    // seamlessly, since the final keyframe matches it. No fill cleanup needed.
+    printEl.animate(
       [
         { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0.5 },
         { transform: 'translate(0, 0) scale(1)',                                  opacity: 1   },
       ],
-      { duration: 360, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' }
+      { duration: 360, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'none' }
     );
-    // Cancel after finishing so the WAAPI fill doesn't persist. The final value
-    // (translate(0,0) scale(1)) is identical to the natural CSS state, so there
-    // is no visual snap. Leaving the fill active causes iOS Safari to misplace
-    // the print when the flex layout reflows (e.g. info panel opening).
-    anim.onfinish = () => anim.cancel();
   }
 
   // flipClose is the reverse: start at the print's current natural position,
   // end at the card's position. Uses originCardEl (captured at open time) instead of
   // cardEls[currentIndex] because lightbox-internal navigation changes currentIndex
   // while the origin card stays the same, and stack view has only one card in the DOM.
+  //
+  // Falls back to zoomClose when the card is not in the viewport — animating toward an
+  // off-screen rect produces non-uniform scaleX/scaleY that squishes or stretches the photo.
+  function isCardInViewport(el) {
+    const r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.top < window.innerHeight &&
+           r.right  > 0 && r.left < window.innerWidth;
+  }
+
+  function zoomClose(onDone) {
+    lightboxEl.animate(
+      [{ opacity: 1 }, { opacity: 0 }],
+      { duration: 280, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+    );
+    const anim = printEl.animate(
+      [
+        { transform: 'scale(1)',    opacity: 1 },
+        { transform: 'scale(0.88)', opacity: 0 },
+      ],
+      { duration: 280, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+    );
+    anim.onfinish = () => {
+      printEl.getAnimations().forEach(a => a.cancel());
+      lightboxEl.getAnimations().forEach(a => a.cancel());
+      onDone();
+    };
+  }
+
   function flipClose(onDone) {
-    // originCardEl is used in stack mode: only one .photo-card exists in the DOM
-    // and cardEls[currentIndex] is wrong after lightbox-internal navigation.
     const cardEl = originCardEl || cardEls[currentIndex];
-    if (!cardEl || !printEl) { onDone(); return; }
+
+    // If no card or card is off-screen, use a clean zoom-out instead of FLIP —
+    // animating toward an off-screen rect produces non-uniform scale that distorts the image.
+    if (!cardEl || !printEl || !isCardInViewport(cardEl)) {
+      zoomClose(onDone);
+      return;
+    }
 
     const printRect = printEl.getBoundingClientRect();
     const cardRect  = cardEl.getBoundingClientRect();
@@ -308,8 +323,8 @@
 
     const anim = printEl.animate(
       [
-        { transform: 'translate(0, 0) scale(1)',                                  opacity: 1   },
-        { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0   },
+        { transform: 'translate(0, 0) scale(1)',                                  opacity: 1 },
+        { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0 },
       ],
       { duration: 300, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
     );
@@ -341,19 +356,28 @@
       { duration: 220, fill: 'forwards' }
     );
 
-    flipOpen(cardEl);
+    // FLIP open only on desktop — on mobile it feels janky
+    if (window.innerWidth > 680) flipOpen(cardEl);
     closeBtn.focus();
   }
 
   function close() {
-    flipClose(() => {
+    const onDone = () => {
       lightboxEl.hidden = true;
       document.body.style.overflow = '';
       lightboxEl.scrollTop = 0;
-      // Return focus to the card that was open
       const returnCard = cardEls[currentIndex];
       if (returnCard) returnCard.focus();
-    });
+    };
+    // FLIP/zoom close only on desktop — on mobile just fade out
+    if (window.innerWidth > 680) {
+      flipClose(onDone);
+    } else {
+      lightboxEl.animate(
+        [{ opacity: 1 }, { opacity: 0 }],
+        { duration: 180, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
+      ).onfinish = () => { lightboxEl.getAnimations().forEach(a => a.cancel()); onDone(); };
+    }
   }
 
   function triggerChunkLoad() {
@@ -364,23 +388,22 @@
   function prev() {
     if (currentIndex === 0) {
       if (photos.length >= totalPhotos) {
-        const target = photos.length - 1;
-        loadPhoto(target, -1, findVisibleCard(target));
+        loadPhoto(photos.length - 1, -1);
       } else {
         pendingWrap = true;
         pendingDirection = -1;
         triggerChunkLoad();
       }
     } else {
-      loadPhoto(currentIndex - 1, -1, findVisibleCard(currentIndex - 1));
+      loadPhoto(currentIndex - 1, -1);
     }
   }
 
   function next() {
     if (currentIndex === photos.length - 1) {
-      if (photos.length >= totalPhotos) loadPhoto(0, 1, findVisibleCard(0));
+      if (photos.length >= totalPhotos) loadPhoto(0, 1);
     } else {
-      loadPhoto(currentIndex + 1, 1, findVisibleCard(currentIndex + 1));
+      loadPhoto(currentIndex + 1, 1);
     }
   }
 
@@ -421,8 +444,7 @@
     if (pendingWrap) {
       if (photos.length >= totalPhotos) {
         pendingWrap = false;
-        const target = photos.length - 1;
-        loadPhoto(target, pendingDirection, findVisibleCard(target));
+        loadPhoto(photos.length - 1, pendingDirection);
       } else {
         triggerChunkLoad();
       }

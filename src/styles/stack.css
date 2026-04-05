@@ -121,8 +121,13 @@ body.stack-mode main {
   height: auto;
 }
 
-/* Hover: gentle lift (overrides base card's larger lift) */
-#stack-stage .photo-card:hover,
+/* Hover: gentle lift (overrides base card's larger lift) — mouse only */
+@media (hover: hover) {
+  #stack-stage .photo-card:hover {
+    transform: rotate(var(--rotation, 0deg)) translateY(-5px) scale(1.015);
+  }
+}
+
 #stack-stage .photo-card:focus-visible {
   transform: rotate(var(--rotation, 0deg)) translateY(-5px) scale(1.015);
 }

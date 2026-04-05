@@ -363,9 +363,36 @@
     overflow: hidden;
   }
 
+  /* Safe-area edge fades — same "sheet" concept as the gallery body::after.
+     Uses the solid base of --overlay (rgb(10,6,3)) so the fade matches the
+     lightbox backdrop rather than the wood-grain --bg.
+     z-index: 5 within the lightbox stacking context — layout and close button
+     are bumped to z-index: 6 so they float above the fade sheets. */
+  #lightbox::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      linear-gradient(
+        to bottom,
+        rgb(10, 6, 3) 0px,
+        rgb(10, 6, 3) env(safe-area-inset-top, 20px),
+        transparent calc(env(safe-area-inset-top, 20px) + 36px)
+      ),
+      linear-gradient(
+        to top,
+        rgb(10, 6, 3) 0px,
+        rgb(10, 6, 3) env(safe-area-inset-bottom, 0px),
+        transparent calc(env(safe-area-inset-bottom, 0px) + 28px)
+      );
+    pointer-events: none;
+    z-index: 5;
+  }
+
   .lightbox__layout {
     flex-direction: column;
     align-items: stretch;
+    z-index: 6; /* above the ::before fade sheets */
     padding: 0;
     gap: 0;
     height: 100dvh;           /* fill full viewport */
@@ -387,7 +414,8 @@
     height: 100%;  /* definite height = photo-col content box; img max-height: 100% resolves against this */
     display: flex;
     align-items: center;
-    margin: auto;  /* robust centering — more reliable than justify-content: center on parent for iOS Safari */
+    justify-content: center;
+    margin: auto;
   }
 
   .lightbox__print img {
@@ -471,6 +499,11 @@
     margin-top: 0;
     padding: 10px 0 14px;
     border-top: 1px solid var(--accent-faint);
+  }
+
+  /* Close button above the safe-area fade sheets */
+  .lightbox__close {
+    z-index: 6;
   }
 
   /* ── Info toggle ── */

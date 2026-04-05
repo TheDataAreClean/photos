@@ -46,9 +46,9 @@ src/
     photos.11tydata.js Computed data: pageTitle, ogImage, ogDescription
   styles/
     base.css           Design tokens + reset (single source of truth for all tokens)
-    desk.css           Wood grain background, vignette, header, footer
+    desk.css           Wood grain background, vignette, header, footer, mobile safe-area edge fades (.fade-top / .fade-bottom)
     grid.css           Masonry grid, mobile single-column
-    photo-card.css     Card: rotation, shadows, hover, caption
+    photo-card.css     Card: rotation, shadows, hover (mouse-only), caption
     lightbox.css       Lightbox modal: two-column desktop, stacked mobile
     photo-page.css     Individual photo permalink page layout
     stack.css          Stack view: stage, shadow layers, nav buttons, card animations
@@ -56,7 +56,7 @@ src/
   scripts/
     gallery-core.js    Shared card factory (makeCard, formatDateStamp, buildBackExif, SVG icons) — exposed as window.GalleryCore
     gallery.js         Grid rendering, JS masonry, infinite scroll — consumes GalleryCore
-    lightbox.js        Lightbox open/close FLIP animation, keyboard nav
+    lightbox.js        Lightbox open/close FLIP animation (desktop) / fade (mobile), keyboard nav
     stack.js           Stack view: navigation, WAAPI card transitions, swipe, chunk proximity trigger — exposed as window.StackView
     view-toggle.js     window.ViewState singleton (localStorage r/w, Fisher-Yates shuffle); toggle button wiring
 
@@ -133,7 +133,21 @@ All design values live in `base.css` as `:root` custom properties. Token categor
 - **Fonts:** `--font-serif` (Schoolbell), `--font-ibm-sans` (IBM Plex Sans), `--font-mono` (VT323), `--font-mono-read` (IBM Plex Mono)
 - **Durations:** `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s)
 
-Never hardcode a value that has a token. The grain gradients in `desk.css` use raw rgba intentionally — they are texture-specific. Shadow layers in `photo-card.css`, `lightbox.css`, and `stack.css` use raw rgba intentionally — each has a distinct visual weight.
+Never hardcode a value that has a token. The grain gradients in `desk.css` use raw rgba intentionally — they are texture-specific. Shadow layers in `photo-card.css`, `lightbox.css`, and `stack.css` use raw rgba intentionally — each has a distinct visual weight. The safe-area edge fades in `desk.css` use `#000` intentionally — pure black regardless of theme.
+
+### Hover rules — mouse only
+All `:hover` rules on interactive cards and buttons are wrapped in `@media (hover: hover)`. This prevents iOS Safari's sticky-hover bug, where `:hover` fires on `touchstart` and stays applied to the element while the user scrolls past it. Rule: every new `:hover` style must be inside `@media (hover: hover)`. When a selector combines `:hover` and `:focus-visible`, split them — keep `:focus-visible` outside so keyboard navigation still works on all devices.
+
+### Mobile safe-area edge fades
+`.fade-top` and `.fade-bottom` are `position: fixed` elements in `base.njk`, hidden on desktop via `display: none`, activated inside `@media (max-width: 560px)` in `desk.css`. They sit at `z-index: 40` — above page content (1) but below the view-toggle (50) and lightbox (1000). Two separate elements are used instead of one with stacked gradients because `calc(env(safe-area-inset-*) + Npx)` inside `linear-gradient()` fails silently on iOS Safari (see Known traps). The fade colour is `#000`, not `var(--bg)`, so it masks content against any background.
+
+### Lightbox animation — desktop vs mobile
+The lightbox FLIP open/close animation only runs on desktop (`window.innerWidth > 680`). On mobile, open uses a plain backdrop fade and close uses a 180ms opacity fade — the FLIP zoom felt janky on touch. The 680px threshold matches the lightbox two-column layout breakpoint. `flipClose` also has a viewport-visibility check: if the origin card is off-screen, it falls back to `zoomClose` (scale + fade) to avoid non-uniform scale distortion from off-screen FLIP coordinates.
+
+### Breakpoints
+Two distinct breakpoints are used — they are intentionally different:
+- **560px** — mobile layout switch: single-column grid, safe-area fades, mobile header padding, stack card sizing
+- **680px** — lightbox layout switch: two-column → stacked, FLIP animation enabled/disabled, meta panel default open/closed
 
 ### View toggle and localStorage persistence
 
@@ -214,6 +228,12 @@ First build after dropping a new photo: sidecar is created from EXIF, then the f
 ### Per-photo page images need root-relative URLs
 Local photo URLs are root-relative (`/photos/filename.jpg`) so they resolve correctly from `/photos/YYYY-MM-DD-local-slug/`. Never make them relative paths.
 
+### `overflow-x: hidden` on `html` breaks `position: fixed` on iOS Safari
+Applying `overflow-x: hidden` to the `<html>` element causes `position: fixed` children to stop behaving as fixed — they act as if they are `position: absolute` relative to the clipped ancestor. The symptom is fixed overlays (like `.fade-top`, `.fade-bottom`, the lightbox) disappearing or scrolling with the page. Safe on `body`; never add it to `html`.
+
+### `calc(env() + px)` inside `linear-gradient` fails silently on iOS Safari
+Using `calc()` with `env()` inside a `linear-gradient` value (e.g. `linear-gradient(... calc(env(safe-area-inset-top, 0px) + 60px) ...)`) causes the entire background declaration to be silently dropped on iOS Safari. Workaround: use `env()` directly inside the gradient (without `calc()`), and put `calc(env() + px)` only in regular CSS properties like `height`. Example in `desk.css` `.fade-top`: `height: calc(env(safe-area-inset-top, 0px) + 80px)` with `env(safe-area-inset-top, 0px)` used directly as a gradient stop.
+
 ---
 
 ## Keeping docs updated
@@ -258,7 +278,8 @@ When pulling new Glass data and pushing to the repo, always run steps in this or
 - [ ] New local photos renamed (date-based stem) and sidecars auto-created
 - [ ] `glass-sidecars/` has one file per Glass photo
 - [ ] Gallery grid loads, masonry correct at desktop + mobile
-- [ ] Lightbox opens, FLIP animation, prev/next/close, keyboard nav
+- [ ] Lightbox opens (desktop: FLIP zoom from card; mobile: fade), prev/next/close, keyboard nav
+- [ ] Lightbox close when card is off-screen: zoom-out fade (no squish/stretch)
 - [ ] Infinite scroll loads next chunk when > 60 photos
 - [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{source}-{slug}/`
 - [ ] View toggle widget visible bottom-right of gallery, all three buttons functional

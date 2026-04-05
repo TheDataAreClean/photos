@@ -35,6 +35,14 @@
 
 /* ── Mobile: single column, normal document flow ─────── */
 @media (max-width: 560px) {
+  /* Establish an explicit stacking context below the body::after fade sheets (z-index: 20).
+     Without this, photo cards with transform:rotate() create z-index:auto stacking
+     contexts that can paint above the fixed overlay on iOS Safari. */
+  #gallery-root {
+    position: relative;
+    z-index: 1;
+  }
+
   .gallery-grid {
     display: flex;
     flex-direction: column;

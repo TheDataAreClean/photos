@@ -15,6 +15,12 @@ body {
   background-position:   center center, center center;
 }
 
+/* Safe-area edge fades — mobile-only, hidden on desktop */
+.fade-top,
+.fade-bottom {
+  display: none;
+}
+
 /* Vignette — edges worn dark from decades of use */
 body::after {
   content: '';
@@ -45,7 +51,7 @@ body::after {
   font-size: var(--text-lg);
   font-weight: normal;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--on-dark);
 }
 
 .site-subtitle {
@@ -61,7 +67,7 @@ body::after {
   font-family: var(--font-serif);
   font-size: var(--text-md);
   letter-spacing: 0.08em;
-  color: var(--accent-body);
+  color: var(--on-dark);
   text-decoration: none;
   white-space: nowrap;
   flex-shrink: 0;
@@ -69,7 +75,7 @@ body::after {
 }
 
 .site-attribution:hover {
-  color: var(--accent-readable);
+  color: var(--paper);
 }
 
 @media (max-width: 560px) {
@@ -83,6 +89,48 @@ body::after {
 
   body {
     background: transparent;
+  }
+
+  /* Desktop vignette disabled on mobile — edge fades handled by
+     .fade-top / .fade-bottom (real DOM elements) for reliable iOS Safari z-index. */
+  body::after {
+    display: none;
+  }
+
+  /* Top fade — solid black through Dynamic Island, gradient into content.
+     Height is safe-area-inset-top + 80px gradient zone.
+     env() is used directly in linear-gradient (no calc inside gradient),
+     and calc(env()+px) is only in height where it parses reliably. */
+  .fade-top {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(env(safe-area-inset-top, 0px) + 80px);
+    background: linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.85) 0px,
+      rgba(0,0,0,0.85) env(safe-area-inset-top, 0px),
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 40;
+  }
+
+  /* Bottom fade — extends 4px below viewport bottom to close any sub-pixel gap
+     iOS Safari leaves between a fixed element and the physical screen edge.
+     Short solid zone before the gradient ensures the gap is fully covered. */
+  .fade-bottom {
+    display: block;
+    position: fixed;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 124px;
+    background: linear-gradient(to top, #000 0%, #000 10%, transparent 100%);
+    pointer-events: none;
+    z-index: 40;
   }
 
   body::before {
@@ -105,8 +153,10 @@ body::after {
   }
 
   .site-header {
-    /* Push header content below the Dynamic Island / notch safe area */
-    padding: calc(28px + env(safe-area-inset-top, 0px)) 14px 16px;
+    /* Sit above the fade-top overlay so the title is never dimmed by it */
+    position: relative;
+    z-index: 45;
+    padding: calc(env(safe-area-inset-top, 0px) + 44px) 14px 16px;
   }
 
   .site-subtitle {

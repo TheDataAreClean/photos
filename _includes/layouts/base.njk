@@ -66,5 +66,12 @@
 
 {{ content | safe }}
 
+<!-- Safe-area edge fades — hidden on desktop, active on mobile.
+     Two separate elements so each gradient is a simple linear-gradient
+     with no calc(env()) inside it (avoids iOS Safari parsing failures).
+     z-index: 40 — above page content (z-index: 1), below view-toggle (50) and lightbox (1000). -->
+<div class="fade-top"    aria-hidden="true"></div>
+<div class="fade-bottom" aria-hidden="true"></div>
+
 </body>
 </html>

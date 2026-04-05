@@ -99,7 +99,7 @@ Save the file and run `npm run build` — changes appear immediately.
 │   │   └── photos.11tydata.js  Computed data (OG tags) for photo pages
 │   ├── styles/
 │   │   ├── base.css           Design tokens and reset
-│   │   ├── desk.css           Wood grain background, header, footer
+│   │   ├── desk.css           Wood grain background, header, footer, mobile edge fades
 │   │   ├── grid.css           Masonry grid layout
 │   │   ├── photo-card.css     Card styling, rotation, hover, flip
 │   │   ├── lightbox.css       Lightbox modal (desktop + mobile)
