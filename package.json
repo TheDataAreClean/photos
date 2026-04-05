@@ -11,15 +11,16 @@
     "rename:glass": "node scripts/rename-glass.js",
     "rename:local": "node scripts/rename-local.js",
     "sync:glass": "node scripts/sync-glass.js",
-    "gen:favicon": "node build/gen-favicon.js"
+    "gen:favicon": "node build/gen-favicon.js",
+    "gen:og": "node -e \"const {generateOgImage}=require('./build/og-image');const p=require('./dist/data/photos-1.json');generateOgImage(p,'./dist').then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1)});\""
   },
   "dependencies": {
-    "@napi-rs/canvas": "^0.1.97",
-    "exifr": "^7.1.3",
-    "gray-matter": "^4.0.3",
-    "sharp": "^0.33.5"
+    "@napi-rs/canvas": "0.1.97",
+    "exifr": "7.1.3",
+    "gray-matter": "4.0.3",
+    "sharp": "0.33.5"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^3.1.5"
+    "@11ty/eleventy": "3.1.5"
   }
 }

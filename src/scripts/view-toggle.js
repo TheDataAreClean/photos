@@ -20,16 +20,20 @@
 
   const ViewState = {
     getView() {
-      return localStorage.getItem(STORAGE_VIEW) === 'stack' ? 'stack' : 'grid';
+      try {
+        return localStorage.getItem(STORAGE_VIEW) === 'stack' ? 'stack' : 'grid';
+      } catch { return 'grid'; }
     },
     setView(v) {
-      localStorage.setItem(STORAGE_VIEW, v);
+      try { localStorage.setItem(STORAGE_VIEW, v); } catch { /* private browsing */ }
     },
     getShuffle() {
-      return localStorage.getItem(STORAGE_SHUFFLE) === 'on';
+      try {
+        return localStorage.getItem(STORAGE_SHUFFLE) === 'on';
+      } catch { return false; }
     },
     setShuffle(bool) {
-      localStorage.setItem(STORAGE_SHUFFLE, bool ? 'on' : 'off');
+      try { localStorage.setItem(STORAGE_SHUFFLE, bool ? 'on' : 'off'); } catch { /* private browsing */ }
     },
     applyShuffle() {
       if (this.getShuffle() && window.GalleryPhotos && window.GalleryPhotos.length) {

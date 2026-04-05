@@ -153,6 +153,10 @@
       : '';
 
     imgEl.alt = photo.altText || photo.title || '';
+    imgEl.onerror = () => {
+      imgEl.style.opacity = '1';
+      console.warn('Lightbox: failed to load image', photo.id);
+    };
     imgEl.onload = () => {
       imgEl.style.opacity = '1';
 

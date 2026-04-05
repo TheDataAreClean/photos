@@ -30,7 +30,9 @@ async function fetchGlass(config, fresh = false) {
         raw = JSON.parse(await fs.readFile(cacheFile, 'utf8'));
         console.log(`  Glass: loaded ${raw.length} from cache`);
       }
-    } catch { /* cache miss */ }
+    } catch (err) {
+      if (err.message) console.warn('  Glass: cache file invalid —', err.message, '— re-fetching');
+    }
   }
 
   if (!raw) {

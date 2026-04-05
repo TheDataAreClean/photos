@@ -137,8 +137,9 @@
       if (loadedChunks >= totalChunks) { observer.disconnect(); return; }
 
       fetching = true;
-      loadedChunks++;
-      const url = `/data/photos-${loadedChunks}.json`;
+      const chunkToLoad = loadedChunks + 1;
+      loadedChunks = chunkToLoad;
+      const url = `/data/photos-${chunkToLoad}.json`;
 
       fetch(url)
         .then(res => {
@@ -155,7 +156,7 @@
           if (loadedChunks >= totalChunks) observer.disconnect();
         })
         .catch(err => {
-          console.warn('Chunk load failed:', err);
+          console.warn(`Chunk ${chunkToLoad} failed to load: ${err.message}`);
           loadedChunks--;  // allow retry on next scroll
           fetching = false;
         });
