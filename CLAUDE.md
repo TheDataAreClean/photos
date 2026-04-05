@@ -21,6 +21,7 @@ npm run rename:glass      # Glass sidecars only
 
 npm run sync:glass        # Pull latest Glass API data without a full build
 npm run gen:favicon       # Regenerate apple-touch-icon.png + favicon-32.png from SVG design
+npm run gen:og            # Regenerate og-image.jpg manually (requires a prior build)
 ```
 
 ---
@@ -171,6 +172,30 @@ One photo at a time, two CSS-only shadow layers (`div.stack-layer`) behind the c
 - **Chunk loading:** within 5 photos of the loaded count, `checkChunkProximity()` scrolls `#scroll-sentinel` into view, triggering the existing `IntersectionObserver` in `gallery.js`. `gallery.js` calls `window.StackView.onChunkLoaded()` after each chunk.
 - **Lightbox:** `originCardEl` is stored at `open()` time for FLIP close — `cardEls[currentIndex]` would be wrong after lightbox-internal navigation since only one card exists in the DOM.
 - **Swipe:** `pointerdown`/`pointerup` on `#stack-stage`; horizontal dominance check and 30px minimum threshold prevent accidental triggers.
+
+### Monthly OG image generation
+
+`build/og-image.js` generates `dist/og-image.jpg` (1200×630) on every build using `@napi-rs/canvas`. The homepage `og:image` meta tag always points to this file; per-photo pages use their own photo image.
+
+**Deterministic monthly seed:** `year * 12 + month`. The same build within a calendar month always produces the same image. The seed changes on the 1st — a different template and photo set is selected.
+
+**Templates:** 6 layout definitions in `TEMPLATES` (matching `sample/identity-preview.html`) — each is an array of card objects with `{ w, ar, left/right, top, rot, z }` as percentages of the 1200×630 canvas.
+
+**Photo selection:** Photos are Fisher-Yates shuffled with the seeded PRNG, then the first N are used (N = number of cards in the selected template).
+
+**Image sources:** Glass photos are read from `.cache/glass-images/${id}.bin` (populated by the watermarking step earlier in the same build). Local photos are read from `dist/photos/`. CDN fetch is a fallback only.
+
+**Fonts:** IBM Plex Sans 500 and Schoolbell are downloaded from Google Fonts on first run and cached to `.cache/`. Falls back to system fonts if download fails.
+
+**Scheduling:** `.github/workflows/deploy.yml` includes `schedule: cron: '0 6 1 * *'` — runs the full build on the 1st of every month at 06:00 UTC, regenerating the OG image and favicon for the new month automatically.
+
+### Favicon
+
+The favicon is fixed: variant 4 (stacked prints, warm amber/sepia palette). On each build, `build/gen-favicon.js` copies the pre-rendered files from `src/images/` directly to `dist/` — no canvas rendering occurs at build time.
+
+There is no monthly rotation or seed selection for the favicon. The scheduled workflow cron does not affect the favicon.
+
+`npm run gen:favicon` re-renders `src/images/` from the variant 4 design — run this if you change the favicon design, then commit the result.
 
 ### Local photo renaming
 `processLocal()` calls `autoRename()` before processing. Any file whose stem doesn't start with `YYYY-MM-DD` is renamed in-place (image + sidecar) using EXIF date + sidecar title. **The build mutates `local/` on disk.** Files already starting with a date are never touched.

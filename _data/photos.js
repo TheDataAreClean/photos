@@ -3,9 +3,11 @@
 const path   = require('path');
 const fs     = require('fs/promises');
 const config = require('../config');
-const { fetchGlass }   = require('../build/sources/glass');
-const { processLocal } = require('../build/sources/local');
-const { mergeAndSort } = require('../build/merge');
+const { fetchGlass }      = require('../build/sources/glass');
+const { processLocal }    = require('../build/sources/local');
+const { mergeAndSort }    = require('../build/merge');
+const { generateOgImage }  = require('../build/og-image');
+const { generateFavicon }  = require('../build/gen-favicon');
 
 const CHUNK_SIZE = 60;
 
@@ -54,6 +56,17 @@ module.exports = async function () {
 
   await pruneStaleAssets(photos, chunks.length, outDir, dataDir);
 
+  // Both generators use the same monthly seed so they rotate in sync
+  const monthSeed = new Date().getFullYear() * 12 + new Date().getMonth();
+
+  await generateOgImage(photos, outDir, monthSeed).catch(err => {
+    console.warn('  OG image: generation failed —', err.message);
+  });
+
+  await generateFavicon(outDir).catch(err => {
+    console.warn('  Favicon: generation failed —', err.message);
+  });
+
   return photos;
 };
 
@@ -81,8 +94,8 @@ async function pruneStaleAssets(photos, chunkCount, outDir, dataDir) {
   let entries;
   try { entries = await fs.readdir(photosDir, { withFileTypes: true }); } catch { entries = []; }
 
-  const staleFiles = entries.filter(e => e.isFile()      && !expectedFiles.has(e.name));
-  const staleDirs  = entries.filter(e => e.isDirectory() && !expectedDirs.has(e.name));
+  const staleFiles = entries.filter(e => e.isFile()      && !e.name.startsWith('.') && !expectedFiles.has(e.name));
+  const staleDirs  = entries.filter(e => e.isDirectory() && !e.name.startsWith('.') && !expectedDirs.has(e.name));
 
   await Promise.all([
     ...staleFiles.map(e => fs.unlink(path.join(photosDir, e.name)).catch(() => {})),

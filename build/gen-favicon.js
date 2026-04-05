@@ -1,81 +1,93 @@
 'use strict';
 
 /**
- * Generates src/images/apple-touch-icon.png (180×180) and
- * src/images/favicon-32.png (32×32) using @napi-rs/canvas.
+ * Favicon generator — stacked photo prints, variant 4 (fixed).
  *
- * Run manually:  node build/gen-favicon.js
+ * Build-time: copies src/images/ favicon files directly to dist/ — no rendering.
+ * Standalone (npm run gen:favicon): re-renders src/images/ from the variant 4 design.
  */
 
 const { createCanvas } = require('@napi-rs/canvas');
 const fs   = require('fs/promises');
 const path = require('path');
 
-const OUT_TOUCH = path.resolve('src/images/apple-touch-icon.png');
-const OUT_32    = path.resolve('src/images/favicon-32.png');
+// ── Variant 4 design ──────────────────────────────────────────────────────
+const BG    = '#251108';
+const BACK  = '#7a5e38';
+const FRONT = '#c4a882';
+const VARIANT = { backRot: -5, backOX: -1, backOY: 2, frontRot: 9, frontOX: 2, frontOY: -1 };
 
-// Site colours
-const BG     = '#1a1208';
-const STROKE = '#c4a882';
+// ── Drawing ───────────────────────────────────────────────────────────────
+function drawPrintStack(ctx, size) {
+  const { backRot, backOX, backOY, frontRot, frontOX, frontOY } = VARIANT;
+  const s  = size / 32;
+  const cw = 13 * s;
+  const ch = 17 * s;
 
-// 6-blade aperture iris matching favicon.svg
-// Points on a circle of radius 11 at 60° intervals from the top:
-//   (16,5), (25.5,10.5), (25.5,21.5), (16,27), (6.5,21.5), (6.5,10.5)
-const BLADES = [
-  [[16,5],    [25.5,10.5], 0.90],
-  [[25.5,10.5],[25.5,21.5], 0.60],
-  [[25.5,21.5],[16,27],    0.90],
-  [[16,27],   [6.5,21.5],  0.60],
-  [[6.5,21.5],[6.5,10.5],  0.90],
-  [[6.5,10.5],[16,5],      0.60],
-];
-
-function drawAperture(ctx, size) {
-  const s = size / 32;
-  const cx = 16 * s, cy = 16 * s;
-
-  ctx.clearRect(0, 0, size, size);
-
-  // ── Background circle ────────────────────────────
-  ctx.beginPath();
-  ctx.arc(cx, cy, 16 * s, 0, Math.PI * 2);
   ctx.fillStyle = BG;
-  ctx.fill();
+  ctx.fillRect(0, 0, size, size);
 
-  // ── 6 aperture blades ────────────────────────────
-  for (const [[x1, y1], [x2, y2], opacity] of BLADES) {
-    ctx.globalAlpha = opacity;
-    ctx.beginPath();
-    ctx.moveTo(cx,       cy);
-    ctx.lineTo(x1 * s,  y1 * s);
-    ctx.lineTo(x2 * s,  y2 * s);
-    ctx.closePath();
-    ctx.fillStyle = STROKE;
-    ctx.fill();
+  function drawCard(color, rot, ox, oy) {
+    const cx = (16 + ox) * s;
+    const cy = (15 + oy) * s;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur    = 2 * s;
+    ctx.shadowOffsetY = 1 * s;
+    ctx.fillStyle = color;
+    ctx.fillRect(-cw / 2, -ch / 2, cw, ch);
+    ctx.shadowColor = 'transparent';
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
 
-  // ── Centre hole ───────────────────────────────────
-  ctx.beginPath();
-  ctx.arc(cx, cy, 4.5 * s, 0, Math.PI * 2);
-  ctx.fillStyle = BG;
-  ctx.fill();
+  drawCard(BACK,  backRot,  backOX,  backOY);
+  drawCard(FRONT, frontRot, frontOX, frontOY);
 }
 
+function buildSVG() {
+  const { backRot, backOX, backOY, frontRot, frontOX, frontOY } = VARIANT;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="${BG}"/>
+  <rect x="${9.5 + backOX}"  y="${6.5 + backOY}"  width="13" height="17" fill="${BACK}"  transform="rotate(${backRot},${16 + backOX},${15 + backOY})"/>
+  <rect x="${9.5 + frontOX}" y="${6.5 + frontOY}" width="13" height="17" fill="${FRONT}" transform="rotate(${frontRot},${16 + frontOX},${15 + frontOY})"/>
+</svg>`;
+}
+
+// ── Build entry point — copies src/images/ to dist/, no rendering ─────────
+async function generateFavicon(distDir) {
+  const srcDir = path.resolve('src/images');
+  try {
+    await fs.mkdir(distDir, { recursive: true });
+    await Promise.all([
+      fs.copyFile(path.join(srcDir, 'favicon.svg'),          path.join(distDir, 'favicon.svg')),
+      fs.copyFile(path.join(srcDir, 'apple-touch-icon.png'), path.join(distDir, 'apple-touch-icon.png')),
+      fs.copyFile(path.join(srcDir, 'favicon-32.png'),       path.join(distDir, 'favicon-32.png')),
+    ]);
+    console.log('  Favicon: copied from src/images/');
+  } catch (err) {
+    console.warn('  Favicon: copy failed —', err.message);
+  }
+}
+
+// ── Standalone: npm run gen:favicon ──────────────────────────────────────
 async function main() {
-  const sizes = [
-    { path: OUT_TOUCH, size: 180 },
-    { path: OUT_32,    size: 32  },
-  ];
-
-  for (const { path: outPath, size } of sizes) {
+  const outDir = path.resolve('src/images');
+  await fs.writeFile(path.join(outDir, 'favicon.svg'), buildSVG());
+  for (const { file, size } of [
+    { file: 'apple-touch-icon.png', size: 180 },
+    { file: 'favicon-32.png',       size: 32  },
+  ]) {
     const canvas = createCanvas(size, size);
-    drawAperture(canvas.getContext('2d'), size);
-    const png = canvas.toBuffer('image/png');
-    await fs.mkdir(path.dirname(outPath), { recursive: true });
-    await fs.writeFile(outPath, png);
-    console.log(`  Favicon: ${size}×${size} → ${path.relative(process.cwd(), outPath)}`);
+    drawPrintStack(canvas.getContext('2d'), size);
+    await fs.writeFile(path.join(outDir, file), canvas.toBuffer('image/png'));
   }
+  console.log('  gen:favicon → src/images/');
 }
 
-main().catch(err => { console.error('gen-favicon failed:', err.message); process.exit(1); });
+if (require.main === module) {
+  main().catch(err => { console.error('gen-favicon failed:', err.message); process.exit(1); });
+}
+
+module.exports = { generateFavicon };

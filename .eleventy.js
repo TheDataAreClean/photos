@@ -6,10 +6,8 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy('src/scripts');
   eleventyConfig.addPassthroughCopy('src/images');
 
-  // Favicon files served from root
-  eleventyConfig.addPassthroughCopy({ 'src/images/favicon.svg':         'favicon.svg'         });
-  eleventyConfig.addPassthroughCopy({ 'src/images/apple-touch-icon.png': 'apple-touch-icon.png' });
-  eleventyConfig.addPassthroughCopy({ 'src/images/favicon-32.png':       'favicon-32.png'       });
+  // Favicon files are generated to dist/ by build/gen-favicon.js (monthly variants).
+  // Do NOT add passthrough copies here — they would overwrite the generated versions.
 
   // Live-reload on CSS/JS changes
   eleventyConfig.addWatchTarget('src/styles/');
