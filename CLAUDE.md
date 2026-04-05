@@ -185,7 +185,7 @@ One photo at a time, two CSS-only shadow layers (`div.stack-layer`) behind the c
 
 **Image sources:** Glass photos are read from `.cache/glass-images/${id}.bin` (populated by the watermarking step earlier in the same build). Local photos are read from `dist/photos/`. CDN fetch is a fallback only.
 
-**Fonts:** IBM Plex Sans 500 and Schoolbell are downloaded from Google Fonts on first run and cached to `.cache/`. Falls back to system fonts if download fails.
+**Fonts:** IBM Plex Sans 500 and Schoolbell are downloaded on first run and cached to `.cache/`. Download order: GitHub release URL (primary) → Google Fonts CSS v1 (fallback). IBM Plex Sans from `IBM/plex@v6.4.0`; Schoolbell from `google/fonts` main. The CI workflow installs `fonts-open-sans fonts-liberation` via apt before building so `sans-serif` always resolves even if both downloads fail.
 
 **Scheduling:** `.github/workflows/deploy.yml` includes `schedule: cron: '0 6 1 * *'` — runs the full build on the 1st of every month at 06:00 UTC, regenerating the OG image and favicon for the new month automatically.
 
@@ -252,6 +252,12 @@ First build after dropping a new photo: sidecar is created from EXIF, then the f
 
 ### Per-photo page images need root-relative URLs
 Local photo URLs are root-relative (`/photos/filename.jpg`) so they resolve correctly from `/photos/YYYY-MM-DD-local-slug/`. Never make them relative paths.
+
+### Google Fonts CSS v1 API returns dynamic URLs without `.ttf` extension
+The old Google Fonts API endpoint (`fonts.googleapis.com/css?family=…`) with a legacy User-Agent used to return CSS with literal `.ttf` URLs in `url(…)`. It now returns dynamic gstatic URLs like `url(https://fonts.gstatic.com/l/font?kit=…)` with no extension. Any regex matching `.ttf` in the URL will silently fail to match. Use a direct GitHub release URL as the primary source and the Google Fonts CSS approach only as a fallback with a regex that matches any `fonts.gstatic.com` URL.
+
+### OG image text invisible in headless CI without system fonts
+`@napi-rs/canvas` uses Skia for rendering. On a bare Ubuntu runner with no system fonts installed, `sans-serif` and `cursive` CSS font families resolve to nothing — `fillText` succeeds but draws invisible/zero-width glyphs. Fix: install `fonts-open-sans fonts-liberation` via apt before building so generic family names always resolve.
 
 ### `overflow-x: hidden` on `html` breaks `position: fixed` on iOS Safari
 Applying `overflow-x: hidden` to the `<html>` element causes `position: fixed` children to stop behaving as fixed — they act as if they are `position: absolute` relative to the clipped ancestor. The symptom is fixed overlays (like `.fade-top`, `.fade-bottom`, the lightbox) disappearing or scrolling with the page. Safe on `body`; never add it to `html`.

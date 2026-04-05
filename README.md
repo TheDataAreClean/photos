@@ -167,6 +167,7 @@ All options are in `config.js`:
 | `npm run rename:local` | Local photos only |
 | `npm run rename:glass` | Glass sidecars only |
 | `npm run gen:favicon` | Regenerate favicon assets from SVG |
+| `npm run gen:og` | Regenerate `og-image.jpg` manually (requires a prior build) |
 
 ---
 
