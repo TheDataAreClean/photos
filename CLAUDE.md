@@ -349,4 +349,6 @@ git push origin v1.0.0
 |---|---|
 | MAJOR | Visual redesign or change in site concept |
 | MINOR | New feature (new source, tag pages, RSS, etc.) |
-| PATCH | Bug fix, content update, sidecar edit |
+| PATCH | Bug fix, docs update, config/CI change |
+
+**Never tag content commits** — photo syncs (`Add: N new Glass photos`, `Chore: sync Glass`, sidecar edits) are not releases and should not get a version tag.
