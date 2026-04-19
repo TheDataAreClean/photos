@@ -10,6 +10,7 @@
   <meta name="description" content="{{ ogDescription or siteConfig.description }}">
   <meta name="author" content="Arpit (@thedataareclean)">
   {% if siteConfig.url %}<link rel="canonical" href="{{ siteConfig.url }}{{ page.url }}">{% endif %}
+  {% if siteConfig.url %}<link rel="alternate" type="application/atom+xml" title="{{ siteConfig.displayTitle }}" href="{{ siteConfig.url }}/feed.xml">{% endif %}
 
   {# ── Open Graph ──────────────────────────────────────── #}
   {# Use the explicit ogImage (per-photo pages), or the monthly generated scene for everything else #}

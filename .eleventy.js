@@ -32,6 +32,30 @@ module.exports = function (eleventyConfig) {
     Math.ceil((arr || []).length / n)
   );
 
+  // Returns whichever of two ISO dates is later — used for Atom <updated>
+  eleventyConfig.addFilter('laterDate', (a, b) => {
+    const da = a ? new Date(a) : new Date(0);
+    const db = b ? new Date(b) : new Date(0);
+    return (da > db ? da : db).toISOString();
+  });
+
+  // ISO date → RFC3339 (required by Atom spec)
+  eleventyConfig.addFilter('dateToRfc3339', iso => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return isNaN(d) ? '' : d.toISOString();
+  });
+
+  // Plain text → HTML paragraphs (for Atom <content>)
+  eleventyConfig.addFilter('toParagraphs', text => {
+    if (!text) return '';
+    return text.split(/\n{2,}/)
+      .map(p => p.trim())
+      .filter(Boolean)
+      .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+  });
+
   // "Monday, January 1, 2024"
   eleventyConfig.addFilter('longDate', iso => {
     if (!iso) return '';

@@ -1,0 +1,50 @@
+---
+permalink: /feed.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>{{ siteConfig.url }}/feed.xml</id>
+  <title>{{ siteConfig.title }}</title>
+  <subtitle>{{ siteConfig.description }}</subtitle>
+  <link href="{{ siteConfig.url }}/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="{{ siteConfig.url }}/" rel="alternate" type="text/html"/>
+  <updated>{{ photos[0].dateAdded | dateToRfc3339 }}</updated>
+  <author>
+    <name>Arpit</name>
+    <uri>{{ siteConfig.url }}</uri>
+  </author>
+
+  {%- for photo in photos | first(15) %}
+  {%- set permalink = siteConfig.url + '/photos/' + photo.id + '/' %}
+  {%- set imageUrl = photo.url.download | absUrl(siteConfig.url) %}
+  <entry>
+    <id>{{ permalink }}</id>
+    <title>{{ photo.title | escape }}</title>
+    <link href="{{ permalink }}" rel="alternate" type="text/html"/>
+    <published>{{ photo.dateAdded | dateToRfc3339 }}</published>
+    <updated>{{ photo.dateAdded | laterDate(photo.sidecarUpdatedAt) | dateToRfc3339 }}</updated>
+    {%- for tag in photo.tags %}
+    <category term="{{ tag | escape }}"/>
+    {%- endfor %}
+    <content type="html"><![CDATA[
+      {%- if imageUrl %}<img src="{{ imageUrl }}" alt="{{ photo.title | escape }}">{% endif %}
+      {{ photo.description | toParagraphs | safe }}
+      {%- if photo.dateTaken %}
+      <p><small>Captured {{ photo.dateTaken | shortDate }}</small></p>
+      {%- endif %}
+      {%- if photo.exif.camera or photo.exif.lens %}
+      <p><small>
+        {%- if photo.exif.camera %}{{ photo.exif.camera }}{% endif %}
+        {%- if photo.exif.lens %} · {{ photo.exif.lens }}{% endif %}
+        {%- if photo.exif.focalLength35 %} · {{ photo.exif.focalLength35 }}{% if photo.exif.focalLength %} ({{ photo.exif.focalLength }}){% endif %}
+        {%- elif photo.exif.focalLength %} · {{ photo.exif.focalLength }}{% endif %}
+        {%- if photo.exif.aperture %} · {{ photo.exif.aperture }}{% endif %}
+        {%- if photo.exif.shutterSpeed %} · {{ photo.exif.shutterSpeed }}{% endif %}
+        {%- if photo.exif.iso %} · ISO {{ photo.exif.iso }}{% endif %}
+      </small></p>
+      {%- endif %}
+    ]]></content>
+  </entry>
+  {%- endfor %}
+</feed>

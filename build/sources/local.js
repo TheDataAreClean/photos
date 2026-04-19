@@ -178,8 +178,9 @@ async function processOne(filename, photosDir, outputDir, config) {
       dateTaken:   finalDateTaken,
       dateAdded:   finalDateTaken || fileStat.mtime.toISOString(),
       exif:        finalExif,
-      tags:        sidecar?.data?.tags || [],
-      _local:      { filename, sidecarFound: !!sidecar },
+      tags:             sidecar?.data?.tags || [],
+      sidecarUpdatedAt: sidecar?._mtime || null,
+      _local:           { filename, sidecarFound: !!sidecar },
       _glass:      null,
     };
   } catch (err) {
@@ -213,7 +214,13 @@ dateTaken:${ymlStr(dateTaken)}
 async function loadSidecar(dir, stem, exifData, dateTaken) {
   const sidecarPath = path.join(dir, `${stem}.md`);
   try {
-    return matter(await fs.readFile(sidecarPath, 'utf8'));
+    const [content, stat] = await Promise.all([
+      fs.readFile(sidecarPath, 'utf8'),
+      fs.stat(sidecarPath),
+    ]);
+    const parsed = matter(content);
+    parsed._mtime = stat.mtime.toISOString();
+    return parsed;
   } catch {
     const stub = sidecarStub(exifData, dateTaken);
     await fs.writeFile(sidecarPath, stub, 'utf8').catch(() => {});

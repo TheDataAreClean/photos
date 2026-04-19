@@ -235,8 +235,14 @@ async function mergeSidecars(photos, autoIdMap) {
   return Promise.all(photos.map(async photo => {
     const sidecarPath = await findSidecarPath(photo.id, autoIdMap);
     let sidecar = null;
+    let sidecarMtime = null;
     try {
-      sidecar = matter(await fs.readFile(sidecarPath, 'utf8'));
+      const [content, stat] = await Promise.all([
+        fs.readFile(sidecarPath, 'utf8'),
+        fs.stat(sidecarPath),
+      ]);
+      sidecar = matter(content);
+      sidecarMtime = stat.mtime.toISOString();
     } catch { return photo; }
 
     const d         = sidecar.data || {};
@@ -248,8 +254,9 @@ async function mergeSidecars(photos, autoIdMap) {
       title:       ov(d.title,            photo.title),
       description: ov(sidecar.content?.trim(), photo.description),
       altText:     ov(d.title,            photo.altText),
-      tags:        d.tags?.length ? d.tags : photo.tags,
-      dateTaken:   finalDate,
+      tags:             d.tags?.length ? d.tags : photo.tags,
+      sidecarUpdatedAt: sidecarMtime,
+      dateTaken:        finalDate,
       exif: {
         ...photo.exif,
         camera:        ov(overrides.camera,        photo.exif.camera),
