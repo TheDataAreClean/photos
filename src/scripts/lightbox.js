@@ -60,6 +60,14 @@
     metaToggleBtn.addEventListener('click', () => setMetaOpen(!metaOpen));
   }
 
+  // Re-apply meta panel state when viewport crosses the mobile breakpoint
+  // (e.g. phone rotates while lightbox is open)
+  window.matchMedia('(max-width: 680px)').addEventListener('change', e => {
+    if (!lightboxEl.hasAttribute('hidden')) {
+      setMetaOpen(!e.matches);
+    }
+  });
+
   // ── Tab toggle (mobile only) ──────────────────────────
   function setTab(tab) {
     tabBtns.forEach(btn => btn.classList.toggle('is-active', btn.dataset.tab === tab));

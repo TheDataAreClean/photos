@@ -51,6 +51,14 @@
     const colWidth = (inner - GAP * (colCount - 1)) / colCount;
     const colTops  = new Array(colCount).fill(0);
 
+    // Set widths before reading heights — cards retain the previous colWidth as an
+    // inline style between masonry calls, so reading offsetHeight before updating
+    // width gives stale measurements and causes overlaps/gaps on resize.
+    cards.forEach(card => {
+      card.style.position = 'absolute';
+      card.style.width    = colWidth + 'px';
+    });
+
     const heights = cards.map(card => card.offsetHeight);
 
     cards.forEach((card, i) => {
@@ -58,10 +66,8 @@
       const x   = pl + col * (colWidth + GAP);
       const y   = colTops[col];
 
-      card.style.position = 'absolute';
-      card.style.width    = colWidth + 'px';
-      card.style.left     = x + 'px';
-      card.style.top      = y + 'px';
+      card.style.left = x + 'px';
+      card.style.top  = y + 'px';
 
       colTops[col] += heights[i] + GAP;
     });

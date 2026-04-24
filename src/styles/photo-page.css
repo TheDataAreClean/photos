@@ -1,9 +1,11 @@
 /* ── Photo permalink page — uses lightbox classes, minimal overrides ── */
 
 /* lightbox__layout uses min-height:100% relative to #lightbox (fixed).
-   On a static page the parent is body, so force 100vh instead. */
+   On a static page the parent is body, so force 100vh instead.
+   margin: auto centers the max-width container (lightbox is centered by #lightbox flex). */
 .photo-page.lightbox__layout {
   min-height: 100vh;
+  margin: 0 auto;
 }
 
 /* Backdrop — same dark overlay as lightbox, but not clickable */
@@ -35,6 +37,28 @@ a.photo-page__close {
   color: var(--paper-strong);
 }
 
+/* Desktop: mirror #lightbox toggle states using .photo-page as scope */
+@media (min-width: 681px) {
+  /* Open state: toggle is a compact header row */
+  .photo-page.is-meta-open .lightbox__meta-toggle {
+    align-self: auto;
+    border-bottom: 1px solid var(--accent-faint);
+    justify-content: flex-end;
+    padding: 0 0 10px;
+    margin-bottom: 8px;
+  }
+
+  /* Collapsed: meta col shrinks to icon strip */
+  .photo-page:not(.is-meta-open) .lightbox__meta-col {
+    width: 42px;
+  }
+
+  .photo-page:not(.is-meta-open) .lightbox__meta-panels,
+  .photo-page:not(.is-meta-open) .lightbox__nav {
+    display: none;
+  }
+}
+
 /* Mobile: needs explicit height like the lightbox for fixed-zone layout */
 @media (max-width: 680px) {
   .photo-page.lightbox__layout {
@@ -42,4 +66,8 @@ a.photo-page__close {
     height: 100vh;
   }
 
+  /* Toggle is desktop-only on the photo page — mobile uses the tab system */
+  .photo-page .lightbox__meta-toggle {
+    display: none;
+  }
 }

@@ -254,6 +254,12 @@
   if (prevBtn) prevBtn.addEventListener('click', prev);
   if (nextBtn) nextBtn.addEventListener('click', next);
 
+  // Re-fit deck on resize/orientation change
+  new ResizeObserver(() => {
+    const photo = photos()[currentIndex];
+    if (photo) fitDeckToStage(photo);
+  }).observe(stageEl);
+
   function init() {
     if (window.StackView.isInitialised) return;
     window.StackView.isInitialised = true;

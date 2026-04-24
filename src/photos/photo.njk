@@ -25,6 +25,10 @@ layout: layouts/base.njk
 
   <div class="lightbox__meta-col">
 
+    <button class="lightbox__meta-toggle" aria-label="Close photo info" aria-expanded="true">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+    </button>
+
     <div class="lightbox__tabs">
       <button class="lightbox__tab-btn is-active" data-tab="about">About</button>
       <button class="lightbox__tab-btn" data-tab="info">Info</button>
@@ -86,6 +90,23 @@ layout: layouts/base.njk
 
 <script>
 (function () {
+  // Meta panel toggle
+  var layoutEl = document.querySelector('.photo-page');
+  var metaToggleBtn = document.querySelector('.photo-page .lightbox__meta-toggle');
+  var ppMetaOpen = true;
+  function setMetaOpen(open) {
+    ppMetaOpen = open;
+    if (layoutEl) layoutEl.classList.toggle('is-meta-open', open);
+    if (metaToggleBtn) {
+      metaToggleBtn.setAttribute('aria-expanded', String(open));
+      metaToggleBtn.setAttribute('aria-label', open ? 'Close photo info' : 'Open photo info');
+    }
+  }
+  setMetaOpen(true);
+  if (metaToggleBtn) {
+    metaToggleBtn.addEventListener('click', function () { setMetaOpen(!ppMetaOpen); });
+  }
+
   // Share button — copies page URL
   var shareBtn = document.getElementById('pp-share');
   if (shareBtn) {
