@@ -6,7 +6,18 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
-## UNRELEASED
+## 2026-04-24 — v1.4.1
+
+- fix: photo permalink pages now centred on wide screens (`margin: 0 auto`)
+- fix: photo permalink pages missing meta-toggle — layout now matches lightbox (open by default, collapsible)
+- fix: stray vertical line on lightbox ℹ icon strip — removed `border-left` from toggle button
+- fix: masonry grid — heights now measured after column widths are set, preventing overlaps/gaps on resize
+- fix: lightbox meta panel state now re-evaluated on orientation change (matchMedia listener)
+- fix: stack view deck width now recalculates on resize/orientation change (ResizeObserver)
+
+---
+
+## 2026-04-24 — v1.4.0
 
 - feat: Atom feed at `/feed.xml` — 15 most recent photos, watermarked images, full description, EXIF line, "Captured [date]"
 - feat: feed `<updated>` tracks sidecar file mtime — editing a description re-surfaces the entry in readers
