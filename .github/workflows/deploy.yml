@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 6 1 * *'   # 1st of every month, 06:00 UTC — refreshes OG image
+    - cron: '0 6 * * 1'   # every Monday, 06:00 UTC — picks up Glass edits/new photos
 
 permissions:
   contents: write
@@ -19,6 +20,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.sidecars.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,19 +55,28 @@ jobs:
           GLASS_TOKEN: ${{ secrets.GLASS_TOKEN }}
 
       - name: Commit new sidecars
+        id: sidecars
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add glass-sidecars/
-          git diff --cached --quiet || git commit -m "Chore: auto-sync new Glass sidecars [skip ci]"
-          git push origin main || true
+          if git diff --cached --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            git commit -m "Chore: auto-sync new Glass sidecars [skip ci]"
+            git push origin main
+          fi
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload pages artifact
+        if: github.event_name != 'schedule' || steps.sidecars.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
 
   deploy:
     needs: build
+    if: github.event_name != 'schedule' || needs.build.outputs.changed == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
