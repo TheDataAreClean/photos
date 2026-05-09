@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## UNRELEASED
+
+- infra: weekly Monday CI cron to pick up Glass edits and new photos; scheduled runs skip deploy when no sidecars changed
+
+---
+
 ## 2026-04-24 — v1.4.1
 
 - fix: photo permalink pages now centred on wide screens (`margin: 0 auto`)

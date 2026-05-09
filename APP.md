@@ -179,7 +179,7 @@ Favicon is fixed (variant 4, stacked prints). `build/gen-favicon.js` copies pre-
 | Concern | Detail |
 |---|---|
 | Hosting | GitHub Pages — `dist/` uploaded as Pages artifact |
-| CI | `.github/workflows/deploy.yml` — triggers on push to `main`, manual dispatch, and monthly cron |
+| CI | `.github/workflows/deploy.yml` — triggers on push to `main`, manual dispatch, monthly cron (OG image refresh), and weekly Monday cron (Glass sync); scheduled runs skip deploy when no sidecars changed |
 | Glass sync in CI | `npm run sync:glass` runs before build; new sidecars auto-committed back to `main` with `[skip ci]` |
 | Local weekly sync | launchd agent runs `scripts/glass-sync.sh` Sundays 08:00 |
 | Node | 20 (CI); local version managed via nvm or Homebrew |
