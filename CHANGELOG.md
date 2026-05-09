@@ -6,7 +6,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
-## UNRELEASED
+## 2026-05-09 — v1.4.2
 
 - infra: weekly Monday CI cron to pick up Glass edits and new photos; scheduled runs skip deploy when no sidecars changed
 
