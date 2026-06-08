@@ -1,0 +1,22 @@
+---
+title: "Gate"
+tags: []
+
+# Edit any value below — leave blank to fall back to what Glass provides
+overrideExif:
+  camera: "Fujifilm X-T50"
+  lens: "XF16-50mmF2.8-4.8 R LM WR"
+  focalLength: "46mm"
+  focalLength35: "69mm"
+  aperture: "ƒ/4.6"
+  shutterSpeed: "1/280s"
+  iso: 250
+
+dateTaken: "2026-05-17T07:19:01Z"
+---
+
+#1.
+
+A glimpse into the lives of people from a small beach town in Northern Karnataka. What would your gate look like?
+
+Start here. 👇🏽
