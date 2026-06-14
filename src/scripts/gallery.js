@@ -27,7 +27,7 @@
 
   // ── Masonry layout ─────────────────────────────────────
   function masonry() {
-    const cards = Array.from(gridEl.querySelectorAll('.photo-card'));
+    const cards = Array.from(gridEl.querySelectorAll('.photo-card, .series-card'));
     if (!cards.length) return;
 
     const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
@@ -81,6 +81,54 @@
     resizeTimer = setTimeout(masonry, 80);
   }).observe(gridEl);
 
+  // ── Series grouping ────────────────────────────────────
+  // window.GallerySeries: { [slug]: { slug, title, description, coverPhoto, photos: [{photo, _idx}] } }
+  // Built incrementally as chunks load; photos sorted by seriesOrder within each series.
+  window.GallerySeries = window.GallerySeries || {};
+
+  function mergeSeries(newPhotos, startIndex) {
+    const meta = window.GallerySeriesMeta || {};
+    newPhotos.forEach((photo, i) => {
+      if (!photo.series) return;
+      const slug = photo.series;
+      if (!window.GallerySeries[slug]) {
+        window.GallerySeries[slug] = {
+          slug,
+          title:       meta[slug]?.title       || slug,
+          description: meta[slug]?.description || null,
+          coverPhoto:  meta[slug]?.coverPhoto  || null,
+          photos: [],
+        };
+      }
+      window.GallerySeries[slug].photos.push({ photo, _idx: startIndex + i });
+    });
+    // Re-sort each touched series by seriesOrder
+    const touchedSlugs = [...new Set(newPhotos.filter(p => p.series).map(p => p.series))];
+    touchedSlugs.forEach(slug => {
+      window.GallerySeries[slug].photos.sort(
+        (a, b) => (a.photo.seriesOrder ?? 9999) - (b.photo.seriesOrder ?? 9999)
+      );
+    });
+  }
+
+  // ── Attach click + keyboard events to a series card ───
+  function attachSeriesEvents(card, slug) {
+    function openSeries() {
+      window.location.href = '/series/' + slug + '/';
+    }
+    card.addEventListener('click', openSeries);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openSeries();
+      }
+    });
+    if (window.matchMedia('(hover: hover)').matches) {
+      card.addEventListener('pointerenter', () => { card.style.willChange = 'transform'; });
+      card.addEventListener('pointerleave', () => { card.style.willChange = ''; });
+    }
+  }
+
   // ── Attach click + keyboard events to a card ──────────
   function attachEvents(card, photo, index) {
     // Preload display-size image on first hover so lightbox opens instantly
@@ -110,11 +158,39 @@
 
   // ── Append an array of photos as cards ────────────────
   function appendCards(newPhotos, startIndex) {
+    // First pass: merge any series photos into window.GallerySeries
+    mergeSeries(newPhotos, startIndex);
+
+    // Second pass: render — series photos collapse into one folder card each.
+    // _rendered persists on window.GallerySeries so chunks don't re-render the card.
     const fragment = document.createDocumentFragment();
+    let eagerCount = 0;
+
     newPhotos.forEach((photo, i) => {
       const index = startIndex + i;
-      const card  = window.GalleryCore.makeCard(photo, index, startIndex === 0 && i < 4);
-      // Re-attach masonry trigger — GalleryCore.makeCard is masonry-agnostic
+
+      if (photo.series && !window.galleryNoSeriesGroup) {
+        const slug = photo.series;
+        if (!window.GallerySeries[slug]?._rendered) {
+          window.GallerySeries[slug]._rendered = true;
+          const card = window.GalleryCore.makeSeriesCard(window.GallerySeries[slug]);
+          attachSeriesEvents(card, slug);
+          // Masonry trigger when peek images load
+          card.querySelectorAll('img').forEach(img => {
+            img.addEventListener('load', () => {
+              clearTimeout(resizeTimer);
+              resizeTimer = setTimeout(masonry, 80);
+            }, { once: true });
+          });
+          fragment.appendChild(card);
+        }
+        // Remaining series photos: skip individual card
+        return;
+      }
+
+      const eager = startIndex === 0 && eagerCount < 4;
+      if (eager) eagerCount++;
+      const card = window.GalleryCore.makeCard(photo, index, eager);
       const img = card.querySelector('img');
       if (img) {
         img.addEventListener('load', () => {
@@ -125,6 +201,7 @@
       attachEvents(card, photo, index);
       fragment.appendChild(card);
     });
+
     gridEl.appendChild(fragment);
     requestAnimationFrame(() => requestAnimationFrame(masonry));
   }
@@ -182,14 +259,11 @@
       return;
     }
 
-    if (window.ViewState && window.ViewState.getView() === 'stack') {
-      // stack.js self-initialises after it loads; skip grid render
-      gridEl.classList.remove('is-loading');
-    } else {
-      appendCards(window.GalleryPhotos, 0);
-      gridEl.classList.remove('is-loading');
-      gridEl.classList.add('is-ready');
-    }
+    // Always render the grid — it may be hidden in stack mode, but must be ready
+    // so switching from stack→grid shows the correct order without re-render.
+    appendCards(window.GalleryPhotos, 0);
+    gridEl.classList.remove('is-loading');
+    gridEl.classList.add('is-ready');
 
     setupInfiniteScroll();
   }

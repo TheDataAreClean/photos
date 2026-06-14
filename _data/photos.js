@@ -3,11 +3,12 @@
 const path   = require('path');
 const fs     = require('fs/promises');
 const config = require('../config');
-const { fetchGlass }      = require('../build/sources/glass');
+const { fetchGlass, fetchHiddenGlassPosts } = require('../build/sources/glass');
 const { processLocal }    = require('../build/sources/local');
 const { mergeAndSort }    = require('../build/merge');
 const { generateOgImage }  = require('../build/og-image');
 const { generateFavicon }  = require('../build/gen-favicon');
+const { loadSeries }      = require('../build/series');
 
 const CHUNK_SIZE = 60;
 
@@ -24,15 +25,45 @@ module.exports = async function () {
 
   const fresh = process.argv.includes('--fresh') || process.env.FRESH === '1';
 
-  const [glassPhotos, localPhotos] = await Promise.all([
+  const [glassPhotos, localPhotos, seriesMap] = await Promise.all([
     fetchGlass(config, fresh).catch(err => {
       console.warn('  Glass: fetch failed —', err.message);
       return [];
     }),
     processLocal(config),
+    loadSeries(),
   ]);
 
-  const photos = mergeAndSort([...glassPhotos, ...localPhotos]);
+  // Fetch photos that are hidden from the Glass profile but accessible by URL.
+  // These are listed as hiddenGlassPhotos: [friendlyId, ...] in series/*.md files.
+  const hiddenFriendlyIds = [...new Set(
+    Object.values(seriesMap).flatMap(m => m.hiddenGlassPhotos || [])
+  )];
+  const hiddenPhotos = hiddenFriendlyIds.length
+    ? await fetchHiddenGlassPosts(config.glass.username, hiddenFriendlyIds, config, fresh)
+        .catch(err => { console.warn('  Glass hidden: fetch failed —', err.message); return []; })
+    : [];
+
+  const photos = mergeAndSort([...glassPhotos, ...localPhotos, ...hiddenPhotos]);
+
+  // Apply series membership from series/*.md — single source of truth.
+  // Overrides any series/seriesOrder set in individual sidecar files.
+  const seriesLookup = {};
+  for (const [slug, meta] of Object.entries(seriesMap)) {
+    (meta.photos || []).forEach(({ id, order }) => {
+      seriesLookup[id] = { slug, order };
+    });
+  }
+  photos.forEach(photo => {
+    const s = seriesLookup[photo.id];
+    if (s) {
+      const meta        = seriesMap[s.slug];
+      photo.series      = s.slug;
+      photo.seriesOrder = s.order;
+      photo.seriesTitle = meta?.title || null;
+      photo.seriesCount = meta?.photos?.length || 0;
+    }
+  });
 
   console.log(`\n  Glass: ${glassPhotos.length} photos`);
   console.log(`  Local: ${localPhotos.length} photos`);
@@ -55,6 +86,7 @@ module.exports = async function () {
   );
 
   await pruneStaleAssets(photos, chunks.length, outDir, dataDir);
+  await pruneStaleCache(photos, hiddenFriendlyIds, cacheDir);
 
   // Both generators use the same monthly seed so they rotate in sync
   const monthSeed = new Date().getFullYear() * 12 + new Date().getMonth();
@@ -120,3 +152,34 @@ async function pruneStaleAssets(photos, chunkCount, outDir, dataDir) {
     console.log(`  Pruned: ${staleFiles.length} asset(s), ${staleDirs.length} page dir(s), ${staleChunks.length} chunk(s)\n`);
   }
 };
+
+// ── Cache cleanup ──────────────────────────────────────────────────────────
+// Removes downloaded-original caches for Glass photos no longer in the photo
+// set, and hidden-post caches for friendlyIds no longer referenced by any
+// series — otherwise these directories grow unboundedly over time.
+async function pruneStaleCache(photos, hiddenFriendlyIds, cacheDir) {
+  const expectedImageIds = new Set(
+    photos.filter(p => p._glass).map(p => `${p.id}.bin`)
+  );
+  const expectedHiddenIds = new Set(hiddenFriendlyIds.map(fid => `${fid}.json`));
+
+  const imageCacheDir  = path.join(cacheDir, 'glass-images');
+  const hiddenCacheDir = path.join(cacheDir, 'glass-hidden');
+
+  let imageEntries, hiddenEntries;
+  try { imageEntries  = await fs.readdir(imageCacheDir); }  catch { imageEntries  = []; }
+  try { hiddenEntries = await fs.readdir(hiddenCacheDir); } catch { hiddenEntries = []; }
+
+  const staleImages  = imageEntries.filter(f  => !expectedImageIds.has(f));
+  const staleHidden  = hiddenEntries.filter(f => !expectedHiddenIds.has(f));
+
+  await Promise.all([
+    ...staleImages.map(f  => fs.unlink(path.join(imageCacheDir, f)).catch(() => {})),
+    ...staleHidden.map(f  => fs.unlink(path.join(hiddenCacheDir, f)).catch(() => {})),
+  ]);
+
+  const removed = staleImages.length + staleHidden.length;
+  if (removed > 0) {
+    console.log(`  Pruned cache: ${staleImages.length} image(s), ${staleHidden.length} hidden post(s)\n`);
+  }
+}

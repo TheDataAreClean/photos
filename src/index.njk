@@ -86,8 +86,9 @@ permalink: /
 
       <div class="lightbox__meta-panels">
         <div class="lightbox__meta-top">
-          <div id="lightbox-title" class="lightbox__title" hidden></div>
-          <div id="lightbox-desc"  class="lightbox__description" hidden></div>
+          <div id="lightbox-title"  class="lightbox__title" hidden></div>
+          <div id="lightbox-desc"   class="lightbox__description" hidden></div>
+          <a  id="lightbox-series" class="lightbox__series-tag" hidden></a>
         </div>
         <div class="lightbox__meta-bottom">
           <div id="lightbox-exif"   class="lightbox__exif" hidden></div>
@@ -111,10 +112,43 @@ permalink: /
   <button class="lightbox__close" aria-label="Close (Esc)">&times;</button>
 </div>
 
+{# ── Series overlay ───────────────────────────────── #}
+<div id="series-overlay" class="series-overlay" role="dialog" aria-modal="true" aria-label="Series viewer">
+  <div class="series-overlay__bar">
+    <div class="series-overlay__identity">
+      <div class="series-overlay__folder-icon" aria-hidden="true"></div>
+      <div>
+        <div class="series-overlay__title" id="series-overlay-title"></div>
+        <div class="series-overlay__counter" id="series-overlay-counter"></div>
+      </div>
+    </div>
+    <button class="series-overlay__close" id="series-overlay-close" aria-label="Close series (Esc)">×</button>
+  </div>
+
+  <div class="series-overlay__stage">
+    <button class="series-overlay__nav" id="series-overlay-prev" aria-label="Previous photo">&#8249;</button>
+    <div class="series-overlay__print-wrap">
+      <div class="series-overlay__print" id="series-overlay-print">
+        <img id="series-overlay-img" src="" alt="" draggable="false" />
+        <div class="series-overlay__caption">
+          <span class="series-overlay__caption-title" id="series-overlay-cap-title"></span>
+          <span class="series-overlay__caption-date"  id="series-overlay-cap-date"></span>
+        </div>
+      </div>
+      <div class="series-overlay__open-hint">click photo to open in lightbox</div>
+    </div>
+    <button class="series-overlay__nav" id="series-overlay-next" aria-label="Next photo">&#8250;</button>
+  </div>
+
+  <div class="series-overlay__strip" id="series-overlay-strip"></div>
+</div>
+
 {# First 60 photos inlined for instant paint; remaining loaded via infinite scroll #}
 <script id="gallery-data" type="application/json">{{ photos | first(60) | json | safe }}</script>
+<script>window.GallerySeriesMeta = {{ series | json | safe }};</script>
 <script src="/scripts/gallery-core.js"></script>
 <script src="/scripts/view-toggle.js"></script>
 <script src="/scripts/gallery.js"></script>
 <script src="/scripts/stack.js"></script>
 <script src="/scripts/lightbox.js"></script>
+<script src="/scripts/series-overlay.js"></script>

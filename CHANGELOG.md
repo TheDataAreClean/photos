@@ -6,6 +6,25 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.0.0
+
+- feat: series support — `series/*.md` files define a series (title, description, cover photo); photo sidecars tagged with `series:` + `seriesOrder:` fields
+- feat: series folder card in the masonry grid — manila folder aesthetic with peeking photo prints; collapses all photos from a series into one card
+- feat: series overlay — full-screen viewer (like lightbox) with thumbnail strip, prev/next, counter; opens from folder card; photo click opens existing lightbox
+- fix: Glass ID generation — use text before first period as slug snippet so numbered series like "Gate #12." get unique IDs instead of colliding on "Gate"
+- Gate series: 15 photos (#1, #5–#18) tagged as first series
+- a11y: series page/overlay — fixed breadcrumb and title contrast, added missing `:focus-visible` styles across series cards, badges, and overlay controls (incl. keyboard-accessible thumbnail strip)
+- fix: all `:hover` rules now wrapped in `@media (hover: hover)` (lightbox, stack, desk, photo-page, view-toggle, series)
+- refactor: copy-link logic deduplicated into `GalleryCore.copyLink()`, with `execCommand` clipboard fallback for non-secure contexts
+- perf: `will-change` hints on lightbox FLIP/zoom and stack-view transitions
+- perf: faster local photo processing — single sharp pipeline reused for metadata + thumb + display via `.clone()`
+- perf: watermark resize result cached per target size instead of recomputed for every photo
+- chore: OG image generator now reads title/subtitle/attribution/cache dir from `config.js` instead of hardcoded duplicates
+- chore: stale Glass image/hidden-post cache entries pruned automatically each build
+- a11y: photo page primary image gets `decoding="async" fetchpriority="high"`
+
+---
+
 ## 2026-05-09 — v1.4.2
 
 - infra: weekly Monday CI cron to pick up Glass edits and new photos; scheduled runs skip deploy when no sidecars changed

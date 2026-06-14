@@ -18,6 +18,8 @@ layout: layouts/base.njk
         src="{{ photo.url.display }}"
         alt="{{ photo.altText or photo.title or '' }}"
         draggable="false"
+        decoding="async"
+        fetchpriority="high"
       />
       <div class="img-protect"></div>
     </div>
@@ -41,6 +43,9 @@ layout: layouts/base.njk
       {% endif %}
       {% if photo.description %}
       <p class="lightbox__description">{{ photo.description }}</p>
+      {% endif %}
+      {% if photo.series and series[photo.series] %}
+      <a class="lightbox__series-tag" href="/series/{{ photo.series }}/">{{ series[photo.series].title }}</a>
       {% endif %}
     </div>
 

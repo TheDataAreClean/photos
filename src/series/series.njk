@@ -1,0 +1,118 @@
+---
+pagination:
+  data: seriesArray
+  size: 1
+  alias: seriesItem
+permalink: /series/{{ seriesItem.slug }}/index.html
+layout: layouts/base.njk
+eleventyComputed:
+  pageTitle: "{{ seriesItem.title }}"
+  ogDescription: "{{ seriesItem.description }}"
+---
+
+{%- set sp = seriesItem -%}
+{%- set spPhotos = photos | seriesPhotos(sp.slug) -%}
+{%- set coverPhotoObj = spPhotos[0] -%}
+
+{# ── Series header ─────────────────────────────────────── #}
+<header class="series-page__header">
+  <div class="series-page__crumb">
+    <div class="series-page__folder-icon" aria-hidden="true"></div>
+    <a href="/" class="series-page__crumb-home">Gallery</a>
+    <span class="series-page__crumb-sep" aria-hidden="true">›</span>
+    <span class="series-page__crumb-current">{{ sp.title }}</span>
+  </div>
+
+  <h1 class="series-page__title">{{ sp.title }}</h1>
+
+  {% if sp.description %}
+  <p class="series-page__desc">{{ sp.description }}</p>
+  {% endif %}
+
+  <div class="series-page__meta-row">
+    <button class="series-page__badge" aria-label="Copy link to this series"><span>series</span><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+    <span class="series-page__count">{{ spPhotos | length }} photo{% if spPhotos | length != 1 %}s{% endif %}</span>
+  </div>
+</header>
+
+{# ── Photo grid ────────────────────────────────────────── #}
+<main>
+  <div
+    id="gallery-root"
+    class="gallery-grid is-loading"
+    role="list"
+    data-total-chunks="1"
+  ></div>
+  <div id="scroll-sentinel" aria-hidden="true" style="height:1px"></div>
+</main>
+
+<footer class="site-footer"><a href="https://thedataareclean.com" target="_blank" rel="noopener noreferrer">@thedataareclean</a></footer>
+
+{# ── Lightbox ─────────────────────────────────────────── #}
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo viewer" data-total-photos="{{ spPhotos | length }}">
+  <div class="lightbox__backdrop"></div>
+  <div class="lightbox__layout">
+
+    <div class="lightbox__photo-col">
+      <div class="lightbox__print">
+        <img id="lightbox-img" src="" alt="" draggable="false" />
+        <div class="img-protect"></div>
+      </div>
+    </div>
+
+    <div class="lightbox__meta-col">
+
+      <button class="lightbox__meta-toggle" aria-label="Open photo info" aria-expanded="false">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      </button>
+
+      <div class="lightbox__tabs">
+        <button class="lightbox__tab-btn is-active" data-tab="about">About</button>
+        <button class="lightbox__tab-btn" data-tab="info">Info</button>
+      </div>
+
+      <div class="lightbox__meta-panels">
+        <div class="lightbox__meta-top">
+          <div id="lightbox-title"  class="lightbox__title" hidden></div>
+          <div id="lightbox-desc"   class="lightbox__description" hidden></div>
+          <a   id="lightbox-series" class="lightbox__series-tag" hidden></a>
+        </div>
+        <div class="lightbox__meta-bottom">
+          <div id="lightbox-exif"   class="lightbox__exif" hidden></div>
+          <div id="lightbox-footer" class="lightbox__footer"></div>
+          <div class="lightbox__actions">
+            <button id="lightbox-share" class="lightbox__action-btn"><span>Share</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+            <a id="lightbox-download" class="lightbox__action-btn" href="#" download>Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+            <a id="lightbox-glass" class="lightbox__action-btn" href="#" target="_blank" rel="noopener noreferrer" hidden>Glass<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="lightbox__nav">
+        <button class="lightbox__prev" aria-label="Previous photo">&#8249;</button>
+        <span id="lightbox-counter" class="lightbox__counter"></span>
+        <button class="lightbox__next" aria-label="Next photo">&#8250;</button>
+      </div>
+    </div>
+
+  </div>
+  <button class="lightbox__close" aria-label="Close (Esc)">&times;</button>
+</div>
+
+{# Series photos inlined — sorted by seriesOrder, no folder grouping #}
+<script id="gallery-data" type="application/json">{{ spPhotos | json | safe }}</script>
+<script>window.GallerySeriesMeta = {{ series | json | safe }};</script>
+<script>window.galleryNoSeriesGroup = true;</script>
+<script src="/scripts/gallery-core.js"></script>
+<script src="/scripts/gallery.js"></script>
+<script src="/scripts/lightbox.js"></script>
+<script>
+(function () {
+  var badge = document.querySelector('.series-page__badge');
+  if (!badge) return;
+  var badgeLabel = badge.querySelector('span');
+  badge.addEventListener('click', function () {
+    window.GalleryCore.copyLink(window.location.href, { labelEl: badgeLabel, resetText: 'series', toggleEl: badge });
+  });
+})();
+</script>

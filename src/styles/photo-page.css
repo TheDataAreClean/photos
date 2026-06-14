@@ -33,8 +33,15 @@ a.photo-page__close {
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.photo-page__back:hover {
-  color: var(--paper-strong);
+@media (hover: hover) {
+  .photo-page__back:hover {
+    color: var(--paper-strong);
+  }
+}
+
+.photo-page__back:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 2px;
 }
 
 /* Desktop: mirror #lightbox toggle states using .photo-page as scope */

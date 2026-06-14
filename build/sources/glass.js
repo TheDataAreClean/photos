@@ -91,19 +91,19 @@ async function paginate(username, token, maxPhotos) {
 function glassToUnified(p) {
   const exif = parseGlassExif(p);
 
-  // Build a stable, human-readable ID from date + description snippet
+  // Build a stable, human-readable ID from date + description snippet.
+  // Use text before the first period or newline so "Gate #12." → "gate-12" (unique)
+  // rather than just the first word "Gate" (which collides across a numbered series).
   const dateStr     = exif.dateTaken || p.created_at || null;
   const date        = dateStr ? new Date(dateStr) : null;
-  const descSnippet = (p.description || '').trim().split(/\s+/).slice(0, 1).join(' ');
+  const descSnippet = (p.description || '').trim().split(/[.\n]/)[0].trim();
   const stem        = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
   const datePart    = stem.slice(0, 10);
   const rest        = stem.slice(11);
   const id          = rest ? `${datePart}-glass-${rest}` : `${datePart}-glass`;
 
-  // Default title: first word of the Glass description
-  const autoTitle = p.description
-    ? p.description.trim().split(/\s+/)[0] || null
-    : null;
+  // Default title: full text before the first period/newline (same slice used for the ID)
+  const autoTitle = descSnippet || null;
 
   return {
     id,
@@ -126,7 +126,9 @@ function glassToUnified(p) {
     dateTaken:  exif.dateTaken,
     dateAdded:  p.created_at || null,
     exif,
-    tags:       [],
+    tags:        [],
+    series:      null,
+    seriesOrder: null,
     _glass: { id: p.id, friendlyId: p.friendly_id },
     _local: null,
   };
@@ -184,7 +186,9 @@ async function buildAutoIdMap() {
       const parsed = matter(await fs.readFile(path.join(SIDECARS_DIR, file), 'utf8'));
       const aid = parsed.data?.glassAutoId;
       if (aid) map.set(aid, path.join(SIDECARS_DIR, file));
-    } catch {}
+    } catch (err) {
+      console.warn(`  Glass: failed to parse sidecar ${file}: ${err.message}`);
+    }
   }));
   return map;
 }
@@ -203,7 +207,6 @@ const SIDECAR_STUB = (photo) => {
     : '';
   return `---
 title:${ymlStr(photo.title)}
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
@@ -249,12 +252,23 @@ async function mergeSidecars(photos, autoIdMap) {
     const overrides = d.overrideExif || {};
     const finalDate = ov(d.dateTaken, photo.dateTaken);
 
+    const mergedSeries = d.series || photo.series || null;
+    // seriesOrder: sidecar value → auto-extracted from description → null
+    let mergedSeriesOrder = d.seriesOrder != null ? d.seriesOrder : null;
+    if (mergedSeriesOrder == null && mergedSeries) {
+      const desc = sidecar.content?.trim() || photo.description || '';
+      const m = desc.match(/#(\d+)/) || (photo.description || '').match(/#(\d+)/);
+      if (m) mergedSeriesOrder = parseInt(m[1], 10);
+    }
+
     return {
       ...photo,
       title:       ov(d.title,            photo.title),
       description: ov(sidecar.content?.trim(), photo.description),
       altText:     ov(d.title,            photo.altText),
       tags:             d.tags?.length ? d.tags : photo.tags,
+      series:           mergedSeries,
+      seriesOrder:      mergedSeriesOrder,
       sidecarUpdatedAt: sidecarMtime,
       dateTaken:        finalDate,
       exif: {
@@ -270,6 +284,80 @@ async function mergeSidecars(photos, autoIdMap) {
       },
     };
   }));
+}
+
+// ── Hidden Glass photos (hidden from profile, fetchable by direct URL) ───────
+// Some Glass photos are hidden from the public profile feed but still accessible
+// via their individual page URL. The regular posts API omits them entirely.
+// This function fetches them by parsing __NEXT_DATA__ from each photo's HTML page.
+async function fetchHiddenGlassPosts(username, friendlyIds, config, fresh = false) {
+  if (!username || !friendlyIds.length) return [];
+
+  const hiddenCacheDir = path.join(path.resolve(config.build.cacheDir), 'glass-hidden');
+  const imageCacheDir  = path.join(path.resolve(config.build.cacheDir), 'glass-images');
+  const outputDir      = path.join(path.resolve(config.build.outputDir), 'photos');
+
+  await Promise.all([
+    fs.mkdir(SIDECARS_DIR,   { recursive: true }),
+    fs.mkdir(hiddenCacheDir, { recursive: true }),
+    fs.mkdir(imageCacheDir,  { recursive: true }),
+    fs.mkdir(outputDir,      { recursive: true }),
+  ]);
+
+  const rawPosts = await Promise.all(
+    friendlyIds.map(fid => fetchHiddenPost(username, fid, hiddenCacheDir, fresh))
+  );
+  const validPosts = rawPosts.filter(Boolean);
+  if (!validPosts.length) return [];
+  console.log(`  Glass hidden: ${validPosts.length}/${friendlyIds.length} fetched`);
+
+  const photos    = validPosts.map(glassToUnified);
+  const autoIdMap = await buildAutoIdMap();
+  await ensureSidecars(photos, autoIdMap);
+  const merged    = await mergeSidecars(photos, autoIdMap);
+
+  await Promise.all(merged.map(photo => watermarkGlassPhoto(photo, imageCacheDir, outputDir)));
+  return merged;
+}
+
+async function fetchHiddenPost(username, friendlyId, cacheDir, fresh) {
+  const cacheFile = path.join(cacheDir, `${friendlyId}.json`);
+
+  if (!fresh) {
+    try {
+      // Hidden posts rarely change — treat any cached copy as valid
+      return JSON.parse(await fs.readFile(cacheFile, 'utf8'));
+    } catch {}
+  }
+
+  try {
+    const res = await fetch(`https://glass.photo/${username}/${friendlyId}`, {
+      headers: { Accept: 'text/html,application/xhtml+xml' },
+    });
+    if (!res.ok) {
+      console.warn(`  Glass hidden: ${res.status} — ${friendlyId} (skipped)`);
+      return null;
+    }
+
+    const html  = await res.text();
+    const match = html.match(/<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/s);
+    if (!match) {
+      console.warn(`  Glass hidden: no page data — ${friendlyId} (skipped)`);
+      return null;
+    }
+
+    const post = JSON.parse(match[1])?.props?.pageProps?.fallbackData?.post;
+    if (!post?.id) {
+      console.warn(`  Glass hidden: empty post — ${friendlyId} (skipped)`);
+      return null;
+    }
+
+    await fs.writeFile(cacheFile, JSON.stringify(post), 'utf8');
+    return post;
+  } catch (err) {
+    console.warn(`  Glass hidden: ${err.message} — ${friendlyId} (skipped)`);
+    return null;
+  }
 }
 
 // ── Download + watermark one Glass photo ─────────────
@@ -308,4 +396,4 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir) {
   }
 }
 
-module.exports = { fetchGlass };
+module.exports = { fetchGlass, fetchHiddenGlassPosts };

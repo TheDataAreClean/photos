@@ -12,6 +12,11 @@ const WM_PNG = path.resolve('build/assets/watermark.png');
 let _wmReady = false;
 let _wmMeta  = null;
 
+// Resized watermark buffers, keyed by "targetW x targetH" — most photos
+// share the same display width (2400px), so this avoids re-resizing the
+// watermark PNG on every single call to applyWatermark.
+const _wmResizedCache = new Map();
+
 async function ensureWatermark() {
   if (_wmReady) return;
   try {
@@ -38,9 +43,12 @@ async function applyWatermark(inputBuf) {
   const targetH   = Math.round((_wmMeta.height / _wmMeta.width) * targetW);
   const margin    = Math.round(imgW * 0.018);
 
-  const wmResized = await sharp(WM_PNG)
-    .resize(targetW, targetH)
-    .toBuffer();
+  const cacheKey = `${targetW}x${targetH}`;
+  let wmResized = _wmResizedCache.get(cacheKey);
+  if (!wmResized) {
+    wmResized = await sharp(WM_PNG).resize(targetW, targetH).toBuffer();
+    _wmResizedCache.set(cacheKey, wmResized);
+  }
 
   return sharp(inputBuf)
     .composite([{

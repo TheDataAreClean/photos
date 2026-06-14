@@ -74,8 +74,10 @@ body::after {
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.site-attribution:hover {
-  color: var(--paper);
+@media (hover: hover) {
+  .site-attribution:hover {
+    color: var(--paper);
+  }
 }
 
 @media (max-width: 560px) {
@@ -182,6 +184,8 @@ body::after {
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.site-footer a:hover {
-  color: var(--accent-readable);
+@media (hover: hover) {
+  .site-footer a:hover {
+    color: var(--accent-readable);
+  }
 }

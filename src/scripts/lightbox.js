@@ -4,6 +4,10 @@
 (function () {
   'use strict';
 
+  // Matches CSS breakpoint where lightbox switches from mobile (fade, stacked
+  // meta panel) to desktop (FLIP zoom, side meta panel) — see lightbox.css.
+  const DESKTOP_BREAKPOINT = 680;
+
   // ── State ─────────────────────────────────────────────
   let photos = [];
   let currentIndex = 0;
@@ -19,6 +23,7 @@
 
   const imgEl       = document.getElementById('lightbox-img');
   const titleEl     = document.getElementById('lightbox-title');
+  const seriesTagEl = document.getElementById('lightbox-series');
   const descEl      = document.getElementById('lightbox-desc');
   const exifEl      = document.getElementById('lightbox-exif');
   const footerEl    = document.getElementById('lightbox-footer');
@@ -62,7 +67,7 @@
 
   // Re-apply meta panel state when viewport crosses the mobile breakpoint
   // (e.g. phone rotates while lightbox is open)
-  window.matchMedia('(max-width: 680px)').addEventListener('change', e => {
+  window.matchMedia(`(max-width: ${DESKTOP_BREAKPOINT}px)`).addEventListener('change', e => {
     if (!lightboxEl.hasAttribute('hidden')) {
       setMetaOpen(!e.matches);
     }
@@ -196,6 +201,19 @@
     titleEl.textContent = photo.title || '';
     titleEl.hidden = !photo.title;
 
+    // Series tag — title from GallerySeriesMeta, not from the photo's series slug
+    if (seriesTagEl) {
+      const slug = photo.series;
+      const meta = slug && window.GallerySeriesMeta && window.GallerySeriesMeta[slug];
+      if (meta) {
+        seriesTagEl.textContent = meta.title || slug;
+        seriesTagEl.href = '/series/' + slug + '/';
+        seriesTagEl.hidden = false;
+      } else {
+        seriesTagEl.hidden = true;
+      }
+    }
+
     // Description (plain text / pre-wrap preserves line breaks from markdown body)
     descEl.textContent = photo.description || '';
     descEl.hidden = !photo.description;
@@ -272,13 +290,15 @@
 
     // fill: 'none' — when the animation ends the CSS natural state (no transform) takes over
     // seamlessly, since the final keyframe matches it. No fill cleanup needed.
-    printEl.animate(
+    printEl.style.willChange = 'transform, opacity';
+    const anim = printEl.animate(
       [
         { transform: `translate(${tx}px, ${ty}px) scale(${scaleX}, ${scaleY})`, opacity: 0.5 },
         { transform: 'translate(0, 0) scale(1)',                                  opacity: 1   },
       ],
       { duration: 360, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'none' }
     );
+    anim.onfinish = () => { printEl.style.willChange = ''; };
   }
 
   // flipClose is the reverse: start at the print's current natural position,
@@ -299,6 +319,7 @@
       [{ opacity: 1 }, { opacity: 0 }],
       { duration: 280, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
     );
+    printEl.style.willChange = 'transform, opacity';
     const anim = printEl.animate(
       [
         { transform: 'scale(1)',    opacity: 1 },
@@ -307,6 +328,7 @@
       { duration: 280, easing: 'cubic-bezier(0.4, 0, 1, 1)', fill: 'forwards' }
     );
     anim.onfinish = () => {
+      printEl.style.willChange = '';
       printEl.getAnimations().forEach(a => a.cancel());
       lightboxEl.getAnimations().forEach(a => a.cancel());
       onDone();
@@ -333,6 +355,7 @@
     const ty = (cardRect.top  + cardRect.height / 2) -
                (printRect.top  + printRect.height / 2);
 
+    printEl.style.willChange = 'transform, opacity';
     const anim = printEl.animate(
       [
         { transform: 'translate(0, 0) scale(1)',                                  opacity: 1 },
@@ -342,6 +365,7 @@
     );
 
     anim.onfinish = () => {
+      printEl.style.willChange = '';
       printEl.getAnimations().forEach(a => a.cancel());
       onDone();
     };
@@ -356,11 +380,11 @@
     originCardEl = cardEl; // stored for flipClose — stack mode has only one card in DOM
 
     loadPhoto(index);
-    setMetaOpen(window.innerWidth > 680);
+    setMetaOpen(window.innerWidth > DESKTOP_BREAKPOINT);
 
     lightboxEl.hidden = false;
     // Lock page scroll on desktop; on mobile the lightbox itself scrolls
-    if (window.innerWidth > 680) document.body.style.overflow = 'hidden';
+    if (window.innerWidth > DESKTOP_BREAKPOINT) document.body.style.overflow = 'hidden';
 
     // Backdrop fade
     lightboxEl.animate(
@@ -369,7 +393,7 @@
     );
 
     // FLIP open only on desktop — on mobile it feels janky
-    if (window.innerWidth > 680) flipOpen(cardEl);
+    if (window.innerWidth > DESKTOP_BREAKPOINT) flipOpen(cardEl);
     closeBtn.focus();
   }
 
@@ -382,7 +406,7 @@
       if (returnCard) returnCard.focus();
     };
     // FLIP/zoom close only on desktop — on mobile just fade out
-    if (window.innerWidth > 680) {
+    if (window.innerWidth > DESKTOP_BREAKPOINT) {
       flipClose(onDone);
     } else {
       lightboxEl.animate(
@@ -397,26 +421,96 @@
     if (sentinel) sentinel.scrollIntoView({ block: 'end', behavior: 'instant' });
   }
 
-  function prev() {
-    if (currentIndex === 0) {
-      if (photos.length >= totalPhotos) {
-        loadPhoto(photos.length - 1, -1);
-      } else {
-        pendingWrap = true;
-        pendingDirection = -1;
-        triggerChunkLoad();
+  // ── Series-aware navigation helpers ─────────────────────
+  // When inside a series, prev/next follow seriesOrder instead of global index.
+  // At series boundaries, fall through to global navigation skipping other
+  // members of the same series so you land on the next non-series photo.
+
+  // Navigate to a photo, applying the series entry-point redirect if needed.
+  // direction > 0: enter series at first (seriesOrder 1); < 0: enter at last.
+  // Used for all global-nav transitions so wrap-arounds and exits also redirect.
+  function navigateToPhoto(index, direction) {
+    if (direction !== 0) {
+      const tp = photos[index];
+      if (tp?.series) {
+        const s = window.GallerySeries?.[tp.series];
+        if (s?.photos?.length) {
+          const entry = direction > 0 ? s.photos[0]._idx : s.photos[s.photos.length - 1]._idx;
+          loadPhoto(entry, direction);
+          return;
+        }
       }
-    } else {
-      loadPhoto(currentIndex - 1, -1);
     }
+    loadPhoto(index, direction);
+  }
+
+  function getSeriesNav(idx) {
+    const photo = photos[idx];
+    if (!photo?.series) return null;
+    const s = window.GallerySeries?.[photo.series];
+    if (!s?.photos?.length) return null;
+    const pos = s.photos.findIndex(e => e._idx === idx);
+    return pos === -1 ? null : { s, slug: photo.series, pos };
+  }
+
+  function skipSeries(fromIdx, step, slug) {
+    let i = fromIdx;
+    while (i >= 0 && i < photos.length && photos[i]?.series === slug) i += step;
+    return i;
+  }
+
+  function prev() {
+    const nav = getSeriesNav(currentIndex);
+    if (nav) {
+      if (nav.pos > 0) {
+        // Within series: retreat by seriesOrder
+        loadPhoto(nav.s.photos[nav.pos - 1]._idx, -1);
+        return;
+      }
+      // At series start: exit backward past all series members
+      const target = skipSeries(currentIndex - 1, -1, nav.slug);
+      if (target < 0) {
+        if (photos.length >= totalPhotos) { navigateToPhoto(photos.length - 1, -1); }
+        else { pendingWrap = true; pendingDirection = -1; triggerChunkLoad(); }
+      } else {
+        navigateToPhoto(target, -1);
+      }
+      return;
+    }
+    // Global nav: step back one
+    const target = currentIndex - 1;
+    if (target < 0) {
+      if (photos.length >= totalPhotos) { navigateToPhoto(photos.length - 1, -1); }
+      else { pendingWrap = true; pendingDirection = -1; triggerChunkLoad(); }
+      return;
+    }
+    navigateToPhoto(target, -1);
   }
 
   function next() {
-    if (currentIndex === photos.length - 1) {
-      if (photos.length >= totalPhotos) loadPhoto(0, 1);
-    } else {
-      loadPhoto(currentIndex + 1, 1);
+    const nav = getSeriesNav(currentIndex);
+    if (nav) {
+      if (nav.pos < nav.s.photos.length - 1) {
+        // Within series: advance by seriesOrder
+        loadPhoto(nav.s.photos[nav.pos + 1]._idx, 1);
+        return;
+      }
+      // At series end: exit forward past all series members
+      const target = skipSeries(currentIndex + 1, 1, nav.slug);
+      if (target >= photos.length) {
+        if (photos.length >= totalPhotos) navigateToPhoto(0, 1);
+      } else {
+        navigateToPhoto(target, 1);
+      }
+      return;
     }
+    // Global nav: step forward one
+    const target = currentIndex + 1;
+    if (target >= photos.length) {
+      if (photos.length >= totalPhotos) navigateToPhoto(0, 1);
+      return;
+    }
+    navigateToPhoto(target, 1);
   }
 
   // ── Event listeners ───────────────────────────────────
@@ -441,13 +535,7 @@
       const photo = photos[currentIndex];
       if (!photo) return;
       const url = `${window.location.origin}/photos/${photo.id}/`;
-      navigator.clipboard.writeText(url).then(() => {
-        if (shareLabelEl) shareLabelEl.textContent = 'Copied!';
-        setTimeout(() => { if (shareLabelEl) shareLabelEl.textContent = 'Share'; }, 1500);
-      }).catch(() => {
-        if (shareLabelEl) shareLabelEl.textContent = 'Error';
-        setTimeout(() => { if (shareLabelEl) shareLabelEl.textContent = 'Share'; }, 1500);
-      });
+      window.GalleryCore.copyLink(url, { labelEl: shareLabelEl, resetText: 'Share' });
     });
   }
 
@@ -456,7 +544,7 @@
     if (pendingWrap) {
       if (photos.length >= totalPhotos) {
         pendingWrap = false;
-        loadPhoto(photos.length - 1, pendingDirection);
+        navigateToPhoto(photos.length - 1, pendingDirection);
       } else {
         triggerChunkLoad();
       }

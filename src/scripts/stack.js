@@ -1,6 +1,7 @@
 // stack.js — one-photo-at-a-time stack view
 // Exposes window.StackView: { init, isInitialised, onChunkLoaded }
 // Navigation: prev/next buttons, keyboard ← →, horizontal swipe.
+// Series photos are collapsed into a single folder card item, matching the grid.
 // Chunk loading: proximity check triggers the existing IntersectionObserver in gallery.js
 // by scrolling #scroll-sentinel into view — no duplicate fetch logic.
 (function () {
@@ -20,8 +21,36 @@
   let currentCardEl = null;
   let pendingWrap   = false;
 
+  // stackItems: array of { type: 'photo', photoIdx } | { type: 'series', slug }
+  // Series photos are collapsed into one entry, same as the grid.
+  let stackItems = [];
+
   function photos() {
     return window.GalleryPhotos || [];
+  }
+
+  // Build or rebuild the stack item list from the currently loaded photos.
+  // Called on init and after each chunk loads.
+  function buildStackItems() {
+    const photoList = photos();
+    stackItems = [];
+    // Series pages set galleryNoSeriesGroup — show individual photos
+    if (window.galleryNoSeriesGroup || !window.GallerySeries) {
+      photoList.forEach((_, i) => stackItems.push({ type: 'photo', photoIdx: i }));
+      return;
+    }
+    const seenSeries = new Set();
+    photoList.forEach((photo, i) => {
+      if (photo.series) {
+        const slug = photo.series;
+        if (!seenSeries.has(slug)) {
+          seenSeries.add(slug);
+          stackItems.push({ type: 'series', slug });
+        }
+      } else {
+        stackItems.push({ type: 'photo', photoIdx: i });
+      }
+    });
   }
 
   // Parse photo.aspectRatio which may be a number (1.5) or string ("3/2")
@@ -39,15 +68,13 @@
   }
 
   // Narrow the deck for portrait photos so the card always fits in the stage height.
-  // Landscape photos use the full CSS deck width; portrait photos scale the deck
-  // narrower so their natural height lands within the available stage space.
   function fitDeckToStage(photo) {
     const ar = parseAspectRatio(photo.aspectRatio);
     if (!ar) return;
     const stageH = stageEl.clientHeight;
     if (!stageH) return;
-    const padV   = 20;  // 2 × 10px top/bottom padding from photo-card__front
-    const padH   = 20;  // 2 × 10px left/right padding
+    const padV   = 20;
+    const padH   = 20;
     const maxW   = (stageH - padV) * ar + padH;
     const cssMax = Math.min(480, window.innerWidth * 0.92);
     deckEl.style.width = Math.round(Math.min(cssMax, maxW)) + 'px';
@@ -59,22 +86,33 @@
     return Math.max(buildTotal, photos().length);
   }
 
-  // Show thumbnail from upcoming photos on the decorative stack layers
-  function updateStackLayers(index) {
-    const photoList = photos();
-    const layerEls  = Array.from(deckEl.querySelectorAll('.stack-layer'));
-    // layerEls[0] = stack-layer--2 (furthest), layerEls[1] = stack-layer--1 (closer)
-    [index + 2, index + 1].forEach((previewIdx, i) => {
-      const photo = photoList[previewIdx];
-      layerEls[i].style.backgroundImage = (photo && photo.url && photo.url.thumb)
-        ? `url('${photo.url.thumb}')`
-        : '';
+  // Pick a thumbnail URL for a stack item (photo or series cover)
+  function thumbForItem(item) {
+    if (!item) return '';
+    if (item.type === 'photo') {
+      return photos()[item.photoIdx]?.url?.thumb || '';
+    }
+    if (item.type === 'series') {
+      const s = window.GallerySeries?.[item.slug];
+      const coverItem = s?.coverPhoto ? s.photos.find(p => p.photo.id === s.coverPhoto) : null;
+      const peek = coverItem?.photo || s?.photos?.[0]?.photo;
+      return peek?.url?.thumb || '';
+    }
+    return '';
+  }
+
+  // Show thumbnail from upcoming items on the decorative stack layers
+  function updateStackLayers(itemIndex) {
+    const layerEls = Array.from(deckEl.querySelectorAll('.stack-layer'));
+    [itemIndex + 2, itemIndex + 1].forEach((previewIdx, i) => {
+      const url = thumbForItem(stackItems[previewIdx]);
+      layerEls[i].style.backgroundImage = url ? `url('${url}')` : '';
     });
   }
 
   function updateCounter() {
     if (!counterEl) return;
-    counterEl.textContent = photos().length ? `${currentIndex + 1} / ${getTotal()}` : '';
+    counterEl.textContent = stackItems.length ? `${currentIndex + 1} / ${stackItems.length}` : '';
   }
 
   function updateNavButtons() {
@@ -82,66 +120,92 @@
     if (nextBtn) nextBtn.disabled = false;
   }
 
-  // Trigger the next chunk fetch when the user is within 5 photos of the loaded count.
-  // The sentinel scroll kicks the IntersectionObserver in gallery.js — stack.js has no
-  // fetch logic of its own. 5 photos gives enough lead time for a network round-trip
-  // before the user reaches the boundary, even on a slow connection.
+  // Trigger the next chunk fetch when the user is close to the end of loaded items.
   function checkChunkProximity() {
-    const loaded = photos().length;
-    if (loaded > 0 && currentIndex >= loaded - 5) {
+    if (stackItems.length > 0 && currentIndex >= stackItems.length - 5) {
       const sentinel = document.getElementById('scroll-sentinel');
       if (sentinel) sentinel.scrollIntoView({ block: 'end', behavior: 'instant' });
     }
   }
 
-  function wireCardEvents(card, index) {
+  // Wire click + keyboard on a photo card to open the lightbox.
+  function wireCardEvents(card, photoIdx) {
     card.addEventListener('click', () => {
       if (card.classList.contains('is-flipped')) return;
-      window.Lightbox && window.Lightbox.open(index, card);
+      window.Lightbox && window.Lightbox.open(photoIdx, card);
     });
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (card.classList.contains('is-flipped')) return;
-        window.Lightbox && window.Lightbox.open(index, card);
+        window.Lightbox && window.Lightbox.open(photoIdx, card);
       }
     });
   }
 
-  // Initial render — no animation
-  function showCard(index) {
-    if (currentCardEl) currentCardEl.remove();
-    const photo = photos()[index];
-    if (!photo) return;
+  // Wire click + keyboard on a series card to open the series page.
+  function wireSeriesEvents(card, seriesData) {
+    function openSeries() {
+      window.location.href = '/series/' + seriesData.slug + '/';
+    }
+    card.addEventListener('click', openSeries);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openSeries(); }
+    });
+  }
 
-    currentIndex = index;
+  // Build a card element for a stack item.
+  function makeItemCard(item) {
+    if (item.type === 'series') {
+      const seriesData = window.GallerySeries?.[item.slug];
+      if (!seriesData) return null;
+      const card = window.GalleryCore.makeSeriesCard(seriesData);
+      // Override the CSS `position: absolute` (designed for masonry); stack uses flow layout
+      card.style.position = 'relative';
+      card.style.width    = '100%';
+      wireSeriesEvents(card, seriesData);
+      return card;
+    }
+    // type === 'photo'
+    const photo = photos()[item.photoIdx];
+    if (!photo) return null;
     fitDeckToStage(photo);
-    const card = window.GalleryCore.makeCard(photo, index);
-    wireCardEvents(card, index);
+    const card = window.GalleryCore.makeCard(photo, item.photoIdx);
+    wireCardEvents(card, item.photoIdx);
+    return card;
+  }
+
+  // Initial render — no animation
+  function showCard(itemIndex) {
+    if (currentCardEl) currentCardEl.remove();
+    const item = stackItems[itemIndex];
+    if (!item) return;
+
+    const card = makeItemCard(item);
+    if (!card) return;
+
+    currentIndex  = itemIndex;
     deckEl.appendChild(card);
     currentCardEl = card;
 
-    updateStackLayers(index);
+    updateStackLayers(itemIndex);
     updateCounter();
     updateNavButtons();
   }
 
   // Navigate with exit + enter animations
-  function navigate(newIndex, direction) {
-    const photo = photos()[newIndex];
-    if (!photo) return;
+  function navigate(newItemIndex, direction) {
+    const item = stackItems[newItemIndex];
+    if (!item) return;
 
-    fitDeckToStage(photo);
-    const newCard = window.GalleryCore.makeCard(photo, newIndex);
-    wireCardEvents(newCard, newIndex);
+    const newCard = makeItemCard(item);
+    if (!newCard) return;
 
-    const oldCard = currentCardEl;
-    currentIndex  = newIndex;
-    currentCardEl = newCard;
+    const oldCard     = currentCardEl;
+    currentIndex      = newItemIndex;
+    currentCardEl     = newCard;
 
-    // Pull old card out of flow BEFORE appending the new one so the stage
-    // height jumps straight to the new photo's natural height, not to
-    // old-height + new-height stacked.
+    // Pull old card out of flow so stage height snaps to the new card's height
     if (oldCard) {
       oldCard.style.position = 'absolute';
       oldCard.style.top      = '0';
@@ -149,24 +213,25 @@
       oldCard.style.width    = '100%';
     }
 
-    // New card is in-flow → deck height = new photo's natural height
     deckEl.appendChild(newCard);
-
-    updateStackLayers(newIndex);
+    updateStackLayers(newItemIndex);
 
     // Enter: new card rises from the stack
-    newCard.animate(
+    newCard.style.willChange = 'transform, opacity';
+    const enterAnim = newCard.animate(
       [
         { transform: 'translateY(28px) scale(0.93)', opacity: 0 },
         { transform: 'translateY(0)    scale(1)',     opacity: 1 },
       ],
       { duration: 320, delay: 80, easing: 'cubic-bezier(0, 0, 0.2, 1)', fill: 'forwards' }
     );
+    enterAnim.onfinish = () => { newCard.style.willChange = ''; };
 
     // Exit: old card slides off to the side
     if (oldCard) {
       const dx  = direction === 'next' ? '115%' : '-115%';
       const rot = direction === 'next' ? '6deg'  : '-6deg';
+      oldCard.style.willChange = 'transform, opacity';
       const anim = oldCard.animate(
         [
           { transform: 'translateX(0) rotate(0deg)', opacity: 1 },
@@ -187,11 +252,10 @@
   }
 
   function prev() {
-    const loaded = photos().length;
-    if (!loaded) return;
+    if (!stackItems.length) return;
     if (currentIndex === 0) {
-      if (loaded >= getTotal()) {
-        navigate(loaded - 1, 'prev');
+      if (photos().length >= getTotal()) {
+        navigate(stackItems.length - 1, 'prev');
       } else {
         pendingWrap = true;
         triggerChunkLoad();
@@ -202,10 +266,9 @@
   }
 
   function next() {
-    const loaded = photos().length;
-    if (!loaded) return;
-    if (currentIndex === loaded - 1) {
-      if (loaded >= getTotal()) navigate(0, 'next');
+    if (!stackItems.length) return;
+    if (currentIndex === stackItems.length - 1) {
+      if (photos().length >= getTotal()) navigate(0, 'next');
       else checkChunkProximity();
     } else {
       navigate(currentIndex + 1, 'next');
@@ -230,7 +293,6 @@
     let tracking = false;
 
     stageEl.addEventListener('pointerdown', e => {
-      // Don't start swipe tracking when tapping interactive elements
       if (e.target.closest('button, a')) return;
       startX   = e.clientX;
       startY   = e.clientY;
@@ -254,28 +316,35 @@
   if (prevBtn) prevBtn.addEventListener('click', prev);
   if (nextBtn) nextBtn.addEventListener('click', next);
 
-  // Re-fit deck on resize/orientation change
+  // Re-fit deck on resize/orientation change (photo items only; series cards use 100% width)
   new ResizeObserver(() => {
-    const photo = photos()[currentIndex];
-    if (photo) fitDeckToStage(photo);
+    const item = stackItems[currentIndex];
+    if (item?.type === 'photo') {
+      const photo = photos()[item.photoIdx];
+      if (photo) fitDeckToStage(photo);
+    } else {
+      deckEl.style.width = '';
+    }
   }).observe(stageEl);
 
   function init() {
     if (window.StackView.isInitialised) return;
     window.StackView.isInitialised = true;
 
+    buildStackItems();
     showCard(0);
     setupKeyboard();
     setupSwipe();
   }
 
   function onChunkLoaded() {
+    buildStackItems();
     updateCounter();
     updateNavButtons();
     if (pendingWrap) {
       if (photos().length >= getTotal()) {
         pendingWrap = false;
-        navigate(photos().length - 1, 'prev');
+        navigate(stackItems.length - 1, 'prev');
       } else {
         triggerChunkLoad();
       }

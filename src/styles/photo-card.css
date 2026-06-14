@@ -9,7 +9,7 @@
   transform: rotate(var(--rotation, 0deg));
   transform-origin: center center;
 
-  transition: transform 0.2s var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out);
 
   /* Three shadow layers: contact edge, mid lift, ambient spread — static, never transitions */
   box-shadow:
@@ -35,7 +35,7 @@
     0 12px 30px rgba(0, 0, 0, 0.46),
     0 34px 80px rgba(0, 0, 0, 0.32);
   opacity: 0;
-  transition: opacity 0.2s var(--ease-out);
+  transition: opacity var(--dur-fast) var(--ease-out);
   pointer-events: none;
 }
 
@@ -297,12 +297,12 @@
   letter-spacing: 0.12em;
   color: var(--stamp);
   text-shadow:
-    0 0 6px rgba(232, 130, 10, 0.7),
+    0 0 6px rgba(var(--stamp-rgb), 0.7),
     0 1px 2px rgba(0, 0, 0, 0.6);
   pointer-events: none;
   user-select: none;
   line-height: 1;
-  transition: opacity 0.2s var(--ease-out);
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 
 /* ── Flip trigger — bottom-right corner ─────────────── */
@@ -321,7 +321,7 @@
   transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
   z-index: 6;
   text-shadow:
-    0 0 6px rgba(232, 130, 10, 0.6),
+    0 0 6px rgba(var(--stamp-rgb), 0.6),
     0 1px 2px rgba(0, 0, 0, 0.6);
 }
 

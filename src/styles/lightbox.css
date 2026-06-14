@@ -109,9 +109,43 @@
 }
 
 .lightbox__title[hidden],
+.lightbox__series-tag[hidden],
 .lightbox__description[hidden],
 .lightbox__exif[hidden] {
   display: none;
+}
+
+.lightbox__series-tag {
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  opacity: 0.85;
+  margin: 12px 0 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-align: left;
+  transition: opacity var(--dur-fast);
+}
+
+.lightbox__series-tag::after {
+  content: '';
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8a020' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='7' y1='17' x2='17' y2='7'/%3E%3Cpolyline points='7 7 17 7 17 17'/%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+@media (hover: hover) {
+  .lightbox__series-tag:hover { opacity: 1; }
 }
 
 .lightbox__description {
@@ -177,9 +211,11 @@
   transition: color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
-.lightbox__footer a:hover {
-  color: var(--on-dark);
-  border-bottom-color: var(--accent-ui);
+@media (hover: hover) {
+  .lightbox__footer a:hover {
+    color: var(--on-dark);
+    border-bottom-color: var(--accent-ui);
+  }
 }
 
 /* ── Nav: arrows + counter at foot of right panel ───── */
@@ -212,9 +248,11 @@
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.lightbox__prev:hover,
-.lightbox__next:hover {
-  color: var(--paper-strong);
+@media (hover: hover) {
+  .lightbox__prev:hover,
+  .lightbox__next:hover {
+    color: var(--paper-strong);
+  }
 }
 
 .lightbox__prev:disabled,
@@ -249,9 +287,11 @@
   line-height: 1.6;
 }
 
-.lightbox__action-btn:hover {
-  color: var(--on-dark);
-  border-color: var(--accent-readable);
+@media (hover: hover) {
+  .lightbox__action-btn:hover {
+    color: var(--on-dark);
+    border-color: var(--accent-readable);
+  }
 }
 
 /* ── Close button ───────────────────────────────────── */
@@ -270,8 +310,10 @@
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.lightbox__close:hover {
-  color: var(--paper-strong);
+@media (hover: hover) {
+  .lightbox__close:hover {
+    color: var(--paper-strong);
+  }
 }
 
 .lightbox__close:focus-visible,
@@ -323,8 +365,10 @@
     transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .lightbox__meta-toggle:hover {
-    color: var(--paper-body);
+  @media (hover: hover) {
+    .lightbox__meta-toggle:hover {
+      color: var(--paper-body);
+    }
   }
 
   /* Collapsed (default): meta col shrinks to toggle width (icon 22px + padding 10px×2) */
@@ -518,8 +562,10 @@
     transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .lightbox__meta-toggle:hover {
-    color: var(--paper-body);
+  @media (hover: hover) {
+    .lightbox__meta-toggle:hover {
+      color: var(--paper-body);
+    }
   }
 
   /* Collapsed on mobile: hide tabs and panels; nav stays visible */

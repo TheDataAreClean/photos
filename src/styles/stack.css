@@ -103,12 +103,9 @@ body.stack-mode main {
   z-index: 1;
 }
 
-/* ── Active card: in-flow, natural size ──────────────── */
-/* The card is NOT stretched to fill the stage.
-   Its height is driven by the photo's aspect-ratio (set inline by makeCard).
-   JS adjusts deck width per photo so tall portraits always fit in the stage height.
-   The mat border (10px, same as grid view) is always consistent. */
-#stack-stage .photo-card {
+/* ── Active card: in-flow, above stack layers (z-index 0/1) ─ */
+#stack-stage .photo-card,
+#stack-stage .series-card {
   position: relative;
   width: 100%;
   margin-bottom: 0;
@@ -164,8 +161,15 @@ body.stack-mode main {
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.stack-nav-btn:hover {
-  color: var(--accent-body);
+@media (hover: hover) {
+  .stack-nav-btn:hover {
+    color: var(--accent-body);
+  }
+}
+
+.stack-nav-btn:focus-visible {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 2px;
 }
 
 .stack-nav-btn:disabled {

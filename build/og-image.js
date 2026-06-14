@@ -15,15 +15,16 @@ const https  = require('https');
 const http   = require('http');
 const fs     = require('fs/promises');
 const path   = require('path');
+const config = require('../config');
 
 const W = 1200;
 const H = 630;
 
 // ── Config ────────────────────────────────────────────────────────────────
-const CACHE_DIR = path.resolve('.cache');
-const TITLE     = 'Memories';
-const SUBTITLE  = 'My experiments behind the viewfinder.';
-const ATTR      = '@thedataareclean';
+const CACHE_DIR = path.resolve(config.build.cacheDir);
+const TITLE     = config.site.displayTitle;
+const SUBTITLE  = config.site.description;
+const ATTR      = `@${config.glass.username}`;
 
 // ── Seeded PRNG (LCG) — deterministic per calendar month ──────────────────
 function seededRand(seed) {

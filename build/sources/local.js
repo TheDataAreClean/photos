@@ -111,9 +111,10 @@ async function processOne(filename, photosDir, outputDir, config) {
   const downloadFilename = `${stem}@2400-wm.webp`;
 
   try {
+    const source = sharp(filepath);
     const [exifData, sharpMeta, fileStat] = await Promise.all([
       extractExif(filepath),
-      sharp(filepath).metadata(),
+      source.metadata(),
       fs.stat(filepath),
     ]);
 
@@ -143,13 +144,13 @@ async function processOne(filename, photosDir, outputDir, config) {
     ]);
 
     if (!thumbExists || !displayExists || !dlExists) {
-      const displayBuf  = await sharp(filepath)
+      const displayBuf  = await source.clone()
         .resize({ width: 2400, withoutEnlargement: true })
         .toBuffer();
       const watermarked = await applyWatermark(displayBuf);
 
       await Promise.all([
-        resizeImage(filepath, path.join(outputDir, thumbName), config.local.thumbWidth),
+        resizeImage(source.clone(), path.join(outputDir, thumbName), config.local.thumbWidth),
         sharp(displayBuf).webp({ quality: 95 }).toFile(path.join(outputDir, displayFilename)),
         sharp(watermarked).webp({ quality: 95 }).toFile(path.join(outputDir, downloadFilename)),
       ]);
@@ -179,6 +180,8 @@ async function processOne(filename, photosDir, outputDir, config) {
       dateAdded:   finalDateTaken || fileStat.mtime.toISOString(),
       exif:        finalExif,
       tags:             sidecar?.data?.tags || [],
+      series:           sidecar?.data?.series || null,
+      seriesOrder:      sidecar?.data?.seriesOrder ?? null,
       sidecarUpdatedAt: sidecar?._mtime || null,
       _local:           { filename, sidecarFound: !!sidecar },
       _glass:      null,
@@ -228,14 +231,14 @@ async function loadSidecar(dir, stem, exifData, dateTaken) {
   }
 }
 
-async function resizeImage(src, dest, width) {
+async function resizeImage(source, dest, width) {
   try {
-    await sharp(src)
+    await source
       .resize({ width, withoutEnlargement: true })
       .webp({ quality: 85 })
       .toFile(dest);
   } catch (err) {
-    console.warn(`  Resize failed (${path.basename(src)} → ${width}px): ${err.message}`);
+    console.warn(`  Resize failed (${path.basename(dest)} → ${width}px): ${err.message}`);
   }
 }
 

@@ -35,6 +35,16 @@
   --stamp-bright: #ffe066;        /* lighter amber — stamp hover     */
   --overlay:      rgba(10, 6, 3, 0.96); /* lightbox / modal backdrop */
 
+  /* ── Folder palette (series card + breadcrumb/overlay icons) ── */
+  --folder-icon-light: #c89a52;   /* icon front + face gradient mid  */
+  --folder-icon-dark:  #a07030;   /* icon front gradient dark stop   */
+  --folder-tab-light:  #c89040;   /* face tab gradient light stop    */
+  --folder-tab-dark:   #a07028;   /* icon tab + face tab dark stop   */
+  --folder-back-light: #b8883a;   /* folder back gradient light stop */
+  --folder-back-dark:  #8e6420;   /* folder back gradient dark stop  */
+  --folder-face-light: #d8b070;   /* face gradient light stop        */
+  --folder-face-dark:  #b8883c;   /* face gradient dark stop         */
+
   /* ── Typography — fonts ──────────────────────────────── */
   --font-serif:     'Schoolbell', cursive;
   --font-mono:      'VT323', monospace;

@@ -9,6 +9,50 @@
   const ICON_DOWN = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
   const ICON_EXT  = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>';
 
+  const COPY_RESET_MS = 1500;
+
+  // ── Clipboard write with execCommand fallback ─────────
+  // navigator.clipboard requires a secure context; older browsers and
+  // some in-app webviews fall back to the deprecated execCommand path.
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('execCommand copy failed'));
+      } catch (err) {
+        document.body.removeChild(ta);
+        reject(err);
+      }
+    });
+  }
+
+  // ── Copy a link and flash feedback in a label ─────────
+  // labelEl: span whose text flashes "Copied!"/"Error" then resets to resetText.
+  // toggleEl/toggleClass: optional element + class toggled during the "Copied!" state.
+  function copyLink(url, { labelEl, resetText = 'Share', toggleEl, toggleClass = 'is-copied' } = {}) {
+    copyToClipboard(url).then(() => {
+      if (labelEl) labelEl.textContent = 'Copied!';
+      if (toggleEl) toggleEl.classList.add(toggleClass);
+      setTimeout(() => {
+        if (labelEl) labelEl.textContent = resetText;
+        if (toggleEl) toggleEl.classList.remove(toggleClass);
+      }, COPY_RESET_MS);
+    }).catch(() => {
+      if (labelEl) labelEl.textContent = 'Error';
+      setTimeout(() => { if (labelEl) labelEl.textContent = resetText; }, COPY_RESET_MS);
+    });
+  }
+
   // ── Date formatter — camera-style "MM DD 'YY" ─────────
   function formatDateStamp(iso) {
     if (!iso) return '';
@@ -209,17 +253,107 @@
       e.stopPropagation();
       const url = `${window.location.origin}/photos/${photo.id}/`;
       const labelEl = shareBtn.querySelector('span');
-      navigator.clipboard.writeText(url).then(() => {
-        if (labelEl) labelEl.textContent = 'Copied!';
-        setTimeout(() => { if (labelEl) labelEl.textContent = 'Share'; }, 1500);
-      }).catch(() => {
-        if (labelEl) labelEl.textContent = 'Error';
-        setTimeout(() => { if (labelEl) labelEl.textContent = 'Share'; }, 1500);
-      });
+      copyLink(url, { labelEl, resetText: 'Share' });
     });
 
     return article;
   }
 
-  window.GalleryCore = { makeCard, formatDateStamp, buildBackExif };
+  // ── Build one series folder card ────────────────────────
+  // seriesData: { slug, title, coverPhoto, photos: [{photo, _idx}, ...] }
+  function makeSeriesCard(seriesData) {
+    const { slug, title, coverPhoto, photos: items } = seriesData;
+    const displayTitle = title || items[0]?.photo?.title || slug;
+    const count = items.length;
+
+    const article = document.createElement('article');
+    article.className = 'series-card';
+    article.setAttribute('role', 'button');
+    article.setAttribute('tabindex', '0');
+    article.setAttribute('aria-label', `Open series: ${displayTitle} (${count} photos)`);
+    article.dataset.series = slug;
+
+    // Prints peeking from behind the folder face
+
+    const printsWrap = document.createElement('div');
+    printsWrap.className = 'series-card__prints';
+
+    let peekPhotos;
+    if (coverPhoto) {
+      const coverItem = items.find(p => p.photo.id === coverPhoto);
+      const rest      = items.filter(p => p.photo.id !== coverPhoto).slice(0, 2);
+      peekPhotos = coverItem ? [coverItem, ...rest] : items.slice(0, 3);
+    } else {
+      peekPhotos = items.slice(0, 3);
+    }
+    peekPhotos.forEach(({ photo }) => {
+      const printEl = document.createElement('div');
+      printEl.className = 'series-card__print';
+      if (photo.url?.thumb) {
+        const img = document.createElement('img');
+        img.src = photo.url.thumb;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.draggable = false;
+        printEl.appendChild(img);
+      }
+      printsWrap.appendChild(printEl);
+    });
+    article.appendChild(printsWrap);
+
+    // Folder face — kraft paper body that covers the bottom of the prints
+    const face = document.createElement('div');
+    face.className = 'series-card__face';
+
+    const crease = document.createElement('div');
+    crease.className = 'series-card__crease';
+    face.appendChild(crease);
+
+    // Description floats in kraft area above the body panel
+    if (seriesData.description) {
+      const descEl = document.createElement('p');
+      descEl.className = 'series-card__desc';
+      descEl.textContent = seriesData.description;
+      face.appendChild(descEl);
+    }
+
+    // Body — title + count
+    const body = document.createElement('div');
+    body.className = 'series-card__body';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'series-card__title';
+    titleEl.textContent = displayTitle;
+    body.appendChild(titleEl);
+
+    const footer = document.createElement('div');
+    footer.className = 'series-card__footer';
+
+    const countEl = document.createElement('span');
+    countEl.className = 'series-card__count';
+    countEl.textContent = `${count} photo${count === 1 ? '' : 's'}`;
+    footer.appendChild(countEl);
+
+    const badge = document.createElement('button');
+    badge.className = 'series-card__badge';
+    badge.setAttribute('aria-label', 'Copy link to series');
+    const badgeLabel = document.createElement('span');
+    badgeLabel.textContent = 'series';
+    badge.appendChild(badgeLabel);
+    badge.insertAdjacentHTML('beforeend', '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>');
+    badge.addEventListener('click', e => {
+      e.stopPropagation();
+      const url = window.location.origin + '/series/' + slug + '/';
+      copyLink(url, { labelEl: badgeLabel, resetText: 'series', toggleEl: badge });
+    });
+    footer.appendChild(badge);
+
+    body.appendChild(footer);
+    face.appendChild(body);
+    article.appendChild(face);
+
+    return article;
+  }
+
+  window.GalleryCore = { makeCard, makeSeriesCard, formatDateStamp, buildBackExif, copyLink };
 })();

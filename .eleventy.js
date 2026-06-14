@@ -27,6 +27,18 @@ module.exports = function (eleventyConfig) {
   // First N items from an array
   eleventyConfig.addFilter('first', (arr, n) => (arr || []).slice(0, n));
 
+  // Photos belonging to a series, sorted by seriesOrder
+  eleventyConfig.addFilter('seriesPhotos', (photos, slug) =>
+    (photos || [])
+      .filter(p => p.series === slug)
+      .sort((a, b) => (a.seriesOrder ?? 9999) - (b.seriesOrder ?? 9999))
+  );
+
+  // Feed-safe photo list: collapse each series down to its opening photo (seriesOrder === 1)
+  eleventyConfig.addFilter('feedPhotos', photos =>
+    (photos || []).filter(p => !p.series || p.seriesOrder === 1)
+  );
+
   // How many chunks of size n cover the array?
   eleventyConfig.addFilter('chunkCount', (arr, n) =>
     Math.ceil((arr || []).length / n)

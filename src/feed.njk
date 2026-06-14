@@ -9,13 +9,29 @@ eleventyExcludeFromCollections: true
   <subtitle>{{ siteConfig.description }}</subtitle>
   <link href="{{ siteConfig.url }}/feed.xml" rel="self" type="application/atom+xml"/>
   <link href="{{ siteConfig.url }}/" rel="alternate" type="text/html"/>
-  <updated>{{ photos[0].dateAdded | dateToRfc3339 }}</updated>
+  <updated>{{ (photos | feedPhotos)[0].dateAdded | dateToRfc3339 }}</updated>
   <author>
     <name>Arpit</name>
     <uri>{{ siteConfig.url }}</uri>
   </author>
 
-  {%- for photo in photos | first(15) %}
+  {%- for photo in photos | feedPhotos | first(15) %}
+  {%- if photo.series %}
+  {%- set seriesUrl = siteConfig.url + '/series/' + photo.series + '/' %}
+  {%- set imageUrl = photo.url.download | absUrl(siteConfig.url) %}
+  <entry>
+    <id>{{ seriesUrl }}</id>
+    <title>{{ photo.seriesTitle | escape }}</title>
+    <link href="{{ seriesUrl }}" rel="alternate" type="text/html"/>
+    <published>{{ photo.dateAdded | dateToRfc3339 }}</published>
+    <updated>{{ photo.dateAdded | laterDate(photo.sidecarUpdatedAt) | dateToRfc3339 }}</updated>
+    <content type="html"><![CDATA[
+      {%- if imageUrl %}<img src="{{ imageUrl }}" alt="{{ photo.seriesTitle | escape }}">{% endif %}
+      {{ photo.description | toParagraphs | safe }}
+      <p><a href="{{ seriesUrl }}">View all {{ photo.seriesCount }} photos in this series →</a></p>
+    ]]></content>
+  </entry>
+  {%- else %}
   {%- set permalink = siteConfig.url + '/photos/' + photo.id + '/' %}
   {%- set imageUrl = photo.url.download | absUrl(siteConfig.url) %}
   <entry>
@@ -46,5 +62,6 @@ eleventyExcludeFromCollections: true
       {%- endif %}
     ]]></content>
   </entry>
+  {%- endif %}
   {%- endfor %}
 </feed>

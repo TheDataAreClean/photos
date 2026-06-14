@@ -24,13 +24,15 @@
   transition: color var(--dur-fast) var(--ease-out);
 }
 
-.view-toggle__btn:hover,
-.view-toggle__btn:focus-visible {
-  color: var(--on-dark);
-  outline: none;
+@media (hover: hover) {
+  .view-toggle__btn:hover {
+    color: var(--on-dark);
+  }
 }
 
 .view-toggle__btn:focus-visible {
+  color: var(--on-dark);
+  outline: none;
   box-shadow: 0 0 0 2px var(--accent-dim);
 }
 
