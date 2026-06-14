@@ -19,6 +19,6 @@ overrideExif:
 dateTaken: "2026-06-13T04:08:07Z"
 ---
 
-What does a 500 year old commercial heartbeat of the city look like? How many generation and regimes has it seen come and go? How does one even begin to capture the stories this neighbourhood holds?
+What does the 500 year-old commercial heartbeat of a city look like? How many generation and regimes has it seen come and go? How does one even begin to capture the stories this neighbourhood holds?
 
 Bengaluru Pete, Bengaluru, Karnataka.
