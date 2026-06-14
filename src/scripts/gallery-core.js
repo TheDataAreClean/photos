@@ -261,7 +261,7 @@
 
   // ── Build one series folder card ────────────────────────
   // seriesData: { slug, title, coverPhoto, photos: [{photo, _idx}, ...] }
-  function makeSeriesCard(seriesData) {
+  function makeSeriesCard(seriesData, eager) {
     const { slug, title, coverPhoto, photos: items } = seriesData;
     const displayTitle = title || items[0]?.photo?.title || slug;
     const count = items.length;
@@ -293,7 +293,8 @@
         const img = document.createElement('img');
         img.src = photo.url.thumb;
         img.alt = '';
-        img.loading = 'lazy';
+        img.loading = eager ? 'eager' : 'lazy';
+        if (eager) img.fetchPriority = 'high';
         img.draggable = false;
         printEl.appendChild(img);
       }

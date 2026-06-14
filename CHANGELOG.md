@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.0.1
+
+- fix: series folder card's peek images now get `loading="eager"` + `fetchpriority="high"` when the folder lands in the first 4 grid slots, matching the priority regular cards already get — fixes slow-loading folder previews above the fold
+
+---
+
 ## 2026-06-14 — v2.0.0
 
 - feat: series support — `series/*.md` files define a series (title, description, cover photo); photo sidecars tagged with `series:` + `seriesOrder:` fields

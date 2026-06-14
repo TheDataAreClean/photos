@@ -173,7 +173,9 @@
         const slug = photo.series;
         if (!window.GallerySeries[slug]?._rendered) {
           window.GallerySeries[slug]._rendered = true;
-          const card = window.GalleryCore.makeSeriesCard(window.GallerySeries[slug]);
+          const eager = startIndex === 0 && eagerCount < 4;
+          if (eager) eagerCount++;
+          const card = window.GalleryCore.makeSeriesCard(window.GallerySeries[slug], eager);
           attachSeriesEvents(card, slug);
           // Masonry trigger when peek images load
           card.querySelectorAll('img').forEach(img => {
