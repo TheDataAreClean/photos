@@ -106,7 +106,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 
 ## URL slugs
 
-- **Glass:** `YYYY-MM-DD-glass-{first-word-of-description}` — e.g. `2026-03-27-glass-behind`
+- **Glass:** `YYYY-MM-DD-glass-{slug-of-text-before-first-period-or-newline}` — e.g. `2026-03-27-glass-behind`, or `2026-05-17-glass-gate-12` for a description starting "Gate #12."
 - **Local:** `YYYY-MM-DD-local-{filename-stem}` — derived from filename
 - **Changing a slug breaks the URL.** Edit the sidecar body (not the Glass description) to update display text without 404s.
 - **Glass sidecar renaming:** `rename-glass.js` injects `glassAutoId: "original-stem"` before renaming. `glass.js` builds an `autoIdMap` from all `glassAutoId` values each build so it can match sidecars regardless of filename.
@@ -185,7 +185,7 @@ All `:hover` rules are inside `@media (hover: hover)` — prevents iOS Safari st
 - Stack view keeps only one `.photo-card` in the DOM at a time; navigation discards and rebuilds it via `GalleryCore.makeCard()`
 - Stack chunk loading: `checkChunkProximity()` triggers `IntersectionObserver` when within 5 photos of loaded count
 
-Script load order in `index.njk`: `gallery-core.js → view-toggle.js → gallery.js → stack.js → lightbox.js`
+Script load order in `index.njk`: `gallery-core.js → view-toggle.js → gallery.js → stack.js → lightbox.js → series-overlay.js`
 
 ---
 

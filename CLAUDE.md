@@ -27,7 +27,10 @@ Operating manual for Claude. Architecture lives in [APP.md](APP.md). Commands li
 ## Common traps
 
 **Changing a Glass slug breaks the URL**
-The slug uses the first word of the Glass description. Change it → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body — not the Glass description.
+The slug is derived from the text before the first period or newline in the Glass description (so "Gate #12." → `gate-12`). Change that text → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body — not the Glass description.
+
+**Glass descriptions with mid-sentence periods truncate the ID**
+A description like "Mr. Smith waves." produces the snippet "Mr" → ID ending in `-mr`. Numbered series rely on this (`#12.` → `12`), but unrelated abbreviations or initials at the start of a description will produce short, possibly colliding slugs.
 
 **Empty `overrideExif` fields fall back to source, not blank**
 `overrideExif: { camera: "" }` restores the EXIF source value. `iso: 0` overrides with 0 — be explicit with numeric zeros.
@@ -89,6 +92,9 @@ src/styles/base.css    Design tokens — all CSS custom properties
 build/sources/glass.js Glass API, sidecar create/merge, sidecarUpdatedAt
 build/sources/local.js Local processor, auto-rename, sidecarUpdatedAt
 build/og-image.js      Monthly OG image (seeded PRNG, 6 templates)
+build/series.js        loadSeries() — parses series/*.md into slug → meta map
+series/*.md            One file per series: title, cover photo, ordered photo list
+src/scripts/series-overlay.js  Full-screen series viewer (thumbnail strip, prev/next)
 ```
 
 ---
@@ -124,6 +130,9 @@ build/og-image.js      Monthly OG image (seeded PRNG, 6 templates)
 - [ ] Card flip (postcard back) works in both grid and stack view
 - [ ] Mobile: touch targets ≥ 44px, flip button visible without hover, swipe works
 - [ ] `dist/feed.xml` present, opens cleanly, shows 15 entries
+- [ ] Series folder card renders in grid, opens series overlay
+- [ ] Series overlay: thumbnail strip, prev/next, counter work; closing restores focus to the folder card; clicking a photo opens the lightbox
+- [ ] Series permalink page loads at `/series/{slug}/`
 
 ---
 
