@@ -6,6 +6,13 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.1.0
+
+- feat: Glass `categories` are now pulled into `photo.tags` automatically, surfacing as `<category>` entries in the Atom feed
+- feat: sidecar `tags:` field — auto-backfilled from Glass categories for existing photos and pre-filled for new ones; once present, the sidecar value is authoritative (same override pattern as `description`/`overrideExif`) and future Glass category changes won't overwrite it
+
+---
+
 ## 2026-06-14 — v2.0.1
 
 - fix: series folder card's peek images now get `loading="eager"` + `fetchpriority="high"` when the folder lands in the first 4 grid slots, matching the priority regular cards already get — fixes slow-loading folder previews above the fold
