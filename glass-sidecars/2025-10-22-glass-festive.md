@@ -1,5 +1,5 @@
 ---
-title: "festive."
+title: "festive"
 
 tags:
   - action

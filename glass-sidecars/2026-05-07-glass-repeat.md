@@ -1,5 +1,5 @@
 ---
-title: "Repeat."
+title: "Repeat"
 
 tags:
   - landscape

@@ -1,5 +1,5 @@
 ---
-title: "intensity."
+title: "intensity"
 
 tags:
   - action

@@ -1,5 +1,5 @@
 ---
-title: "tower."
+title: "tower"
 
 tags:
   - architecture

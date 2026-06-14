@@ -1,5 +1,5 @@
 ---
-title: "Behind."
+title: "Behind"
 
 tags:
   - black-and-white

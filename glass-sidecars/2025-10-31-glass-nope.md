@@ -1,5 +1,5 @@
 ---
-title: "nope."
+title: "nope"
 
 tags:
   - aerial

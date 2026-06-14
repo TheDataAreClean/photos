@@ -1,5 +1,5 @@
 ---
-title: "spill."
+title: "spill"
 
 tags:
   - everyday

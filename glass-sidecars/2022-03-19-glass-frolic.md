@@ -1,5 +1,5 @@
 ---
-title: "frolic."
+title: "frolic"
 
 tags:
   - action

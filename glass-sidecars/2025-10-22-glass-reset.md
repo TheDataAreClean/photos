@@ -1,5 +1,5 @@
 ---
-title: "reset."
+title: "reset"
 
 tags:
   - everyday

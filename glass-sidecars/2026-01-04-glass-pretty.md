@@ -1,5 +1,5 @@
 ---
-title: "pretty."
+title: "pretty"
 
 tags:
   - street

@@ -1,5 +1,5 @@
 ---
-title: "delight."
+title: "delight"
 
 tags:
   - architecture

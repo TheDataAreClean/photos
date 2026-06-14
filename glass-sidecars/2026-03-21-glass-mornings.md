@@ -1,5 +1,5 @@
 ---
-title: "Mornings."
+title: "Mornings"
 
 tags:
   - golden-hour

@@ -1,5 +1,5 @@
 ---
-title: "dance."
+title: "dance"
 
 tags:
   - architecture

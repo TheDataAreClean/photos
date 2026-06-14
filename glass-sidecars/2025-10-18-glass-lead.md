@@ -1,5 +1,5 @@
 ---
-title: "lead."
+title: "lead"
 
 tags:
   - flora

@@ -1,5 +1,5 @@
 ---
-title: "memories."
+title: "memories"
 
 tags:
   - black-and-white

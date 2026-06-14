@@ -1,5 +1,5 @@
 ---
-title: "path."
+title: "path"
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

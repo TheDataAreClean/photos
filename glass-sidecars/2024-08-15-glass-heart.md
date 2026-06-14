@@ -1,5 +1,5 @@
 ---
-title: "heart."
+title: "heart"
 
 tags:
   - night

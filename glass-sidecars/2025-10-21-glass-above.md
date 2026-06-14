@@ -1,5 +1,5 @@
 ---
-title: "above."
+title: "above"
 
 tags:
   - black-and-white

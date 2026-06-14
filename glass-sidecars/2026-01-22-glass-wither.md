@@ -1,5 +1,5 @@
 ---
-title: "wither."
+title: "wither"
 
 tags:
   - everyday

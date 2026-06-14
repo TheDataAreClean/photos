@@ -1,5 +1,5 @@
 ---
-title: "clipped."
+title: "clipped"
 
 tags:
   - black-and-white

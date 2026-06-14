@@ -1,5 +1,5 @@
 ---
-title: "snapshot."
+title: "snapshot"
 
 tags:
   - architecture

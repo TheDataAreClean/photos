@@ -1,5 +1,5 @@
 ---
-title: "friend."
+title: "friend"
 
 tags:
   - action

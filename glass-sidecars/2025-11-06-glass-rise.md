@@ -1,5 +1,5 @@
 ---
-title: "rise."
+title: "rise"
 
 tags:
   - bokeh

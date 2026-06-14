@@ -1,5 +1,5 @@
 ---
-title: "system."
+title: "system"
 
 tags:
   - astrophotography

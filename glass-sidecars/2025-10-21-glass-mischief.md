@@ -1,5 +1,5 @@
 ---
-title: "mischief."
+title: "mischief"
 
 tags:
   - interior

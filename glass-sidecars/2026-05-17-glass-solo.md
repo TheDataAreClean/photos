@@ -1,5 +1,5 @@
 ---
-title: "Solo."
+title: "Solo"
 
 tags:
   - architecture

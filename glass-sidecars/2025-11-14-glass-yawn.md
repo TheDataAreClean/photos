@@ -1,5 +1,5 @@
 ---
-title: "yawn."
+title: "yawn"
 
 tags:
   - dog

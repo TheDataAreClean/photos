@@ -1,5 +1,5 @@
 ---
-title: "Incomplete."
+title: "Incomplete"
 
 tags:
   - everyday

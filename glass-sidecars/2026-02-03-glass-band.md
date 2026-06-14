@@ -1,5 +1,5 @@
 ---
-title: "band."
+title: "band"
 
 tags:
   - black-and-white

@@ -1,5 +1,5 @@
 ---
-title: "Bougainvillea."
+title: "Bougainvillea"
 
 tags:
   - flora

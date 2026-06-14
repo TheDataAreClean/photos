@@ -1,5 +1,5 @@
 ---
-title: "lost."
+title: "lost"
 
 tags:
   - black-and-white

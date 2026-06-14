@@ -1,5 +1,5 @@
 ---
-title: "mini."
+title: "mini"
 
 tags:
   - portrait

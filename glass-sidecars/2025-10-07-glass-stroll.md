@@ -1,5 +1,5 @@
 ---
-title: "stroll."
+title: "stroll"
 
 tags:
   - golden-hour

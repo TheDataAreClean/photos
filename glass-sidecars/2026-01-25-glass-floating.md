@@ -1,5 +1,5 @@
 ---
-title: "floating."
+title: "floating"
 
 tags:
   - everyday

@@ -1,5 +1,5 @@
 ---
-title: "Naps."
+title: "Naps"
 
 tags:
   - dog

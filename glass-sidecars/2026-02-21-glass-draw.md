@@ -1,5 +1,5 @@
 ---
-title: "draw."
+title: "draw"
 
 tags:
   - black-and-white

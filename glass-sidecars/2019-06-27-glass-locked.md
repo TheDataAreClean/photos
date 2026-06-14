@@ -1,5 +1,5 @@
 ---
-title: "locked."
+title: "locked"
 
 tags:
   - animal

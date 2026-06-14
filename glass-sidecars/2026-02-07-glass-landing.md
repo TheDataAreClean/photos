@@ -1,5 +1,5 @@
 ---
-title: "landing."
+title: "landing"
 
 tags:
   - bird

@@ -1,5 +1,5 @@
 ---
-title: "sneaky."
+title: "sneaky"
 
 tags:
   - action

@@ -1,5 +1,5 @@
 ---
-title: "solo."
+title: "solo"
 
 tags:
   - flower

@@ -1,5 +1,5 @@
 ---
-title: "pour."
+title: "pour"
 
 tags:
   - still-life

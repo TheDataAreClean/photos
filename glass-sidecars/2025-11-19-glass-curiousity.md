@@ -1,5 +1,5 @@
 ---
-title: "curiousity."
+title: "curiousity"
 
 tags:
   - dog

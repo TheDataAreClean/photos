@@ -1,5 +1,5 @@
 ---
-title: "wait."
+title: "wait"
 
 tags:
   - interior

@@ -1,5 +1,5 @@
 ---
-title: "spectrum."
+title: "spectrum"
 
 tags:
   - night

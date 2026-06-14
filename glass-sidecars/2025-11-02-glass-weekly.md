@@ -1,5 +1,5 @@
 ---
-title: "weekly."
+title: "weekly"
 
 tags:
   - everyday

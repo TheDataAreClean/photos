@@ -1,5 +1,5 @@
 ---
-title: "After."
+title: "After"
 glassAutoId: "2026-03-19-glass-after-a-couple-of-years-of"
 
 # Edit any value below — leave blank to fall back to what Glass provides

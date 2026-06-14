@@ -1,5 +1,5 @@
 ---
-title: "Filter."
+title: "Filter"
 
 tags:
   - everyday

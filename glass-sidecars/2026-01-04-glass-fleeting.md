@@ -1,5 +1,5 @@
 ---
-title: "fleeting."
+title: "fleeting"
 
 tags:
   - architecture

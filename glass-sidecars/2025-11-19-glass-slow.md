@@ -1,5 +1,5 @@
 ---
-title: "slow."
+title: "slow"
 
 tags:
   - cat

@@ -1,5 +1,5 @@
 ---
-title: "Spark."
+title: "Spark"
 
 tags:
   - portrait

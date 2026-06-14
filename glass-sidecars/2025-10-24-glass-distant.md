@@ -1,5 +1,5 @@
 ---
-title: "distant."
+title: "distant"
 
 tags:
   - black-and-white

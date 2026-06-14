@@ -1,5 +1,5 @@
 ---
-title: "vroom."
+title: "vroom"
 
 tags:
   - vehicle

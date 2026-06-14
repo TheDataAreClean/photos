@@ -1,5 +1,5 @@
 ---
-title: "Imitate."
+title: "Imitate"
 
 tags:
   - action

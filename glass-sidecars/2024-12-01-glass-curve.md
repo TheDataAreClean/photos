@@ -1,5 +1,5 @@
 ---
-title: "curve."
+title: "curve"
 
 tags:
   - architecture

@@ -1,5 +1,5 @@
 ---
-title: "guard."
+title: "guard"
 
 tags:
   - dog

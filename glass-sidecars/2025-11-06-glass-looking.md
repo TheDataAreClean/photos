@@ -1,5 +1,5 @@
 ---
-title: "looking."
+title: "looking"
 
 tags:
   - night

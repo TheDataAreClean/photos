@@ -1,5 +1,5 @@
 ---
-title: "creation."
+title: "creation"
 
 tags:
   - flora

@@ -1,5 +1,5 @@
 ---
-title: "beyond."
+title: "beyond"
 
 tags:
   - holiday

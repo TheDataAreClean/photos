@@ -1,5 +1,5 @@
 ---
-title: "locks."
+title: "locks"
 
 tags:
   - black-and-white

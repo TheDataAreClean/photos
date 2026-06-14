@@ -1,5 +1,5 @@
 ---
-title: "ride."
+title: "ride"
 
 tags:
   - street

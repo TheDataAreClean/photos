@@ -1,5 +1,5 @@
 ---
-title: "retreat."
+title: "retreat"
 
 tags:
   - architecture

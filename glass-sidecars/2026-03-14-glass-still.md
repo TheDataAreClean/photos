@@ -1,5 +1,5 @@
 ---
-title: "Still."
+title: "Still"
 
 tags:
   - insect

@@ -1,5 +1,5 @@
 ---
-title: "afterlife."
+title: "afterlife"
 
 tags:
   - street
