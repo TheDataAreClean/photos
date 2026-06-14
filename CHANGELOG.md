@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.2.3
+
+- chore: drift sweep renamed to `scripts/sweep-glass-drift.js` and extended to also check tags — flags Glass categories added after the sidecar's `tags:` were set, same non-blocking `::warning::` pattern as description drift
+
+---
+
 ## 2026-06-14 — v2.2.2
 
 - chore: `scripts/sweep-glass-descriptions.js` runs on the weekly scheduled CI build — compares each sidecar's description body against Glass's current description and emits a non-blocking `::warning::` annotation if they've drifted (sidecar bodies are authoritative and never auto-overwritten)

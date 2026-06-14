@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// One-off sweep: compare each sidecar's description body against the
-// current Glass description (after stripping the auto-generated title
-// prefix), to find sidecars that have drifted from edits made on Glass.
+// Sweep: compare each sidecar's description body and tags against Glass's
+// current values, to find sidecars that have drifted from edits made on
+// Glass after the sidecar became authoritative. Warn-only — never writes,
+// since the sidecar is the source of truth once set.
 
 const fs     = require('fs');
 const path   = require('path');
@@ -58,7 +59,7 @@ for (const p of raw) {
   if (sidecarBody !== expectedBody) {
     driftCount++;
     const file = path.basename(sidecarPath);
-    console.log(`\n=== DRIFT: ${file} ===`);
+    console.log(`\n=== DESCRIPTION DRIFT: ${file} ===`);
     console.log('--- Glass (current) ---');
     console.log(expectedBody);
     console.log('--- Sidecar (current) ---');
@@ -67,6 +68,25 @@ for (const p of raw) {
       console.log(`::warning file=glass-sidecars/${file}::Description on Glass differs from the sidecar body — review and update manually if the Glass edit should win.`);
     }
   }
+
+  // Tags: flag categories added on Glass since the sidecar's tags were
+  // last set. Don't flag the reverse (sidecar tags not on Glass) — those
+  // are often intentional curation.
+  const sidecarTags = sidecar.data?.tags || [];
+  const glassTags   = (p.categories || []).map(c => c.slug);
+  const newTags     = glassTags.filter(t => !sidecarTags.includes(t));
+
+  if (sidecarTags.length && newTags.length) {
+    driftCount++;
+    const file = path.basename(sidecarPath);
+    console.log(`\n=== TAGS DRIFT: ${file} ===`);
+    console.log('--- Glass categories (current) ---', glassTags);
+    console.log('--- Sidecar tags (current) ---', sidecarTags);
+    console.log('--- New on Glass, missing from sidecar ---', newTags);
+    if (process.env.GITHUB_ACTIONS) {
+      console.log(`::warning file=glass-sidecars/${file}::New Glass categories not in sidecar tags: ${newTags.join(', ')} — review and add manually if they should be included.`);
+    }
+  }
 }
 
-console.log(`\n${driftCount} sidecar(s) with description drift out of ${raw.length} Glass photos.`);
+console.log(`\n${driftCount} drift issue(s) found across ${raw.length} Glass photos.`);
