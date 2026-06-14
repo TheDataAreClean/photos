@@ -1,5 +1,10 @@
 ---
 title: "Fort Window"
+
+tags:
+  - family
+  - symmetry
+  - window
 glassAutoId: "2024-04-26-glass-124120"
 
 # Edit any value below — leave blank to fall back to what Glass provides

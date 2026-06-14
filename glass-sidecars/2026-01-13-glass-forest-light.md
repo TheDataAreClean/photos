@@ -1,5 +1,9 @@
 ---
 title: "Forest Light"
+
+tags:
+  - interior
+  - perspective
 glassAutoId: "2026-01-13-glass-210923"
 
 # Edit any value below — leave blank to fall back to what Glass provides

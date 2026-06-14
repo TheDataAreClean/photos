@@ -1,5 +1,10 @@
 ---
 title: "Sunglasses"
+
+tags:
+  - everyday
+  - nature
+  - portrait
 glassAutoId: "2025-08-24-glass-063125"
 
 # Edit any value below — leave blank to fall back to what Glass provides

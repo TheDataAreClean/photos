@@ -1,6 +1,11 @@
 ---
 title: "Behind."
 
+tags:
+  - black-and-white
+  - everyday
+  - vehicle
+
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera: "Fujifilm X-T50"

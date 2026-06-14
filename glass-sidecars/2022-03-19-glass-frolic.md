@@ -1,6 +1,11 @@
 ---
 title: "frolic."
 
+tags:
+  - action
+  - black-and-white
+  - holiday
+
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera: "Apple iPhone 12 Mini"

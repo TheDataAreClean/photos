@@ -1,5 +1,10 @@
 ---
 title: "Fortress Wall"
+
+tags:
+  - holiday
+  - portrait
+  - reflection
 glassAutoId: "2025-05-07-glass-124659"
 
 # Edit any value below — leave blank to fall back to what Glass provides

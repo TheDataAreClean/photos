@@ -1,6 +1,11 @@
 ---
 title: "ride."
 
+tags:
+  - street
+  - urban
+  - vehicle
+
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera:

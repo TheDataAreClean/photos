@@ -1,6 +1,11 @@
 ---
 title: "Imitate."
 
+tags:
+  - action
+  - cat
+  - still-life
+
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera: "Fujifilm X-T50"

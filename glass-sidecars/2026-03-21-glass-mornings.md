@@ -1,6 +1,11 @@
 ---
 title: "Mornings."
 
+tags:
+  - golden-hour
+  - portrait
+  - summer
+
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera: "Fujifilm X-T50"
