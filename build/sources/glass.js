@@ -12,6 +12,10 @@ const GLASS_API    = 'https://glass.photo/api/v3/users';
 const PAGE_SIZE    = 50;
 const SIDECARS_DIR = path.resolve('glass-sidecars');
 
+async function fsExists(p) {
+  try { await fs.access(p); return true; } catch { return false; }
+}
+
 // ── Public entry point ────────────────────────────────
 async function fetchGlass(config, fresh = false) {
   if (!config.glass.username) return [];
@@ -56,7 +60,7 @@ async function fetchGlass(config, fresh = false) {
   await fs.mkdir(outputDir,      { recursive: true });
   await fs.mkdir(imageCacheDir,  { recursive: true });
 
-  await Promise.all(merged.map(photo => watermarkGlassPhoto(photo, imageCacheDir, outputDir)));
+  await Promise.all(merged.map(photo => watermarkGlassPhoto(photo, imageCacheDir, outputDir, config)));
   return merged;
 }
 
@@ -332,7 +336,7 @@ async function fetchHiddenGlassPosts(username, friendlyIds, config, fresh = fals
   await ensureSidecars(photos, autoIdMap);
   const merged    = await mergeSidecars(photos, autoIdMap);
 
-  await Promise.all(merged.map(photo => watermarkGlassPhoto(photo, imageCacheDir, outputDir)));
+  await Promise.all(merged.map(photo => watermarkGlassPhoto(photo, imageCacheDir, outputDir, config)));
   return merged;
 }
 
@@ -376,18 +380,25 @@ async function fetchHiddenPost(username, friendlyId, cacheDir, fresh) {
   }
 }
 
-// ── Download + watermark one Glass photo ─────────────
-async function watermarkGlassPhoto(photo, imageCacheDir, outputDir) {
+// ── Download + watermark + thumbnail one Glass photo ──
+// Glass's own thumbnail presets (e.g. image828x0) are 400-600KB JPEG/AVIF —
+// far too large for grid thumbnails. We re-encode a local webp thumb from
+// the same downloaded original used for the watermarked display image.
+async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
   const displayUrl = photo.url.display;
   if (!displayUrl) return;
 
-  const wmFilename = `${photo.id}@wm.webp`;
-  const wmPath     = path.join(outputDir, wmFilename);
+  const wmFilename    = `${photo.id}@wm.webp`;
+  const wmPath        = path.join(outputDir, wmFilename);
+  const thumbFilename = `${photo.id}@thumb.webp`;
+  const thumbPath     = path.join(outputDir, thumbFilename);
 
-  // Skip if already generated
-  try { await fs.access(wmPath); photo.url.download = `/photos/${wmFilename}`; return; } catch { /* generate */ }
+  const [wmExists, thumbExists] = await Promise.all([fsExists(wmPath), fsExists(thumbPath)]);
+  if (wmExists) photo.url.download = `/photos/${wmFilename}`;
+  if (thumbExists) photo.url.thumb = `/photos/${thumbFilename}`;
+  if (wmExists && thumbExists) return;
 
-  // Download original (cache to avoid re-fetching if wm output is deleted)
+  // Download original (cache to avoid re-fetching if outputs are deleted)
   const cachedPath = path.join(imageCacheDir, `${photo.id}.bin`);
   let originalBuf;
   try {
@@ -402,14 +413,29 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir) {
     }
   }
 
-  try {
-    const resized     = await sharp(originalBuf).resize({ width: 2400, withoutEnlargement: true }).toBuffer();
-    const watermarked = await applyWatermark(resized);
-    await sharp(watermarked).webp({ quality: 92 }).toFile(wmPath);
-    photo.url.download = `/photos/${wmFilename}`;
-  } catch (err) {
-    console.warn(`  Glass watermark: failed to process ${photo.id}: ${err.message}`);
-  }
+  await Promise.all([
+    wmExists ? null : (async () => {
+      try {
+        const resized     = await sharp(originalBuf).resize({ width: 2400, withoutEnlargement: true }).toBuffer();
+        const watermarked = await applyWatermark(resized);
+        await sharp(watermarked).webp({ quality: 92 }).toFile(wmPath);
+        photo.url.download = `/photos/${wmFilename}`;
+      } catch (err) {
+        console.warn(`  Glass watermark: failed to process ${photo.id}: ${err.message}`);
+      }
+    })(),
+    thumbExists ? null : (async () => {
+      try {
+        await sharp(originalBuf)
+          .resize({ width: config.local.thumbWidth, withoutEnlargement: true })
+          .webp({ quality: 85 })
+          .toFile(thumbPath);
+        photo.url.thumb = `/photos/${thumbFilename}`;
+      } catch (err) {
+        console.warn(`  Glass thumb: failed to process ${photo.id}: ${err.message}`);
+      }
+    })(),
+  ]);
 }
 
 module.exports = { fetchGlass, fetchHiddenGlassPosts };

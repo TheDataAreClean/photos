@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.1.1
+
+- perf: Glass grid thumbnails now generated locally as `{id}@thumb.webp` (800px, q85, ~150KB avg) from the same cached original used for watermarking, instead of hotlinking Glass CDN's `image828x0` preset (400–630KB) — ~3.2x smaller, served same-origin
+
+---
+
 ## 2026-06-14 — v2.1.0
 
 - feat: Glass `categories` are now pulled into `photo.tags` automatically, surfacing as `<category>` entries in the Atom feed
