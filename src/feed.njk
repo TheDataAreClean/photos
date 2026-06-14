@@ -28,7 +28,8 @@ eleventyExcludeFromCollections: true
     <content type="html"><![CDATA[
       {%- if imageUrl %}<img src="{{ imageUrl }}" alt="{{ photo.seriesTitle | escape }}">{% endif %}
       {{ photo.description | toParagraphs | safe }}
-      <p><a href="{{ seriesUrl }}">View all {{ photo.seriesCount }} photos in this series →</a></p>
+      <hr>
+      <p>📁 <a href="{{ seriesUrl }}">View all {{ photo.seriesCount }} photos in this series →</a></p>
     ]]></content>
   </entry>
   {%- else %}
@@ -47,17 +48,25 @@ eleventyExcludeFromCollections: true
       {%- if imageUrl %}<img src="{{ imageUrl }}" alt="{{ photo.title | escape }}">{% endif %}
       {{ photo.description | toParagraphs | safe }}
       {%- if photo.dateTaken %}
-      <p><small>Captured {{ photo.dateTaken | shortDate }}</small></p>
+      <hr>
+      <p><small>📆 Captured {{ photo.dateTaken | shortDate }}</small></p>
       {%- endif %}
       {%- if photo.exif.camera or photo.exif.lens %}
-      <p><small>
-        {%- if photo.exif.camera %}{{ photo.exif.camera }}{% endif %}
+      <hr>
+      <p><small>📷
+        {%- if photo.exif.camera %} {{ photo.exif.camera }}{% endif %}
         {%- if photo.exif.lens %} · {{ photo.exif.lens }}{% endif %}
         {%- if photo.exif.focalLength35 %} · {{ photo.exif.focalLength35 }}{% if photo.exif.focalLength %} ({{ photo.exif.focalLength }}){% endif %}
         {%- elif photo.exif.focalLength %} · {{ photo.exif.focalLength }}{% endif %}
         {%- if photo.exif.aperture %} · {{ photo.exif.aperture }}{% endif %}
         {%- if photo.exif.shutterSpeed %} · {{ photo.exif.shutterSpeed }}{% endif %}
         {%- if photo.exif.iso %} · ISO {{ photo.exif.iso }}{% endif %}
+      </small></p>
+      {%- endif %}
+      {%- if photo.tags.length %}
+      <hr>
+      <p><small>🏷️
+        {%- for tag in photo.tags %} #{{ tag }}{% endfor %}
       </small></p>
       {%- endif %}
     ]]></content>

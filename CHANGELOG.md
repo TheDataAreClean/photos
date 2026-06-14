@@ -6,6 +6,13 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.2.0
+
+- feat: Atom feed entries restructured for scanability — `<hr>` separators between description, capture date, camera/lens, and tags sections; 📆/📷/🏷️ icons on each section; tags now also rendered as visible `#tag` text (previously only `<category>` XML elements)
+- chore: one-time script (`scripts/strip-title-periods.js`) to strip trailing periods from older auto-generated sidecar titles, matching the v2.0.0 title-generation change (text before first period, not first word)
+
+---
+
 ## 2026-06-14 — v2.1.1
 
 - perf: Glass grid thumbnails now generated locally as `{id}@thumb.webp` (800px, q85, ~150KB avg) from the same cached original used for watermarking, instead of hotlinking Glass CDN's `image828x0` preset (400–630KB) — ~3.2x smaller, served same-origin
