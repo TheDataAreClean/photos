@@ -41,7 +41,11 @@ for (const p of raw) {
   const sidecar = matter(fs.readFileSync(sidecarPath, 'utf8'));
   const sidecarBody = (sidecar.content || '').trim();
 
-  const expectedBody = (p.description || '').trim().replace(/^\S+\s*/, '').trim();
+  let expectedBody = (p.description || '').trim().replace(/^\S+\s*/, '').trim();
+  // Series numbering line (e.g. "#12.") is redundant with the title and
+  // often dropped from the sidecar body intentionally — strip it from the
+  // expected text too so that omission isn't flagged as drift.
+  const expectedBodyNoSeriesNum = expectedBody.replace(/^#\d+\.?\s*\n*/, '').trim();
 
   // Skip legacy single-word-description sidecars: current SIDECAR_STUB
   // strips a lone "word." description down to an empty body, but older
@@ -49,14 +53,19 @@ for (const p of raw) {
   // difference. Only flag when there's actual divergent text on both sides,
   // or Glass added body text that's missing from the sidecar entirely.
   if (!expectedBody && sidecarBody) continue;
+  if (sidecarBody === expectedBodyNoSeriesNum) continue;
 
   if (sidecarBody !== expectedBody) {
     driftCount++;
-    console.log(`\n=== DRIFT: ${path.basename(sidecarPath)} ===`);
+    const file = path.basename(sidecarPath);
+    console.log(`\n=== DRIFT: ${file} ===`);
     console.log('--- Glass (current) ---');
     console.log(expectedBody);
     console.log('--- Sidecar (current) ---');
     console.log(sidecarBody);
+    if (process.env.GITHUB_ACTIONS) {
+      console.log(`::warning file=glass-sidecars/${file}::Description on Glass differs from the sidecar body — review and update manually if the Glass edit should win.`);
+    }
   }
 }
 

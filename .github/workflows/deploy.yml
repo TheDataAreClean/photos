@@ -48,6 +48,10 @@ jobs:
         env:
           GLASS_TOKEN: ${{ secrets.GLASS_TOKEN }}
 
+      - name: Check for sidecar description drift
+        if: github.event_name == 'schedule'
+        run: node scripts/sweep-glass-descriptions.js
+
       - name: Build
         run: npm run build
         env:

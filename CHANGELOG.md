@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.2.2
+
+- chore: `scripts/sweep-glass-descriptions.js` runs on the weekly scheduled CI build — compares each sidecar's description body against Glass's current description and emits a non-blocking `::warning::` annotation if they've drifted (sidecar bodies are authoritative and never auto-overwritten)
+
+---
+
 ## 2026-06-14 — v2.2.1
 
 - chore: bump `actions/upload-pages-artifact` from v3 to v5 — v3 runs on Node.js 20, which GitHub Actions deprecates June 16, 2026
