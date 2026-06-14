@@ -9,7 +9,9 @@ Architecture reference. Factual, no opinion. See [CLAUDE.md](CLAUDE.md) for oper
 ```
 Glass API ──┐
             ├─→ _data/photos.js ──→ Eleventy build ──→ dist/ ──→ GitHub Pages
-local/    ──┘        │
+local/    ──┘        │       ↑
+            series/ ─────────┘
+                     │
                      ├─→ dist/photos/   (resized + watermarked images)
                      ├─→ dist/data/     (paginated JSON chunks)
                      └─→ glass-sidecars/ (sidecar stubs, auto-created)
@@ -27,16 +29,23 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `.eleventy.js` | Eleventy config: filters, passthrough copies, output dir |
 | `_data/photos.js` | Data pipeline entry point |
 | `_data/siteConfig.js` | Exposes `config.site` to Nunjucks templates |
+| `_data/series.js` | Exposes `loadSeries()` map (slug → series meta) to templates |
+| `_data/seriesArray.js` | Same data as `series.js`, as an array — for iteration in templates |
 | `_includes/layouts/base.njk` | HTML shell: `<head>`, CSS links, OG tags, feed autodiscovery |
 | `src/index.njk` | Gallery index — masonry grid, infinite scroll, lightbox, stack view |
 | `src/feed.njk` | Atom feed → `dist/feed.xml` |
 | `src/photos/photo.njk` | Per-photo permalink pages (Eleventy pagination, size: 1) |
+| `src/series/series.njk` | Per-series permalink pages + series overlay markup |
+| `src/scripts/series-overlay.js` | Full-screen series overlay: thumbnail strip, prev/next, counter |
 | `src/styles/base.css` | Design tokens — single source of truth for all CSS custom properties |
+| `src/styles/series.css` | Folder card (masonry) + series overlay styles |
+| `series/*.md` | One file per series — title, description, cover photo, ordered photo list, optional hidden Glass photos |
+| `build/series.js` | `loadSeries()` — parses `series/*.md` into a slug → meta map |
 | `build/sources/glass.js` | Glass API pagination, `glassToUnified()`, sidecar create/merge |
 | `build/sources/local.js` | Local photo processor: auto-rename, EXIF, sharp resize, watermark |
 | `build/merge.js` | Deduplication (local overrides Glass) + date sort |
 | `build/og-image.js` | Monthly OG image generation via `@napi-rs/canvas` |
-| `build/watermark.js` | Watermark compositing via sharp |
+| `build/watermark.js` | Watermark compositing via sharp (resize result cached per target size) |
 | `scripts/sync-glass.js` | Standalone Glass sync — updates cache + sidecars without a full build |
 | `scripts/glass-sync.sh` | Shell wrapper for launchd (resolves node across nvm/Homebrew) |
 
@@ -48,12 +57,16 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 
 1. Fetches Glass API (or reads 1-hour cache from `.cache/glass-raw.json`)
 2. Processes local photos: auto-rename, EXIF extract, sharp resize, watermark
-3. Merges + deduplicates (local overrides Glass on matching ID)
-4. Sorts newest-first by `dateTaken`
-5. Writes paginated JSON chunks to `dist/data/photos-N.json` (60 photos each)
-6. Creates sidecar stubs for any new photos
-7. Prunes stale image files from `dist/photos/` and stale JSON chunks from `dist/data/`
-8. Generates monthly OG image and copies favicon
+3. Loads `series/*.md` via `loadSeries()` into a slug → meta map
+4. Fetches any `hiddenGlassPhotos` referenced by series (Glass posts hidden from the public profile but reachable by direct URL)
+5. Merges + deduplicates (local overrides Glass on matching ID)
+6. Sorts newest-first by `dateTaken`
+7. Applies series membership from `series/*.md` to each photo (`series`, `seriesOrder`, `seriesTitle`, `seriesCount`) — overrides any `series`/`seriesOrder` set in sidecars
+8. Writes paginated JSON chunks to `dist/data/photos-N.json` (60 photos each)
+9. Creates sidecar stubs for any new photos
+10. Prunes stale image files from `dist/photos/` and stale JSON chunks from `dist/data/`
+11. Prunes stale Glass image/hidden-post cache entries (`.cache/glass-images/`, `.cache/glass-hidden/`)
+12. Generates monthly OG image and copies favicon
 
 ### Photo object shape (key fields)
 
@@ -71,6 +84,23 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `url.thumb` | `/photos/ID@800.webp` (local) / CDN (Glass) | |
 | `exif` | sidecar `overrideExif:` → EXIF/Glass | camera, lens, focal, aperture, shutter, ISO |
 | `tags` | sidecar `tags:` | stored, not yet rendered in UI |
+| `series` | `series/*.md` `photos:` list (overrides sidecar `series:`) | slug of the series this photo belongs to, or `null` |
+| `seriesOrder` | `series/*.md` `photos:` list (overrides sidecar `seriesOrder:`) | 1-indexed position within the series |
+| `seriesTitle` | derived from `series/{slug}.md` `title:` | only set when `series` is set |
+| `seriesCount` | derived from `series/{slug}.md` `photos:` length | only set when `series` is set |
+
+---
+
+## Series / folders
+
+`series/*.md` files define a series — front matter: `title`, optional `coverPhoto` (photo ID), `photos:` (ordered list of photo IDs, or `{ id, order }` objects), and optional `hiddenGlassPhotos:` (Glass `friendly_id`s hidden from the public profile but fetchable by direct URL). The Markdown body is the series description.
+
+- `build/series.js` (`loadSeries()`) parses these into a slug → meta map, exposed to templates via `_data/series.js` (map) and `_data/seriesArray.js` (array)
+- `_data/photos.js` applies series membership to each photo after merge/sort — series files are the single source of truth, overriding any `series`/`seriesOrder` set directly in a sidecar
+- In the masonry grid, all photos belonging to a series collapse into a single **folder card** (manila folder aesthetic with peeking photo prints) — built by `GalleryCore.makeSeriesCard()`
+- Clicking a folder card opens the **series overlay** (`src/scripts/series-overlay.js`): full-screen viewer with thumbnail strip, prev/next, and `N / Total` counter; clicking a photo within it opens the existing lightbox
+- `src/series/series.njk` also generates a permalink page per series
+- Folder card colours use the `--folder-*` tokens in `base.css` (see CSS design system below)
 
 ---
 
@@ -123,6 +153,7 @@ All design values live in `src/styles/base.css` as `:root` custom properties. Ne
 | Type scale | `--text-2xs` (0.6rem) → `--text-2xl` (1.9rem) |
 | Fonts | `--font-serif` (Schoolbell), `--font-ibm-sans` (IBM Plex Sans), `--font-mono` (VT323), `--font-mono-read` (IBM Plex Mono) |
 | Durations | `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s) |
+| Folder/series colours | `--folder-icon-light/dark`, `--folder-tab-light/dark`, `--folder-back-light/dark`, `--folder-face-light/dark` — manila folder card gradients |
 
 **Intentional raw values** (not tokens): grain gradients in `desk.css` (texture-specific rgba), shadow layers in `photo-card.css` / `lightbox.css` / `stack.css` (distinct visual weights), safe-area fades in `desk.css` (`#000` — pure black regardless of theme).
 

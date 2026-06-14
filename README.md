@@ -30,6 +30,7 @@ Full command reference: [COMMANDS.md](COMMANDS.md)
 | `scripts/` | CLI utilities: rename, Glass sync |
 | `local/` | Drop photos here — auto-processed on build |
 | `glass-sidecars/` | One `.md` per Glass photo — auto-created, edit freely |
+| `series/` | One `.md` per series — title, description, cover photo, ordered photo list |
 | `launchd/` | Weekly Glass sync agent for macOS |
 | `dist/` | Build output — not committed |
 
