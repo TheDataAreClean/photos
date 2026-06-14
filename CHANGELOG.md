@@ -6,6 +6,22 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.2.4
+
+- fix: lightbox safe-area edge fades split into separate `::before`/`::after` pseudo-elements so each `linear-gradient` can use `env()` directly as a stop — `calc(env()+px)` as a gradient stop fails silently on iOS Safari (see `.fade-top`/`.fade-bottom` pattern in `desk.css`)
+- fix: series overlay close button and mobile nav arrows now meet the 44px touch-target minimum (were 36px)
+- fix: lightbox prev/next/close now look up the origin card by `data-index` instead of a positional snapshot — previously misaligned once a series folder card was present, and went stale for cards loaded by infinite scroll after the lightbox opened
+- fix: series folder card's photo count badge now updates if later infinite-scroll chunks add more photos to an already-rendered series
+- fix: Atom feed top-level `<updated>` now uses the same `laterDate(dateAdded, sidecarUpdatedAt)` logic as individual entries, so a sidecar-only edit to the newest photo bumps the feed-level timestamp too
+- security: inline JSON blobs (`| json` filter) now escape `</` so a Glass-controlled string containing `</script>` can't break out of the `<script>` tag; Atom feed descriptions now escape literal `]]>` so they can't close their `<![CDATA[` section early
+- chore: `merge.js` now warns on duplicate photo IDs instead of silently dropping one
+- chore: `scripts/sweep-glass-drift.js` now imports its ID-generation logic from `build/sources/glass.js` (`glassPostId`) instead of duplicating it
+- chore: Schoolbell font download (GitHub primary, Google Fonts gstatic fallback) consolidated into `build/utils/fonts.js`, shared by `gen-watermark.js` and `og-image.js`
+- chore: new `--dur-slower` (0.5s) and `--dur-flip` (0.55s) tokens in `base.css` for the grid fade-in and card-flip transitions, which previously hardcoded values outside the duration scale
+- docs: `APP.md` notes that `flash`/`gps` EXIF fields are always `null` for Glass photos (the API doesn't provide them) vs. populated from EXIF for local photos
+
+---
+
 ## 2026-06-14 — v2.2.3
 
 - chore: drift sweep renamed to `scripts/sweep-glass-drift.js` and extended to also check tags — flags Glass categories added after the sidecar's `tags:` were set, same non-blocking `::warning::` pattern as description drift

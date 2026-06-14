@@ -82,7 +82,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `url.display` | `/photos/ID@2400.webp` (local) / CDN (Glass) | |
 | `url.download` | `/photos/ID@wm.webp` | watermarked; used in feed image |
 | `url.thumb` | `/photos/ID@800.webp` (local) / CDN (Glass) | |
-| `exif` | sidecar `overrideExif:` → EXIF/Glass | camera, lens, focal, aperture, shutter, ISO |
+| `exif` | sidecar `overrideExif:` → EXIF/Glass | camera, lens, focal, aperture, shutter, ISO; `flash`/`gps` are always `null` for Glass photos (the Glass API doesn't provide them) and populated from EXIF for local photos |
 | `tags` | sidecar `tags:` | stored, not yet rendered in UI |
 | `series` | `series/*.md` `photos:` list (overrides sidecar `series:`) | slug of the series this photo belongs to, or `null` |
 | `seriesOrder` | `series/*.md` `photos:` list (overrides sidecar `seriesOrder:`) | 1-indexed position within the series |

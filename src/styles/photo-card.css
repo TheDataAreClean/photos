@@ -112,7 +112,7 @@
   -webkit-transform-style: preserve-3d;
   /* perspective inline so no parent stacking-context surface is created */
   transform: perspective(900px) rotateY(0deg);
-  transition: transform 0.55s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  transition: transform var(--dur-flip) cubic-bezier(0.45, 0.05, 0.55, 0.95);
   /* will-change omitted — applying it statically creates a GPU layer for every card.
      Browsers promote automatically when the 3D flip transition actually runs. */
 }

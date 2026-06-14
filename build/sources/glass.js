@@ -91,20 +91,26 @@ async function paginate(username, token, maxPhotos) {
   return all.slice(0, maxPhotos);
 }
 
-// ── Unified schema ────────────────────────────────────
-function glassToUnified(p) {
-  const exif = parseGlassExif(p);
-
-  // Build a stable, human-readable ID from date + description snippet.
-  // Use text before the first period or newline so "Gate #12." → "gate-12" (unique)
-  // rather than just the first word "Gate" (which collides across a numbered series).
-  const dateStr     = exif.dateTaken || p.created_at || null;
+// Build a stable, human-readable ID from date + description snippet.
+// Use text before the first period or newline so "Gate #12." → "gate-12" (unique)
+// rather than just the first word "Gate" (which collides across a numbered series).
+// Shared with scripts/sweep-glass-drift.js so both stay in sync with the ID scheme.
+function glassPostId(p, dateTaken) {
+  const dateStr     = dateTaken || p.created_at || null;
   const date        = dateStr ? new Date(dateStr) : null;
   const descSnippet = (p.description || '').trim().split(/[.\n]/)[0].trim();
   const stem        = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
   const datePart    = stem.slice(0, 10);
   const rest        = stem.slice(11);
   const id          = rest ? `${datePart}-glass-${rest}` : `${datePart}-glass`;
+  return { id, descSnippet };
+}
+
+// ── Unified schema ────────────────────────────────────
+function glassToUnified(p) {
+  const exif = parseGlassExif(p);
+
+  const { id, descSnippet } = glassPostId(p, exif.dateTaken);
 
   // Default title: full text before the first period/newline (same slice used for the ID)
   const autoTitle = descSnippet || null;
@@ -438,4 +444,4 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
   ]);
 }
 
-module.exports = { fetchGlass, fetchHiddenGlassPosts };
+module.exports = { fetchGlass, fetchHiddenGlassPosts, glassPostId };

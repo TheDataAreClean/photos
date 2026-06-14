@@ -16,6 +16,7 @@ const http   = require('http');
 const fs     = require('fs/promises');
 const path   = require('path');
 const config = require('../config');
+const { ensureSchoolbell } = require('./utils/fonts');
 
 const W = 1200;
 const H = 630;
@@ -155,34 +156,10 @@ async function ensureFonts() {
     }
   }
 
-  // Download Schoolbell if not cached
-  // Primary: google/fonts GitHub (stable main branch). Fallback: Google Fonts gstatic.
+  // Download Schoolbell if not cached — shared with gen-watermark.js
   if (!(await fileExists(schoolbellPath))) {
-    let downloaded = false;
-    try {
-      const buf = await fetchBuf(
-        'https://github.com/google/fonts/raw/main/apache/schoolbell/Schoolbell-Regular.ttf'
-      );
-      await fs.writeFile(schoolbellPath, buf);
-      downloaded = true;
-    } catch { /* fall through */ }
-
-    if (!downloaded) {
-      try {
-        const css = (await fetchBuf(
-          'https://fonts.googleapis.com/css?family=Schoolbell',
-          { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
-        )).toString();
-        const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
-        if (match) {
-          const buf = await fetchBuf(match[1]);
-          await fs.writeFile(schoolbellPath, buf);
-          downloaded = true;
-        }
-      } catch { /* ignore */ }
-    }
-
-    if (!downloaded) {
+    const fontPath = await ensureSchoolbell(schoolbellPath);
+    if (!fontPath) {
       console.warn('  OG image: Schoolbell download failed — attribution will use cursive fallback');
     }
   }

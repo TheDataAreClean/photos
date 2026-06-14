@@ -117,7 +117,7 @@
 
 .lightbox__series-tag {
   font-family: var(--font-mono);
-  font-size: 0.92rem;
+  font-size: var(--text-sub);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--stamp);
@@ -404,28 +404,44 @@
     overflow: hidden;
   }
 
-  /* Safe-area edge fades — same "sheet" concept as the gallery body::after.
-     Uses the solid base of --overlay (rgb(10,6,3)) so the fade matches the
-     lightbox backdrop rather than the wood-grain --bg.
+  /* Safe-area edge fades — same "sheet" concept as the gallery body::after
+     (see desk.css .fade-top/.fade-bottom). Uses the solid base of --overlay
+     (rgb(10,6,3)) so the fade matches the lightbox backdrop rather than the
+     wood-grain --bg. Split into ::before (top) / ::after (bottom) so each
+     gradient can use env() directly as a stop — calc(env()+px) only appears
+     in `height`, where it parses reliably on iOS Safari.
      z-index: 5 within the lightbox stacking context — layout and close button
      are bumped to z-index: 6 so they float above the fade sheets. */
   #lightbox::before {
     content: '';
     position: fixed;
-    inset: 0;
-    background:
-      linear-gradient(
-        to bottom,
-        rgb(10, 6, 3) 0px,
-        rgb(10, 6, 3) env(safe-area-inset-top, 20px),
-        transparent calc(env(safe-area-inset-top, 20px) + 36px)
-      ),
-      linear-gradient(
-        to top,
-        rgb(10, 6, 3) 0px,
-        rgb(10, 6, 3) env(safe-area-inset-bottom, 0px),
-        transparent calc(env(safe-area-inset-bottom, 0px) + 28px)
-      );
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(env(safe-area-inset-top, 20px) + 36px);
+    background: linear-gradient(
+      to bottom,
+      rgb(10, 6, 3) 0px,
+      rgb(10, 6, 3) env(safe-area-inset-top, 20px),
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  #lightbox::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(env(safe-area-inset-bottom, 0px) + 28px);
+    background: linear-gradient(
+      to top,
+      rgb(10, 6, 3) 0px,
+      rgb(10, 6, 3) env(safe-area-inset-bottom, 0px),
+      transparent 100%
+    );
     pointer-events: none;
     z-index: 5;
   }

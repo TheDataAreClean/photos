@@ -2,6 +2,9 @@ function mergeAndSort(photos) {
   // Deduplicate by id — last writer wins (local overrides Glass if same id)
   const map = new Map();
   for (const photo of photos) {
+    if (map.has(photo.id)) {
+      console.warn(`Warning: duplicate photo id "${photo.id}" — keeping the later one (source: ${photo.source})`);
+    }
     map.set(photo.id, photo);
   }
 

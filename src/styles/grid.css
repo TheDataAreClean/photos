@@ -13,7 +13,7 @@
 
 .gallery-grid.is-ready {
   opacity: 1;
-  transition: opacity 0.5s var(--ease-out);
+  transition: opacity var(--dur-slower) var(--ease-out);
 }
 
 .gallery-empty {

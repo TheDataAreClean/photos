@@ -489,8 +489,8 @@
 }
 
 .series-overlay__close {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   background: none;
   border: 1px solid rgba(var(--accent-rgb), 0.2);
   border-radius: 50%;
@@ -706,8 +706,8 @@
   }
 
   .series-overlay__nav {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     font-size: 1.2rem;
   }
 
