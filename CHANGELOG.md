@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-14 — v2.2.1
+
+- chore: bump `actions/upload-pages-artifact` from v3 to v5 — v3 runs on Node.js 20, which GitHub Actions deprecates June 16, 2026
+
+---
+
 ## 2026-06-14 — v2.2.0
 
 - feat: Atom feed entries restructured for scanability — `<hr>` separators between description, capture date, camera/lens, and tags sections; 📆/📷/🏷️ icons on each section; tags now also rendered as visible `#tag` text (previously only `<category>` XML elements)
