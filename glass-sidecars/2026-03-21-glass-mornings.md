@@ -1,7 +1,5 @@
 ---
-glassAutoId: "2026-03-21-glass-mornings-one-thing-that-stayed-constant"
 title: "Mornings."
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

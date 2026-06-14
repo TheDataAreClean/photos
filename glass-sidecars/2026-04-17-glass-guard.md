@@ -1,6 +1,5 @@
 ---
 title: "Guard."
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
@@ -19,4 +18,4 @@ I am quite envious of the life of street dogs, atleast the ones in my neighbourh
 
 They are revered by families who live here, sparsely guarding the gates of their homes, coming in and out as they please.
 
-Surely my naivety is romanticising their life and ignoring the hard parts. But that isn't what you do at the end of a hard week?
+Surely my naivety is romanticising their life and ignoring the hard parts. But isn't that what you do at the end of a hard week?

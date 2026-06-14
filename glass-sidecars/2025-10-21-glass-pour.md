@@ -1,6 +1,5 @@
 ---
 title: "pour."
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

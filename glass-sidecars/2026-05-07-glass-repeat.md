@@ -1,6 +1,5 @@
 ---
 title: "Repeat."
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
@@ -19,4 +18,4 @@ You keep visiting some places on repeat, no matter how much you try to make a di
 
 Kerala has been on top of that list for me. This is my sixth visit over the last twelve months, and I have thoroughly enjoyed each one of them.
 
-I am yet unable to articulate what keeps pulling me back to "God's Own Country", but I already looking forward to the next one.
+I am yet unable to articulate what keeps pulling me back to "God's Own Country", but I am already looking forward to the next one.

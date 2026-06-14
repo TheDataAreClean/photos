@@ -1,7 +1,6 @@
 ---
 title: "Sunglasses"
 glassAutoId: "2025-08-24-glass-063125"
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

@@ -1,7 +1,6 @@
 ---
 title: "Forest Light"
 glassAutoId: "2026-01-13-glass-210923"
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

@@ -1,7 +1,6 @@
 ---
 title: "Fort Window"
 glassAutoId: "2024-04-26-glass-124120"
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:

@@ -1,7 +1,6 @@
 ---
 title: "Fortress Wall"
 glassAutoId: "2025-05-07-glass-124659"
-tags: []
 
 # Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
