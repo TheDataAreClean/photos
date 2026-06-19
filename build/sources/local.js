@@ -84,8 +84,13 @@ async function autoRename(imageFiles, photosDir) {
     usedStems.add(newStem);
 
     const newFilename = `${newStem}${ext}`;
-    await fs.rename(filepath, path.join(photosDir, newFilename));
-    console.log(`  Renamed: ${filename} → ${newFilename}`);
+    try {
+      await fs.rename(filepath, path.join(photosDir, newFilename));
+      console.log(`  Renamed: ${filename} → ${newFilename}`);
+    } catch (err) {
+      console.warn(`  Rename skipped (${filename}): ${err.message}`);
+      return filename;
+    }
 
     const oldSidecar = path.join(photosDir, `${stem}.md`);
     const newSidecar = path.join(photosDir, `${newStem}.md`);

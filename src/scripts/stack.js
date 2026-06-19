@@ -277,14 +277,16 @@
   }
 
   function setupKeyboard() {
-    document.addEventListener('keydown', e => {
+    function onKeydown(e) {
       const stackRoot  = document.getElementById('stack-root');
       if (!stackRoot || stackRoot.hidden) return;
       const lightboxEl = document.getElementById('lightbox');
       if (lightboxEl && !lightboxEl.hidden) return;
       if (e.key === 'ArrowLeft')  prev();
       if (e.key === 'ArrowRight') next();
-    });
+    }
+    document.addEventListener('keydown', onKeydown);
+    window.StackView.cleanup = () => document.removeEventListener('keydown', onKeydown);
   }
 
   function setupSwipe() {
@@ -317,7 +319,7 @@
   if (nextBtn) nextBtn.addEventListener('click', next);
 
   // Re-fit deck on resize/orientation change (photo items only; series cards use 100% width)
-  new ResizeObserver(() => {
+  const deckResizeObserver = new ResizeObserver(() => {
     const item = stackItems[currentIndex];
     if (item?.type === 'photo') {
       const photo = photos()[item.photoIdx];
@@ -325,7 +327,12 @@
     } else {
       deckEl.style.width = '';
     }
-  }).observe(stageEl);
+  });
+  deckResizeObserver.observe(stageEl);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) deckResizeObserver.disconnect();
+    else deckResizeObserver.observe(stageEl);
+  });
 
   function init() {
     if (window.StackView.isInitialised) return;

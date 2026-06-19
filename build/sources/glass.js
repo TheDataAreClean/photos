@@ -401,8 +401,10 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
   // Download original (cache to avoid re-fetching if outputs are deleted)
   const cachedPath = path.join(imageCacheDir, `${photo.id}.bin`);
   let originalBuf;
+  let servedFromCache = false;
   try {
-    originalBuf = await fs.readFile(cachedPath);
+    originalBuf    = await fs.readFile(cachedPath);
+    servedFromCache = true;
   } catch {
     try {
       originalBuf = await fetchBuffer(displayUrl);
@@ -411,6 +413,12 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
       console.warn(`  Glass watermark: failed to download ${photo.id}: ${err.message}`);
       return;
     }
+  }
+
+  // If the cached file is corrupt and sharp fails, delete the cache so the next
+  // build re-downloads rather than failing permanently on every run.
+  function invalidateCacheOnFailure() {
+    if (servedFromCache) fs.unlink(cachedPath).catch(() => {});
   }
 
   await Promise.all([
@@ -422,6 +430,7 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
         photo.url.download = `/photos/${wmFilename}`;
       } catch (err) {
         console.warn(`  Glass watermark: failed to process ${photo.id}: ${err.message}`);
+        invalidateCacheOnFailure();
       }
     })(),
     thumbExists ? null : (async () => {
@@ -433,6 +442,7 @@ async function watermarkGlassPhoto(photo, imageCacheDir, outputDir, config) {
         photo.url.thumb = `/photos/${thumbFilename}`;
       } catch (err) {
         console.warn(`  Glass thumb: failed to process ${photo.id}: ${err.message}`);
+        invalidateCacheOnFailure();
       }
     })(),
   ]);

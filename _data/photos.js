@@ -85,8 +85,10 @@ module.exports = async function () {
     )
   );
 
-  await pruneStaleAssets(photos, chunks.length, outDir, dataDir);
-  await pruneStaleCache(photos, hiddenFriendlyIds, cacheDir);
+  await Promise.all([
+    pruneStaleAssets(photos, chunks.length, outDir, dataDir),
+    pruneStaleCache(photos, hiddenFriendlyIds, cacheDir),
+  ]);
 
   // Both generators use the same monthly seed so they rotate in sync
   const monthSeed = new Date().getFullYear() * 12 + new Date().getMonth();

@@ -7,7 +7,15 @@ module.exports = {
     // Full URL of your deployed site (no trailing slash).
     // Used for absolute Open Graph image URLs.
     // Can be set via environment variable: SITE_URL=https://example.com npm run build
-    url: process.env.SITE_URL || '',
+    url: (() => {
+      const raw = (process.env.SITE_URL || '').trim().replace(/\/$/, '');
+      if (!raw) return '';
+      try {
+        const u = new URL(raw);
+        if (u.protocol !== 'https:' && u.protocol !== 'http:') return '';
+        return u.origin;
+      } catch { return ''; }
+    })(),
   },
 
   glass: {

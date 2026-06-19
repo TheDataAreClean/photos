@@ -45,24 +45,36 @@
   <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180">
 
-  {# ── Fonts ───────────────────────────────────────────── #}
+  {# ── Fonts — async to avoid render-blocking ──────────── #}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {# ── Glass image CDN ─────────────────────────────────── #}
   <link rel="preconnect" href="https://cdn.glass.photo" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Schoolbell&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0..1,0&icon_names=casino,dashboard_2,info,photo_prints">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Schoolbell&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0..1,0&icon_names=casino,dashboard_2,info,photo_prints" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Schoolbell&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0..1,0&icon_names=casino,dashboard_2,info,photo_prints">
+  </noscript>
 
-  {# ── Styles ──────────────────────────────────────────── #}
+  {# ── Styles: critical (render-blocking) ──────────────── #}
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/desk.css">
   <link rel="stylesheet" href="/styles/grid.css">
   <link rel="stylesheet" href="/styles/photo-card.css">
-  <link rel="stylesheet" href="/styles/lightbox.css">
-  <link rel="stylesheet" href="/styles/photo-page.css">
-  <link rel="stylesheet" href="/styles/stack.css">
   <link rel="stylesheet" href="/styles/view-toggle.css">
-  <link rel="stylesheet" href="/styles/series.css">
+
+  {# ── Styles: deferred (loaded async, not on critical path) #}
+  <link rel="preload" as="style" href="/styles/lightbox.css"   onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" as="style" href="/styles/photo-page.css" onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" as="style" href="/styles/stack.css"      onload="this.onload=null;this.rel='stylesheet'">
+  <link rel="preload" as="style" href="/styles/series.css"     onload="this.onload=null;this.rel='stylesheet'">
+  <noscript>
+    <link rel="stylesheet" href="/styles/lightbox.css">
+    <link rel="stylesheet" href="/styles/photo-page.css">
+    <link rel="stylesheet" href="/styles/stack.css">
+    <link rel="stylesheet" href="/styles/series.css">
+  </noscript>
 </head>
 <body>
 

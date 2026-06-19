@@ -9,7 +9,7 @@
   if (!dataEl) return;
 
   const gridEl = document.getElementById('gallery-root');
-  if (!gridEl) return;
+  if (!gridEl) { console.warn('Gallery: #gallery-root not found'); return; }
 
   const GAP               = 28;
   const MOBILE_BREAKPOINT = 560;
@@ -62,7 +62,8 @@
     const heights = cards.map(card => card.offsetHeight);
 
     cards.forEach((card, i) => {
-      const col = colTops.indexOf(Math.min(...colTops));
+      const min = Math.min(...colTops);
+      const col = colTops.findIndex(v => v === min);
       const x   = pl + col * (colWidth + GAP);
       const y   = colTops[col];
 

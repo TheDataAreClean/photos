@@ -143,8 +143,8 @@ permalink: /
   <div class="series-overlay__strip" id="series-overlay-strip"></div>
 </div>
 
-{# First 60 photos inlined for instant paint; remaining loaded via infinite scroll #}
-<script id="gallery-data" type="application/json">{{ photos | first(60) | json | safe }}</script>
+{# First 30 photos inlined for instant paint; remaining loaded via infinite scroll #}
+<script id="gallery-data" type="application/json">{{ photos | first(30) | json | safe }}</script>
 <script>window.GallerySeriesMeta = {{ series | json | safe }};</script>
 <script src="/scripts/gallery-core.js"></script>
 <script src="/scripts/view-toggle.js"></script>

@@ -1,5 +1,5 @@
 // gallery-core.js — shared card factory and utilities
-// Exposes window.GalleryCore: { makeCard, formatDateStamp, buildBackExif }
+// Exposes window.GalleryCore: { makeCard, makeSeriesCard, formatDateStamp, buildExifDl, copyLink }
 // Consumed by gallery.js (grid), stack.js (stack view), and lightbox.js (action buttons).
 (function () {
   'use strict';
@@ -64,8 +64,8 @@
     return `${mm} ${dd} '${yy}`;
   }
 
-  // ── Build EXIF rows for back face ──────────────────────
-  function buildBackExif(exif) {
+  // ── Build EXIF <dl> — shared by card back and lightbox ──
+  function buildExifDl(exif, className) {
     if (!exif) return null;
     const dash = '—';
     const focal = exif.focalLength35
@@ -80,6 +80,7 @@
       ['ISO',      exif.iso != null  ? String(exif.iso) : dash],
     ];
     const dl = document.createElement('dl');
+    if (className) dl.className = className;
     rows.forEach(([l, v]) => {
       const dt = document.createElement('dt'); dt.textContent = l;
       const dd = document.createElement('dd'); dd.textContent = v;
@@ -159,7 +160,7 @@
 
     back.appendChild(backBody);
 
-    const exifDl = buildBackExif(photo.exif);
+    const exifDl = buildExifDl(photo.exif);
     if (exifDl) {
       const exifWrap = document.createElement('div');
       exifWrap.className = 'photo-card__back-exif';
@@ -356,5 +357,5 @@
     return article;
   }
 
-  window.GalleryCore = { makeCard, makeSeriesCard, formatDateStamp, buildBackExif, copyLink };
+  window.GalleryCore = { makeCard, makeSeriesCard, formatDateStamp, buildExifDl, copyLink };
 })();
