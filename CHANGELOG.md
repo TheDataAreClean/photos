@@ -6,6 +6,19 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-06-19 — v2.2.6
+
+- perf: non-critical CSS (`lightbox.css`, `photo-page.css`, `stack.css`, `series.css`) and Google Fonts now loaded async via `rel="preload" as="style"` with `<noscript>` fallbacks — reduces render-blocking resources
+- fix: `cardForIndex()` live DOM lookup in `lightbox.js` replaces stale `cardEls[]` array snapshot
+- fix: stack.js keydown listener stored by name for `removeEventListener` cleanup; `ResizeObserver` disconnects when page is hidden to avoid wasted work
+- fix: `autoRename()` in `local.js` wraps `fs.rename` in try/catch — failure now warns and continues rather than crashing the build
+- fix: glass.js image cache invalidated on sharp failure so corrupt cached files are re-downloaded next build rather than failing permanently
+- perf: `Promise.all` for parallel prune calls in `_data/photos.js`
+- perf: `gallery.js` `findIndex` uses `Math.min` spread instead of manual loop
+- refactor: `buildExifDl(exif, className)` extracted as single implementation on `window.GalleryCore`; duplicate removed from `lightbox.js`
+- refactor: `config.js` validates `SITE_URL` against http/https protocol before using it
+- fix: `gallery.js` warns on missing `#gallery-root` instead of silently failing
+
 ## 2026-06-19 — v2.2.5
 
 - fix: background changed from wood-grain desk surface (`#251108` + SVG texture) to plain dark (`#111`) — safe-area zones (Dynamic Island, Liquid Glass browser bar) now fill naturally via `html { background-color: var(--bg) }` with no overlay required

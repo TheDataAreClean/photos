@@ -69,8 +69,8 @@ module.exports = async function () {
   console.log(`  Local: ${localPhotos.length} photos`);
   console.log(`  Total: ${photos.length} (after dedup + sort)\n`);
 
-  // Write paginated JSON chunks — gallery.js fetches these for infinite scroll.
-  // Chunk 1 is also inlined on the index page for instant first paint.
+  // Write paginated JSON chunks — gallery.js fetches chunks 2+ for infinite scroll.
+  // Chunk 1 content (60 photos) is also inlined in index.njk for instant first paint.
   const chunks = [];
   for (let i = 0; i < photos.length; i += CHUNK_SIZE) {
     chunks.push(photos.slice(i, i + CHUNK_SIZE));

@@ -31,7 +31,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `_data/siteConfig.js` | Exposes `config.site` to Nunjucks templates |
 | `_data/series.js` | Exposes `loadSeries()` map (slug → series meta) to templates |
 | `_data/seriesArray.js` | Same data as `series.js`, as an array — for iteration in templates |
-| `_includes/layouts/base.njk` | HTML shell: `<head>`, CSS links, OG tags, feed autodiscovery |
+| `_includes/layouts/base.njk` | HTML shell: `<head>`, CSS (critical sync + deferred async), OG tags, feed autodiscovery |
 | `src/index.njk` | Gallery index — masonry grid, infinite scroll, lightbox, stack view |
 | `src/feed.njk` | Atom feed → `dist/feed.xml` |
 | `src/photos/photo.njk` | Per-photo permalink pages (Eleventy pagination, size: 1) |
@@ -125,7 +125,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 
 ## Infinite scroll
 
-Photos split into 60-photo chunks at `dist/data/photos-N.json`. Chunk 1 is inlined on the index page for instant first paint. `gallery.js` fetches subsequent chunks via `IntersectionObserver` on `#scroll-sentinel`. `window.GalleryPhotos` is the live array — `lightbox.js` and `stack.js` hold a reference (not a copy) so they automatically cover newly loaded photos.
+Photos split into 60-photo chunks at `dist/data/photos-N.json`. The first 60 photos (chunk 1) are inlined in `index.njk` as `#gallery-data` for instant first paint — no network request for the initial render. `gallery.js` fetches chunks 2+ via `IntersectionObserver` on `#scroll-sentinel`. `window.GalleryPhotos` is the live array — `lightbox.js` and `stack.js` hold a reference (not a copy) so they automatically cover newly loaded photos.
 
 ---
 
@@ -155,7 +155,7 @@ All design values live in `src/styles/base.css` as `:root` custom properties. Ne
 | Durations | `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s) |
 | Folder/series colours | `--folder-icon-light/dark`, `--folder-tab-light/dark`, `--folder-back-light/dark`, `--folder-face-light/dark` — manila folder card gradients |
 
-**Intentional raw values** (not tokens): grain gradients in `desk.css` (texture-specific rgba), shadow layers in `photo-card.css` / `lightbox.css` / `stack.css` (distinct visual weights), safe-area fades in `desk.css` (`#000` — pure black regardless of theme).
+**Intentional raw values** (not tokens): shadow layers in `photo-card.css` / `lightbox.css` / `stack.css` (distinct visual weights), literal `px` gradient stops in `lightbox.css` `#lightbox::before` (safe-area fades — `env()` as a gradient stop fails silently on iOS Safari).
 
 ### Breakpoints
 
@@ -170,9 +170,9 @@ Two distinct thresholds — intentionally different:
 
 All `:hover` rules are inside `@media (hover: hover)` — prevents iOS Safari sticky-hover. When combining `:hover` and `:focus-visible`, split them: `:focus-visible` stays outside so keyboard nav works on all devices.
 
-### Mobile safe-area edge fades
+### Safe-area zones (Dynamic Island / Liquid Glass browser bar)
 
-`.fade-top` and `.fade-bottom` are `position: fixed` in `base.njk`, `display: none` on desktop, active at `max-width: 560px`. `z-index: 40` — above page content (1), below view-toggle (50) and lightbox (1000). Two separate elements (not one with stacked gradients) because `calc(env() + px)` inside `linear-gradient()` fails silently on iOS Safari.
+`html { background-color: var(--bg) }` fills the iOS safe-area zones naturally — no overlay required. `viewport-fit=cover` is intentionally absent so the system chrome stays in sync with the page background. Inside the lightbox, `#lightbox::before` provides a dual-gradient fade (top + bottom) using literal `px` stops — `env()` used directly as a gradient color-stop fails silently on iOS Safari and drops the entire `background` declaration.
 
 ---
 
