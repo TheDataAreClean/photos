@@ -14,9 +14,8 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addWatchTarget('src/scripts/');
 
   // ── Filters ───────────────────────────────────────────
-  // Safe JSON serialisation for inline <script> blocks — escape `</` so a
-  // string containing "</script>" can't close the tag early
-  eleventyConfig.addFilter('json', val => JSON.stringify(val).replace(/<\//g, '<\\/'));
+  // Safe JSON serialisation for inline <script> blocks
+  eleventyConfig.addFilter('json', val => JSON.stringify(val));
 
   // Ensure a URL is absolute — prepends siteUrl only for root-relative paths
   eleventyConfig.addFilter('absUrl', (url, siteUrl) => {
@@ -59,17 +58,14 @@ module.exports = function (eleventyConfig) {
     return isNaN(d) ? '' : d.toISOString();
   });
 
-  // Plain text → HTML paragraphs (for Atom <content>). Output is wrapped in
-  // <![CDATA[...]]> in feed.njk, so escape any literal "]]>" that would
-  // otherwise close the CDATA section early.
+  // Plain text → HTML paragraphs (for Atom <content>)
   eleventyConfig.addFilter('toParagraphs', text => {
     if (!text) return '';
     return text.split(/\n{2,}/)
       .map(p => p.trim())
       .filter(Boolean)
       .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
-      .join('')
-      .replace(/]]>/g, ']]&gt;');
+      .join('');
   });
 
   // "Monday, January 1, 2024"

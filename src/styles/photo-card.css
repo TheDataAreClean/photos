@@ -5,8 +5,9 @@
   cursor: pointer;
   position: relative;
 
-  /* Rotation is set per-card via inline CSS custom property */
-  transform: rotate(var(--rotation, 0deg));
+  /* Rotation is set per-card via inline CSS custom property.
+     translateZ(0) forces GPU compositing — eliminates jagged aliased edges on rotated cards. */
+  transform: rotate(var(--rotation, 0deg)) translateZ(0);
   transform-origin: center center;
 
   transition: transform var(--dur-fast) var(--ease-out);
@@ -43,7 +44,7 @@
    @media (hover: hover) excludes touch devices where :hover sticks on scroll. */
 @media (hover: hover) {
   .photo-card:hover {
-    transform: rotate(var(--rotation, 0deg)) translateY(-9px) scale(1.028);
+    transform: rotate(var(--rotation, 0deg)) translateY(-9px) scale(1.028) translateZ(0);
     z-index: 10;
   }
 
@@ -53,7 +54,7 @@
 }
 
 .photo-card:focus-visible {
-  transform: rotate(var(--rotation, 0deg)) translateY(-9px) scale(1.028);
+  transform: rotate(var(--rotation, 0deg)) translateY(-9px) scale(1.028) translateZ(0);
   z-index: 10;
 }
 
@@ -62,7 +63,7 @@
 }
 
 .photo-card:active {
-  transform: rotate(var(--rotation, 0deg)) translateY(-4px) scale(1.012);
+  transform: rotate(var(--rotation, 0deg)) translateY(-4px) scale(1.012) translateZ(0);
   transition-duration: 0.08s;
 }
 
@@ -112,7 +113,7 @@
   -webkit-transform-style: preserve-3d;
   /* perspective inline so no parent stacking-context surface is created */
   transform: perspective(900px) rotateY(0deg);
-  transition: transform var(--dur-flip) cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  transition: transform 0.55s cubic-bezier(0.45, 0.05, 0.55, 0.95);
   /* will-change omitted — applying it statically creates a GPU layer for every card.
      Browsers promote automatically when the 3D flip transition actually runs. */
 }

@@ -12,17 +12,32 @@
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const fs   = require('fs/promises');
 const path = require('path');
-const { ensureSchoolbell } = require('./utils/fonts');
+const https = require('https');
+const http  = require('http');
 
+const FONT_CSS      = 'https://fonts.googleapis.com/css2?family=Schoolbell&display=swap';
 const FONT_TTF_CACHE = path.resolve('.cache/schoolbell.ttf');
 const OUT_PATH      = path.resolve('build/assets/watermark.png');
 const TEXT          = '@thedataareclean';
 
 async function main() {
   // ── 1. Ensure Schoolbell TTF is cached ───────────────
-  console.log('  Watermark: ensuring Schoolbell TTF is cached…');
-  const fontPath = await ensureSchoolbell(FONT_TTF_CACHE);
-  if (!fontPath) throw new Error('Could not download Schoolbell font from any source');
+  let fontPath = FONT_TTF_CACHE;
+  try {
+    await fs.access(fontPath);
+  } catch {
+    console.log('  Watermark: downloading Schoolbell TTF…');
+    // Request TTF by sending an old browser UA
+    const css = await fetchText(FONT_CSS, {
+      'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)',
+    });
+    const match = css.match(/url\((https:\/\/fonts\.gstatic\.com[^)]+)\)/);
+    if (!match) throw new Error('Could not find Schoolbell font URL in Google Fonts CSS');
+    const buf = await fetchBuffer(match[1]);
+    await fs.mkdir(path.dirname(fontPath), { recursive: true });
+    await fs.writeFile(fontPath, buf);
+    console.log('  Watermark: Schoolbell TTF cached');
+  }
 
   // ── 2. Register font and measure text ────────────────
   GlobalFonts.registerFromPath(fontPath, 'Schoolbell');
@@ -61,6 +76,35 @@ async function main() {
   const png = canvas.toBuffer('image/png');
   await fs.writeFile(OUT_PATH, png);
   console.log(`  Watermark: PNG saved → ${path.relative(process.cwd(), OUT_PATH)} (${textW + pad*2}×${textH + pad*2}px)`);
+}
+
+// ── HTTP helpers ──────────────────────────────────────
+function fetchText(url, headers = {}) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, { headers }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
+        return resolve(fetchText(res.headers.location, headers));
+      let data = '';
+      res.on('data', c => data += c);
+      res.on('end', () => resolve(data));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+function fetchBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https') ? https : http;
+    lib.get(url, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location)
+        return resolve(fetchBuffer(res.headers.location));
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
 }
 
 main().catch(err => { console.error('gen-watermark failed:', err.message); process.exit(1); });

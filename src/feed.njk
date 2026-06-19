@@ -9,8 +9,7 @@ eleventyExcludeFromCollections: true
   <subtitle>{{ siteConfig.description }}</subtitle>
   <link href="{{ siteConfig.url }}/feed.xml" rel="self" type="application/atom+xml"/>
   <link href="{{ siteConfig.url }}/" rel="alternate" type="text/html"/>
-  {%- set newest = (photos | feedPhotos)[0] %}
-  <updated>{{ newest.dateAdded | laterDate(newest.sidecarUpdatedAt) | dateToRfc3339 }}</updated>
+  <updated>{{ (photos | feedPhotos)[0].dateAdded | dateToRfc3339 }}</updated>
   <author>
     <name>Arpit</name>
     <uri>{{ siteConfig.url }}</uri>

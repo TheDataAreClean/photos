@@ -11,6 +11,7 @@
   // ── State ─────────────────────────────────────────────
   let photos = [];
   let currentIndex = 0;
+  let cardEls = [];      // live NodeList snapshot, refreshed on open
   let originCardEl = null; // card that opened the lightbox — used by flipClose in stack mode
   let metaOpen = false;  // resets to false each time lightbox opens
   let pendingWrap = false;
@@ -300,16 +301,9 @@
     anim.onfinish = () => { printEl.style.willChange = ''; };
   }
 
-  // Live lookup by data-index — series photos don't have their own .photo-card,
-  // so positional arrays drift out of sync with the photos[] index. Querying by
-  // data-index also picks up cards rendered by infinite scroll after open().
-  function cardForIndex(index) {
-    return document.querySelector(`.photo-card[data-index="${index}"]`);
-  }
-
   // flipClose is the reverse: start at the print's current natural position,
   // end at the card's position. Uses originCardEl (captured at open time) instead of
-  // cardForIndex(currentIndex) because lightbox-internal navigation changes currentIndex
+  // cardEls[currentIndex] because lightbox-internal navigation changes currentIndex
   // while the origin card stays the same, and stack view has only one card in the DOM.
   //
   // Falls back to zoomClose when the card is not in the viewport — animating toward an
@@ -342,7 +336,7 @@
   }
 
   function flipClose(onDone) {
-    const cardEl = originCardEl || cardForIndex(currentIndex);
+    const cardEl = originCardEl || cardEls[currentIndex];
 
     // If no card or card is off-screen, use a clean zoom-out instead of FLIP —
     // animating toward an off-screen rect produces non-uniform scale that distorts the image.
@@ -381,6 +375,8 @@
   function open(index, cardEl) {
     if (!photos[index]) return;
 
+    // Snapshot current card elements for FLIP + return focus
+    cardEls = Array.from(document.querySelectorAll('.photo-card'));
     originCardEl = cardEl; // stored for flipClose — stack mode has only one card in DOM
 
     loadPhoto(index);
@@ -406,7 +402,7 @@
       lightboxEl.hidden = true;
       document.body.style.overflow = '';
       lightboxEl.scrollTop = 0;
-      const returnCard = cardForIndex(currentIndex);
+      const returnCard = cardEls[currentIndex];
       if (returnCard) returnCard.focus();
     };
     // FLIP/zoom close only on desktop — on mobile just fade out

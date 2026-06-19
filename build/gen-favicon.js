@@ -12,7 +12,7 @@ const fs   = require('fs/promises');
 const path = require('path');
 
 // ── Variant 4 design ──────────────────────────────────────────────────────
-const BG    = '#251108';
+const BG    = '#111';
 const BACK  = '#7a5e38';
 const FRONT = '#c4a882';
 const VARIANT = { backRot: -5, backOX: -1, backOY: 2, frontRot: 9, frontOX: 2, frontOY: -1 };

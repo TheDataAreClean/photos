@@ -13,7 +13,7 @@
 
 .gallery-grid.is-ready {
   opacity: 1;
-  transition: opacity var(--dur-slower) var(--ease-out);
+  transition: opacity 0.5s var(--ease-out);
 }
 
 .gallery-empty {
@@ -35,9 +35,9 @@
 
 /* ── Mobile: single column, normal document flow ─────── */
 @media (max-width: 560px) {
-  /* Establish an explicit stacking context below the body::after fade sheets (z-index: 20).
-     Without this, photo cards with transform:rotate() create z-index:auto stacking
-     contexts that can paint above the fixed overlay on iOS Safari. */
+  /* Explicit stacking context — without z-index here, photo cards with
+     transform:rotate() create z-index:auto contexts that can paint above
+     fixed overlays (lightbox, view-toggle) on iOS Safari. */
   #gallery-root {
     position: relative;
     z-index: 1;

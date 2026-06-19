@@ -111,19 +111,6 @@
     });
   }
 
-  // Series cards render once; if later chunks add more photos to the same
-  // series, the count badge and aria-label would otherwise stay stale at
-  // the count from the first chunk.
-  function updateSeriesCardCount(slug) {
-    const card = gridEl.querySelector(`.series-card[data-series="${slug}"]`);
-    if (!card) return;
-    const count = window.GallerySeries[slug].photos.length;
-    const countEl = card.querySelector('.series-card__count');
-    if (countEl) countEl.textContent = `${count} photo${count === 1 ? '' : 's'}`;
-    const title = window.GallerySeries[slug].title || slug;
-    card.setAttribute('aria-label', `Open series: ${title} (${count} photos)`);
-  }
-
   // ── Attach click + keyboard events to a series card ───
   function attachSeriesEvents(card, slug) {
     function openSeries() {
@@ -198,10 +185,6 @@
             }, { once: true });
           });
           fragment.appendChild(card);
-        } else {
-          // Series card already rendered from an earlier chunk — this photo
-          // brings the running total up, so refresh the count badge.
-          updateSeriesCardCount(slug);
         }
         // Remaining series photos: skip individual card
         return;

@@ -16,7 +16,6 @@ const http   = require('http');
 const fs     = require('fs/promises');
 const path   = require('path');
 const config = require('../config');
-const { ensureSchoolbell } = require('./utils/fonts');
 
 const W = 1200;
 const H = 630;
@@ -156,10 +155,34 @@ async function ensureFonts() {
     }
   }
 
-  // Download Schoolbell if not cached — shared with gen-watermark.js
+  // Download Schoolbell if not cached
+  // Primary: google/fonts GitHub (stable main branch). Fallback: Google Fonts gstatic.
   if (!(await fileExists(schoolbellPath))) {
-    const fontPath = await ensureSchoolbell(schoolbellPath);
-    if (!fontPath) {
+    let downloaded = false;
+    try {
+      const buf = await fetchBuf(
+        'https://github.com/google/fonts/raw/main/apache/schoolbell/Schoolbell-Regular.ttf'
+      );
+      await fs.writeFile(schoolbellPath, buf);
+      downloaded = true;
+    } catch { /* fall through */ }
+
+    if (!downloaded) {
+      try {
+        const css = (await fetchBuf(
+          'https://fonts.googleapis.com/css?family=Schoolbell',
+          { 'User-Agent': 'Mozilla/4.0 (compatible; MSIE 6.0)' }
+        )).toString();
+        const match = css.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/);
+        if (match) {
+          const buf = await fetchBuf(match[1]);
+          await fs.writeFile(schoolbellPath, buf);
+          downloaded = true;
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!downloaded) {
       console.warn('  OG image: Schoolbell download failed — attribution will use cursive fallback');
     }
   }
@@ -199,22 +222,8 @@ async function getImageBuffer(photo, distDir) {
 
 // ── Canvas drawing ────────────────────────────────────────────────────────
 function drawBackground(ctx) {
-  // Dark teak base
-  ctx.fillStyle = '#251108';
+  ctx.fillStyle = '#111';
   ctx.fillRect(0, 0, W, H);
-
-  // Warm amber glow — approximates CSS radial-gradient(ellipse 160% 90% at 50% 45%, …)
-  ctx.save();
-  ctx.transform(1.6, 0, 0, 0.9, 0, 0);
-  const cx = (W / 2) / 1.6;
-  const cy = (H * 0.45) / 0.9;
-  const r  = W * 0.5 / 1.6;
-  const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  grd.addColorStop(0,    'rgba(165,82,18,0.28)');
-  grd.addColorStop(0.65, 'rgba(165,82,18,0)');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, W / 1.6, H / 0.9);
-  ctx.restore();
 }
 
 function drawVignette(ctx) {

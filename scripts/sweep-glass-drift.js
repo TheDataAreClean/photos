@@ -7,7 +7,7 @@
 const fs     = require('fs');
 const path   = require('path');
 const matter = require('gray-matter');
-const { glassPostId } = require('../build/sources/glass');
+const { toSlug, dateTitleStem } = require('../build/utils/slug');
 
 const SIDECARS_DIR = path.resolve('glass-sidecars');
 const raw = JSON.parse(fs.readFileSync('.cache/glass-raw.json', 'utf8'));
@@ -24,7 +24,13 @@ for (const file of fs.readdirSync(SIDECARS_DIR)) {
 let driftCount = 0;
 
 for (const p of raw) {
-  const { id } = glassPostId(p, p.exif?.date_time_original);
+  const descSnippet = (p.description || '').trim().split(/[.\n]/)[0].trim();
+  const dateStr  = p.exif?.date_time_original || p.created_at || null;
+  const date     = dateStr ? new Date(dateStr) : null;
+  const stem     = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
+  const datePart = stem.slice(0, 10);
+  const rest     = stem.slice(11);
+  const id       = rest ? `${datePart}-glass-${rest}` : `${datePart}-glass`;
 
   const directPath = path.join(SIDECARS_DIR, `${id}.md`);
   const sidecarPath = fs.existsSync(directPath) ? directPath : autoIdMap.get(id);
