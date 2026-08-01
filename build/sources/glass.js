@@ -21,6 +21,7 @@ async function fetchGlass(config, fresh = false) {
   if (!config.glass.username) return [];
 
   await fs.mkdir(SIDECARS_DIR, { recursive: true });
+  await fs.mkdir(path.resolve(config.build.cacheDir), { recursive: true });
 
   const cacheFile = path.join(path.resolve(config.build.cacheDir), 'glass-raw.json');
 
