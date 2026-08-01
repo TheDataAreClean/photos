@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-08-01 — v2.2.7
+
+- fix: `fetchGlass()` in `glass.js` now creates `.cache/` before writing `glass-raw.json` — cold-cache CI runs (no prior `actions/cache` hit) failed the "Sync Glass API" step with `ENOENT` and aborted the whole deploy before Build/Upload/Deploy could run
+
+---
+
 ## 2026-06-19 — v2.2.6
 
 - perf: non-critical CSS (`lightbox.css`, `photo-page.css`, `stack.css`, `series.css`) and Google Fonts now loaded async via `rel="preload" as="style"` with `<noscript>` fallbacks — reduces render-blocking resources
