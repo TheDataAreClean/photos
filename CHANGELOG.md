@@ -6,7 +6,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
-## UNRELEASED
+## 2026-08-02 — v2.2.8
 
 - fix: `local/*` added to `.gitignore` (keeping `local/.gitkeep`) — original source photos carry unstripped GPS/EXIF before the build pipeline processes them; a broad `git add` could otherwise commit raw location data to this public repo
 
