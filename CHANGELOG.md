@@ -6,6 +6,12 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## UNRELEASED
+
+- fix: `local/*` added to `.gitignore` (keeping `local/.gitkeep`) — original source photos carry unstripped GPS/EXIF before the build pipeline processes them; a broad `git add` could otherwise commit raw location data to this public repo
+
+---
+
 ## 2026-08-01 — v2.2.7
 
 - fix: `fetchGlass()` in `glass.js` now creates `.cache/` before writing `glass-raw.json` — cold-cache CI runs (no prior `actions/cache` hit) failed the "Sync Glass API" step with `ENOENT` and aborted the whole deploy before Build/Upload/Deploy could run
