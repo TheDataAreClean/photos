@@ -1,6 +1,6 @@
 :root {
   /* ── Surfaces ────────────────────────────────────────── */
-  --bg:           #111;            /* page background                 */
+  --bg:           #111;            /* page background — also hardcoded in base.njk's pre-load styles, update both */
   --paper:        #f4efe6;        /* light text on dark bg           */
   --paper-aged:   #ddd6cc;        /* photo print / card surface      */
 

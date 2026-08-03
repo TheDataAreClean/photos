@@ -5,6 +5,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy('src/styles');
   eleventyConfig.addPassthroughCopy('src/scripts');
   eleventyConfig.addPassthroughCopy('src/images');
+  eleventyConfig.addPassthroughCopy('src/robots.txt');
 
   // Favicon files are generated to dist/ by build/gen-favicon.js (monthly variants).
   // Do NOT add passthrough copies here — they would overwrite the generated versions.

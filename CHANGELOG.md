@@ -6,6 +6,15 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## 2026-08-03 — v2.3.0
+
+- add: `src/robots.txt` (passthrough-copied to `dist/robots.txt`) disallows all crawlers, with named entries for GPTBot, ClaudeBot, Google-Extended, CCBot, and other AI training/retrieval bots — site is not meant to be indexed or used for LLM training
+- add: `<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">` in `base.njk` head, applied to every page
+- fix: `#lightbox::before` safe-area gradient fade removed from `lightbox.css` — `html { background-color: var(--bg) }` already fills the iOS safe-area zones, making the overlay redundant; stale references to it in `.lightbox__layout`/`.lightbox__close` comments and in `APP.md` cleaned up to match
+- docs: `base.njk`'s pre-CSS-load inline background colours (`html` style attribute, `<style>` block, `theme-color` meta) cross-referenced with `--bg` in `base.css` via comments — these can't reference the CSS token itself since they paint before the stylesheet loads, so a comment now flags that all four must be updated together
+
+---
+
 ## 2026-08-02 — v2.2.8
 
 - fix: `local/*` added to `.gitignore` (keeping `local/.gitkeep`) — original source photos carry unstripped GPS/EXIF before the build pipeline processes them; a broad `git add` could otherwise commit raw location data to this public repo

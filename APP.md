@@ -155,7 +155,7 @@ All design values live in `src/styles/base.css` as `:root` custom properties. Ne
 | Durations | `--dur-fast` (0.15s), `--dur-med` (0.22s), `--dur-slow` (0.35s) |
 | Folder/series colours | `--folder-icon-light/dark`, `--folder-tab-light/dark`, `--folder-back-light/dark`, `--folder-face-light/dark` — manila folder card gradients |
 
-**Intentional raw values** (not tokens): shadow layers in `photo-card.css` / `lightbox.css` / `stack.css` (distinct visual weights), literal `px` gradient stops in `lightbox.css` `#lightbox::before` (safe-area fades — `env()` as a gradient stop fails silently on iOS Safari).
+**Intentional raw values** (not tokens): shadow layers in `photo-card.css` / `lightbox.css` / `stack.css` (distinct visual weights).
 
 ### Breakpoints
 
@@ -163,7 +163,7 @@ Two distinct thresholds — intentionally different:
 
 | px | What switches |
 |---|---|
-| 560 | Mobile layout: single-column grid, safe-area fades, mobile header padding, stack card sizing |
+| 560 | Mobile layout: single-column grid, mobile header padding, stack card sizing |
 | 680 | Lightbox layout: two-column → stacked, FLIP animation enabled/disabled, meta panel default open/closed |
 
 ### Hover rules
@@ -172,7 +172,7 @@ All `:hover` rules are inside `@media (hover: hover)` — prevents iOS Safari st
 
 ### Safe-area zones (Dynamic Island / Liquid Glass browser bar)
 
-`html { background-color: var(--bg) }` fills the iOS safe-area zones naturally — no overlay required. `viewport-fit=cover` is intentionally absent so the system chrome stays in sync with the page background. Inside the lightbox, `#lightbox::before` provides a dual-gradient fade (top + bottom) using literal `px` stops — `env()` used directly as a gradient color-stop fails silently on iOS Safari and drops the entire `background` declaration.
+`html { background-color: var(--bg) }` fills the iOS safe-area zones naturally — no overlay required. `viewport-fit=cover` is intentionally absent so the system chrome stays in sync with the page background.
 
 ---
 

@@ -48,7 +48,7 @@ New Glass photos won't appear until the cache expires. Use `npm run build:fresh`
 On `<html>`: fixed children behave as `position: absolute`. On `<body>`: real child elements may be contained by body rather than the viewport on some iOS versions. The codebase uses `overflow-x: clip` on `body` (see `base.css`) — same visual clipping result, does not create a scroll container, does not trap fixed elements. Never revert this to `hidden`.
 
 **Any CSS function inside `linear-gradient` stops fails silently on iOS Safari**
-`calc(env() + px)`, bare `env()`, `max(env(), px)`, and similar expressions as gradient color-stops are silently dropped — the entire `background` declaration is invalidated and the element has no background. Use only literal `px` values as stops; put `calc(env() + px)` only in regular CSS properties like `height`. See `lightbox.css` `#lightbox::before` for the working pattern.
+`calc(env() + px)`, bare `env()`, `max(env(), px)`, and similar expressions as gradient color-stops are silently dropped — the entire `background` declaration is invalidated and the element has no background. Use only literal `px` values as stops; put `calc(env() + px)` only in regular CSS properties like `height`.
 
 **OG image text invisible in headless CI without system fonts**
 `@napi-rs/canvas` uses Skia — `sans-serif` and `cursive` resolve to nothing on a bare Ubuntu runner. CI installs `fonts-open-sans fonts-liberation` via apt. Don't remove that step.

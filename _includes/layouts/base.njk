@@ -1,12 +1,19 @@
 <!DOCTYPE html>
+{# Inline/pre-load background colours below must match --bg in base.css by hand —
+   they paint before that stylesheet loads, so they can't reference the token itself.
+   Update all four together if --bg ever changes. #}
 <html lang="en" style="background-color:#111">
 <head>
   <meta charset="UTF-8">
+  <style>html,body{background:#111}</style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#111111">
+  <meta name="color-scheme" content="dark">
   <title>{% if pageTitle %}{{ pageTitle }} — {% endif %}{{ siteConfig.title }}</title>
 
   {# ── Primary meta ────────────────────────────────────── #}
+  {# This site is intentionally excluded from search/LLM indexing — see robots.txt too #}
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
   <meta name="description" content="{{ ogDescription or siteConfig.description }}">
   <meta name="author" content="Arpit (@thedataareclean)">
   {% if siteConfig.url %}<link rel="canonical" href="{{ siteConfig.url }}{{ page.url }}">{% endif %}

@@ -404,26 +404,11 @@
     overflow: hidden;
   }
 
-  /* Edge fades — softens the lightbox at top (close button area) and bottom
-     (controls area). Literal px stops only — env() as a gradient color-stop
-     fails silently on iOS Safari and drops the entire background declaration.
-     z-index: 5 within the lightbox stacking context; layout and close button
-     are at z-index: 6 so they paint above this overlay. */
-  #lightbox::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      linear-gradient(to bottom, rgb(10, 6, 3) 0px, transparent 60px),
-      linear-gradient(to top,   rgb(10, 6, 3) 0px, transparent 40px);
-    pointer-events: none;
-    z-index: 5;
-  }
 
   .lightbox__layout {
     flex-direction: column;
     align-items: stretch;
-    z-index: 6; /* above the ::before fade sheets */
+    z-index: 6;
     padding: 0;
     gap: 0;
     height: 100dvh;           /* fill full viewport */
@@ -532,7 +517,6 @@
     border-top: 1px solid var(--accent-faint);
   }
 
-  /* Close button above the safe-area fade sheets */
   .lightbox__close {
     z-index: 6;
   }
