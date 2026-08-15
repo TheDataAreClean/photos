@@ -21,7 +21,7 @@ const path = require('path');
 const matter = require('gray-matter');
 const { toSlug } = require('../build/utils/slug');
 
-const SIDECARS_DIR = path.resolve(__dirname, '../glass-sidecars');
+const SIDECARS_DIR = path.resolve(__dirname, '../sidecars');
 const DRY_RUN      = !process.argv.includes('--apply');
 
 async function main() {
@@ -29,7 +29,7 @@ async function main() {
   try {
     entries = await fs.readdir(SIDECARS_DIR);
   } catch {
-    console.log('glass-sidecars/ directory not found.');
+    console.log('sidecars/ directory not found.');
     return;
   }
 

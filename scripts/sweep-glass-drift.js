@@ -9,7 +9,7 @@ const path   = require('path');
 const matter = require('gray-matter');
 const { toSlug, dateTitleStem } = require('../build/utils/slug');
 
-const SIDECARS_DIR = path.resolve('glass-sidecars');
+const SIDECARS_DIR = path.resolve('sidecars');
 const raw = JSON.parse(fs.readFileSync('.cache/glass-raw.json', 'utf8'));
 
 // Build glassAutoId -> filepath map
@@ -65,7 +65,7 @@ for (const p of raw) {
     console.log('--- Sidecar (current) ---');
     console.log(sidecarBody);
     if (process.env.GITHUB_ACTIONS) {
-      console.log(`::warning file=glass-sidecars/${file}::Description on Glass differs from the sidecar body — review and update manually if the Glass edit should win.`);
+      console.log(`::warning file=sidecars/${file}::Description on Glass differs from the sidecar body — review and update manually if the Glass edit should win.`);
     }
   }
 
@@ -84,7 +84,7 @@ for (const p of raw) {
     console.log('--- Sidecar tags (current) ---', sidecarTags);
     console.log('--- New on Glass, missing from sidecar ---', newTags);
     if (process.env.GITHUB_ACTIONS) {
-      console.log(`::warning file=glass-sidecars/${file}::New Glass categories not in sidecar tags: ${newTags.join(', ')} — review and add manually if they should be included.`);
+      console.log(`::warning file=sidecars/${file}::New Glass categories not in sidecar tags: ${newTags.join(', ')} — review and add manually if they should be included.`);
     }
   }
 }

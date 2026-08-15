@@ -10,7 +10,7 @@ const { applyWatermark, fetchBuffer } = require('../watermark');
 
 const GLASS_API    = 'https://glass.photo/api/v3/users';
 const PAGE_SIZE    = 50;
-const SIDECARS_DIR = path.resolve('glass-sidecars');
+const SIDECARS_DIR = path.resolve('sidecars');
 
 async function fsExists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -210,13 +210,10 @@ const SIDECAR_STUB = (photo) => {
   const body = photo.description
     ? photo.description.trim().replace(/^\S+\s*/, '')
     : '';
-  const tags = photo.tags?.length
-    ? `tags:\n${photo.tags.map(t => `  - ${t}`).join('\n')}\n\n`
-    : '';
   return `---
 title:${ymlStr(photo.title)}
 
-${tags}# Edit any value below — leave blank to fall back to what Glass provides
+# Edit any value below — leave blank to fall back to what Glass provides
 overrideExif:
   camera:${ymlStr(e.camera)}
   lens:${ymlStr(e.lens)}
@@ -233,13 +230,6 @@ ${body}
 `.trimEnd() + '\n';
 };
 
-// ── Insert a tags block (from Glass categories) after the title line ──
-function backfillTags(sidecarPath, content, tags) {
-  const tagsBlock = `tags:\n${tags.map(t => `  - ${t}`).join('\n')}\n`;
-  const updated = content.replace(/^(title:.*\n)/m, `$1\n${tagsBlock}`);
-  return fs.writeFile(sidecarPath, updated, 'utf8').then(() => updated);
-}
-
 async function ensureSidecars(photos, autoIdMap) {
   await Promise.all(photos.map(async photo => {
     const found = await findSidecarPath(photo.id, autoIdMap);
@@ -255,17 +245,8 @@ async function mergeSidecars(photos, autoIdMap) {
     let sidecar = null;
     let sidecarMtime = null;
     try {
-      let content = await fs.readFile(sidecarPath, 'utf8');
+      const content = await fs.readFile(sidecarPath, 'utf8');
       sidecar = matter(content);
-
-      // Backfill tags from Glass categories on sidecars that don't have a
-      // tags key yet — written once, then editable/overridable like any
-      // other sidecar field.
-      if (sidecar.data.tags === undefined && photo.tags?.length) {
-        content = await backfillTags(sidecarPath, content, photo.tags);
-        sidecar = matter(content);
-      }
-
       sidecarMtime = (await fs.stat(sidecarPath)).mtime.toISOString();
     } catch { return photo; }
 

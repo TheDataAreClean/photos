@@ -67,12 +67,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add glass-sidecars/ local/
+          git add sidecars/
           if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            git commit -m "Chore: auto-sync new Glass/local sidecars [skip ci]"
+            git commit -m "Chore: auto-sync new sidecars [skip ci]"
             git push origin main
           fi
 

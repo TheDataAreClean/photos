@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const SIDECARS_DIR = path.join(__dirname, '..', 'glass-sidecars');
+const SIDECARS_DIR = path.join(__dirname, '..', 'sidecars');
 
 const TITLE_RE = /^title: "([^".]+)\.\"$/m;
 

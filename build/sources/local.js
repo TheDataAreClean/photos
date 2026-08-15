@@ -9,7 +9,8 @@ const { dateTitleStem, isCleanStem } = require('../utils/slug');
 const { ov, ymlStr, ymlNum }         = require('../utils/sidecar');
 const { applyWatermark }             = require('../watermark');
 
-const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.tiff', '.tif']);
+const IMAGE_EXTS  = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.tiff', '.tif']);
+const SIDECARS_DIR = path.resolve('sidecars');
 
 async function fsExists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -35,7 +36,10 @@ async function processLocal(config) {
   }
 
   const outputDir = path.join(path.resolve(config.build.outputDir), 'photos');
-  await fs.mkdir(outputDir, { recursive: true });
+  await Promise.all([
+    fs.mkdir(outputDir, { recursive: true }),
+    fs.mkdir(SIDECARS_DIR, { recursive: true }),
+  ]);
 
   const cleanFiles = await autoRename(imageFiles, photosDir);
 
@@ -70,7 +74,7 @@ async function autoRename(imageFiles, photosDir) {
 
     let title = null;
     try {
-      const raw     = await fs.readFile(path.join(photosDir, `${stem}.md`), 'utf8');
+      const raw     = await fs.readFile(path.join(SIDECARS_DIR, `${stem}.md`), 'utf8');
       const sidecar = matter(raw);
       title = sidecar.data?.title || null;
     } catch { /* no sidecar yet */ }
@@ -92,8 +96,8 @@ async function autoRename(imageFiles, photosDir) {
       return filename;
     }
 
-    const oldSidecar = path.join(photosDir, `${stem}.md`);
-    const newSidecar = path.join(photosDir, `${newStem}.md`);
+    const oldSidecar = path.join(SIDECARS_DIR, `${stem}.md`);
+    const newSidecar = path.join(SIDECARS_DIR, `${newStem}.md`);
     try {
       await fs.access(oldSidecar);
       await fs.rename(oldSidecar, newSidecar);
@@ -123,7 +127,7 @@ async function processOne(filename, photosDir, outputDir, config) {
       fs.stat(filepath),
     ]);
 
-    const sidecar        = await loadSidecar(photosDir, stem, exifData, exifData.dateTaken);
+    const sidecar        = await loadSidecar(SIDECARS_DIR, stem, exifData, exifData.dateTaken);
     const overrides      = sidecar?.data?.overrideExif || {};
     const finalDateTaken = ov(sidecar?.data?.dateTaken, exifData.dateTaken);
 
@@ -169,7 +173,7 @@ async function processOne(filename, photosDir, outputDir, config) {
       id,
       source:      'local',
       title:       ov(sidecar?.data?.title, null),
-      description: ov(sidecar?.content?.trim(), null),
+      description: ov(stripImageEmbeds(sidecar?.content), null),
       altText:     ov(sidecar?.data?.title, stem.replace(/-/g, ' ')),
       url: {
         full:     `/photos/${filename}`,
@@ -201,7 +205,6 @@ async function processOne(filename, photosDir, outputDir, config) {
 function sidecarStub(exifData, dateTaken) {
   return `---
 title:
-tags: []
 
 # Edit any value below — leave blank to fall back to EXIF
 overrideExif:
@@ -219,13 +222,79 @@ dateTaken:${ymlStr(dateTaken)}
 `.trimEnd() + '\n';
 }
 
+// Fills in any still-blank overrideExif/dateTaken lines with real values
+// extracted from the photo. Needed because a sidecar created ahead of time
+// in Obsidian (from the New Photo template) starts with those lines empty —
+// unlike a stub auto-created by sidecarStub(), which is pre-filled from EXIF
+// immediately. Idempotent: once a line has a value, its regex no longer
+// matches, so re-running on an already-filled sidecar is a no-op. Edits the
+// raw text directly (not a parse+re-stringify) so comments/formatting the
+// user is looking at in Obsidian survive untouched.
+const EXIF_STR_FIELDS = ['camera', 'lens', 'focalLength', 'focalLength35', 'aperture', 'shutterSpeed'];
+
+function backfillExifLines(rawContent, exifData, dateTaken) {
+  let updated = rawContent;
+  let changed = false;
+
+  for (const field of EXIF_STR_FIELDS) {
+    if (exifData[field] == null) continue;
+    const re = new RegExp(`^(  ${field}:)[ \\t]*$`, 'm');
+    if (re.test(updated)) {
+      updated = updated.replace(re, `$1${ymlStr(exifData[field])}`);
+      changed = true;
+    }
+  }
+
+  if (exifData.iso != null) {
+    const isoRe = /^(  iso:)[ \t]*$/m;
+    if (isoRe.test(updated)) {
+      updated = updated.replace(isoRe, `$1${ymlNum(exifData.iso)}`);
+      changed = true;
+    }
+  }
+
+  if (dateTaken) {
+    const dateRe = /^(dateTaken:)[ \t]*$/m;
+    if (dateRe.test(updated)) {
+      updated = updated.replace(dateRe, `$1${ymlStr(dateTaken)}`);
+      changed = true;
+    }
+  }
+
+  return { updated, changed };
+}
+
+// Strips Obsidian image embeds (wikilink `![[photo.jpg]]` or standard
+// Markdown `![alt](photo.jpg)`) out of the sidecar body before it's used as
+// the photo's description. Lets you see the photo right in the note while
+// writing the caption without the embed syntax leaking onto the live site.
+function stripImageEmbeds(text) {
+  if (!text) return text;
+  return text
+    .split('\n')
+    .filter(line => {
+      const t = line.trim();
+      return !(/^!\[\[.+\]\]$/.test(t) || /^!\[[^\]]*\]\([^)]+\)$/.test(t));
+    })
+    .join('\n')
+    .trim();
+}
+
 async function loadSidecar(dir, stem, exifData, dateTaken) {
   const sidecarPath = path.join(dir, `${stem}.md`);
   try {
-    const [content, stat] = await Promise.all([
+    let [content, stat] = await Promise.all([
       fs.readFile(sidecarPath, 'utf8'),
       fs.stat(sidecarPath),
     ]);
+
+    const backfilled = backfillExifLines(content, exifData, dateTaken);
+    if (backfilled.changed) {
+      await fs.writeFile(sidecarPath, backfilled.updated, 'utf8');
+      content = backfilled.updated;
+      stat    = await fs.stat(sidecarPath);
+    }
+
     const parsed = matter(content);
     parsed._mtime = stat.mtime.toISOString();
     return parsed;

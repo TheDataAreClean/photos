@@ -14,6 +14,8 @@ All commands, copy-paste ready. See [CLAUDE.md](CLAUDE.md) for when to use each.
 | Build (force Glass re-fetch) | `npm run build:fresh` |
 | Sync Glass API only | `npm run sync:glass` |
 | Back up local/ originals to R2 | `npm run sync:r2` |
+| One-off: back up all Glass originals (best-res) | `node scripts/backup-glass.js` |
+| Back up + commit + push local/ (full auto-publish) | `npm run publish:local` |
 | Publish a note to Ghost | `npm run publish:ghost -- path/to/note.md` |
 | Rename — dry run | `npm run rename` |
 | Rename — apply | `npm run rename -- --apply` |
@@ -36,6 +38,23 @@ launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-sync.plist
 ```
 
 Runs `scripts/glass-sync.sh` every Sunday at 08:00. Logs to `~/Library/Logs/photos-sync.log`.
+
+---
+
+## launchd (local photo auto-publish, every 20 min)
+
+```sh
+# Install
+cp launchd/com.thedataareclean.photos-local-sync.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.thedataareclean.photos-local-sync.plist
+
+# Uninstall
+launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-local-sync.plist
+```
+
+Runs `scripts/local-sync.sh` → `npm run publish:local` every 20 minutes (and once immediately on load). Backs up any new `local/` originals to R2, then commits + pushes `sidecars/` if any changed — the push triggers the normal CI build/deploy. Only ever touches `sidecars/`, never anything else in the repo. Logs to `~/Library/Logs/photos-local-sync.log`.
+
+**Requires:** git push access to work non-interactively (an SSH key without a passphrase prompt, or a cached credential helper) — the same credentials you already use for manual `git push` from this Mac.
 
 ---
 

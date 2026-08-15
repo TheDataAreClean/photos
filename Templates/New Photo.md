@@ -1,6 +1,5 @@
 ---
 title:
-tags: []
 
 # Leave blank to fall back to EXIF from the photo itself
 overrideExif:

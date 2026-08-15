@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+  <key>Label</key>
+  <string>com.thedataareclean.photos-local-sync</string>
+
+  <!-- Run scripts/local-sync.sh from the project root -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/thedataareclean/Documents/thedataareclean/photos/scripts/local-sync.sh</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/thedataareclean/Documents/thedataareclean/photos</string>
+
+  <!-- Every 20 minutes -->
+  <key>StartInterval</key>
+  <integer>1200</integer>
+
+  <!-- Also run once as soon as the agent is loaded, not just after the first interval -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Logs — viewable with: tail -f ~/Library/Logs/photos-local-sync.log -->
+  <key>StandardOutPath</key>
+  <string>/Users/thedataareclean/Library/Logs/photos-local-sync.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/thedataareclean/Library/Logs/photos-local-sync.log</string>
+
+</dict>
+</plist>

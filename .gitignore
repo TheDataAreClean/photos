@@ -14,14 +14,17 @@ node_modules/
 dist/
 
 # Local source photos — originals carry raw EXIF/GPS, never commit them.
-# Sidecar captions are plain text with no location data, so those are
-# tracked normally (same treatment as glass-sidecars/).
+# Sidecars (captions/EXIF) live in sidecars/, not here, so no exception
+# is needed for .md files.
 local/*
 !local/.gitkeep
-!local/*.md
 
 # Obsidian workspace state (local editor config, not project content)
 .obsidian/
+
+# Glass photo backup — full-resolution originals, never commit them
+# (also pushed to R2 by scripts/backup-glass.js)
+glass-backup/
 
 # OS
 .DS_Store

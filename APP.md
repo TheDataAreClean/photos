@@ -12,11 +12,12 @@ R2 bucket ─→ local/ ┤
                      ├─→ _data/photos.js ──→ Eleventy build ──→ dist/ ──→ GitHub Pages
             series/ ─┘        │       ↑
                      │
-                     ├─→ dist/photos/   (resized + watermarked images)
-                     ├─→ dist/data/     (paginated JSON chunks)
-                     ├─→ glass-sidecars/ (sidecar stubs, auto-created)
-                     └─→ local/*.md     (sidecar stubs, auto-created — tracked in git)
+                     ├─→ dist/photos/  (resized + watermarked images)
+                     ├─→ dist/data/    (paginated JSON chunks)
+                     └─→ sidecars/     (one .md per photo, auto-created — tracked in git)
 ```
+
+`sidecars/` is the single home for every photo's caption/EXIF-override file, regardless of source (`glass.js` and `local.js` both read/write it — see `SIDECARS_DIR` in each). Only image files stay source-specific: Glass images are fetched live from Glass's CDN, local images live in `local/`.
 
 `local/` originals are gitignored (raw EXIF/GPS) and a fresh CI checkout never has them — a private Cloudflare R2 bucket is the backup and the thing CI actually builds from. `downloadMissing()` pulls anything the checkout is missing into `local/` before `processLocal()` runs; `npm run sync:r2` pushes new originals from your machine up to the bucket. Both directions no-op silently when R2 env vars aren't set, so local dev without R2 configured is unaffected.
 
@@ -52,6 +53,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `build/watermark.js` | Watermark compositing via sharp (resize result cached per target size) |
 | `scripts/sync-glass.js` | Standalone Glass sync — updates cache + sidecars without a full build |
 | `scripts/sync-r2.js` | Standalone R2 backup — uploads new `local/` originals to the bucket |
+| `scripts/backup-glass.js` | One-off: downloads best-resolution copies of every Glass photo (visible + hidden) to `glass-backup/` and R2 (`glass/` prefix) — the pipeline itself never stores full-res Glass originals anywhere |
 | `scripts/glass-sync.sh` | Shell wrapper for launchd (resolves node across nvm/Homebrew) |
 
 ---
@@ -69,7 +71,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 7. Sorts newest-first by `dateTaken`
 8. Applies series membership from `series/*.md` to each photo (`series`, `seriesOrder`, `seriesTitle`, `seriesCount`) — overrides any `series`/`seriesOrder` set in sidecars
 9. Writes paginated JSON chunks to `dist/data/photos-N.json` (60 photos each)
-10. Creates sidecar stubs for any new photos
+10. Creates sidecar stubs (in `sidecars/`) for any new photos
 11. Prunes stale image files from `dist/photos/` and stale JSON chunks from `dist/data/`
 12. Prunes stale Glass image/hidden-post cache entries (`.cache/glass-images/`, `.cache/glass-hidden/`)
 13. Generates monthly OG image and copies favicon
@@ -89,7 +91,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `url.download` | `/photos/ID@wm.webp` | watermarked; used in feed image |
 | `url.thumb` | `/photos/ID@800.webp` (local) / CDN (Glass) | |
 | `exif` | sidecar `overrideExif:` → EXIF/Glass | camera, lens, focal, aperture, shutter, ISO |
-| `tags` | sidecar `tags:` | stored, not yet rendered in UI |
+| `tags` | sidecar `tags:` | rendered as hashtags in `feed.njk`; no longer auto-populated for either source (defaults to `[]`) — add manually to a sidecar if wanted |
 | `series` | `series/*.md` `photos:` list (overrides sidecar `series:`) | slug of the series this photo belongs to, or `null` |
 | `seriesOrder` | `series/*.md` `photos:` list (overrides sidecar `seriesOrder:`) | 1-indexed position within the series |
 | `seriesTitle` | derived from `series/{slug}.md` `title:` | only set when `series` is set |
@@ -115,18 +117,21 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 - **Glass:** `YYYY-MM-DD-glass-{slug-of-text-before-first-period-or-newline}` — e.g. `2026-03-27-glass-behind`, or `2026-05-17-glass-gate-12` for a description starting "Gate #12."
 - **Local:** `YYYY-MM-DD-local-{filename-stem}` — derived from filename
 - **Changing a slug breaks the URL.** Edit the sidecar body (not the Glass description) to update display text without 404s.
-- **Glass sidecar renaming:** `rename-glass.js` injects `glassAutoId: "original-stem"` before renaming. `glass.js` builds an `autoIdMap` from all `glassAutoId` values each build so it can match sidecars regardless of filename.
+- **Sidecar renaming:** `rename-glass.js` injects `glassAutoId: "original-stem"` before renaming a Glass sidecar. `glass.js` builds an `autoIdMap` from all `glassAutoId` values each build so it can match sidecars regardless of filename. `local.js`'s `autoRename()` renames a local photo's sidecar in lockstep with the image when the image gets a clean date-based stem.
 
 ---
 
 ## Sidecar semantics
 
-- Every photo has a `.md` sidecar: `glass-sidecars/ID.md` or `local/ID.md`
-- Both are tracked in git — `local/*.md` is explicitly un-ignored (only the image files under `local/` stay gitignored, for the raw-EXIF/GPS reason above)
+- Every photo has a `.md` sidecar in `sidecars/` — `sidecars/ID.md` — regardless of source. One folder, tracked in git, for every photo's caption/EXIF-override file.
+- Only image files stay source-specific: local originals live in `local/` (gitignored — raw EXIF/GPS), Glass images are served from Glass's CDN.
 - Auto-created on first build with EXIF/Glass values pre-filled
 - `overrideExif` fields fall back to source when empty (`""` = not set, not override)
 - `ov(override, fallback)` helper in `glass.js` and `local.js` implements this
 - Local sidecars with `title:` set trigger a filename rename on the next build (URL changes)
+- Neither source auto-populates `tags:` anymore (previously Glass sidecars got it from Glass's `categories` — removed along with the rest of the Glass write-back behavior; `photo.tags` still defaults to `[]` if a sidecar doesn't have the key).
+- **EXIF auto-backfill:** if a local sidecar's `overrideExif`/`dateTaken` lines are blank (e.g. a note created ahead of time in Obsidian from the New Photo template, before the photo's ever been processed), `backfillExifLines()` in `local.js` writes the real extracted values into those exact lines on disk — a targeted text replace, not a full re-serialize, so comments/formatting survive. Idempotent: once a line has a value it's left alone.
+- **Image embeds in the body:** an Obsidian embed (`![[photo.jpg]]`) dropped into the sidecar body is stripped out by `stripImageEmbeds()` before the body becomes the photo's `description` — lets you see the photo inline while writing the caption in Obsidian without the embed syntax leaking onto the live site.
 
 ---
 
