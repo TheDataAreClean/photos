@@ -5,6 +5,7 @@ const fs     = require('fs/promises');
 const config = require('../config');
 const { fetchGlass, fetchHiddenGlassPosts } = require('../build/sources/glass');
 const { processLocal }    = require('../build/sources/local');
+const { downloadMissing } = require('../build/sources/r2');
 const { mergeAndSort }    = require('../build/merge');
 const { generateOgImage }  = require('../build/og-image');
 const { generateFavicon }  = require('../build/gen-favicon');
@@ -24,6 +25,12 @@ module.exports = async function () {
   ]);
 
   const fresh = process.argv.includes('--fresh') || process.env.FRESH === '1';
+
+  // Pull down any originals a fresh checkout wouldn't have (local/ is
+  // gitignored) before processLocal() scans the directory.
+  await downloadMissing(config).catch(err => {
+    console.warn('  R2: download failed —', err.message);
+  });
 
   const [glassPhotos, localPhotos, seriesMap] = await Promise.all([
     fetchGlass(config, fresh).catch(err => {

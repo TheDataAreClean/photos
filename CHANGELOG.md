@@ -6,6 +6,15 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ---
 
+## UNRELEASED
+
+- add: `scripts/publish-ghost.js` (`npm run publish:ghost -- path/to/note.md`) — pushes a Markdown note (frontmatter: title/slug/tags/status/excerpt/featureImage) to a Ghost blog via the Admin API, converting the body to HTML with `marked`; defaults to `status: draft` so nothing goes live unreviewed. New deps: `@tryghost/admin-api`, `marked`.
+- add: `build/sources/r2.js` + `scripts/sync-r2.js` (`npm run sync:r2`) — private Cloudflare R2 bucket now backs up `local/` originals and is what CI actually builds from, since `local/` is gitignored and a fresh checkout never has anything dropped in there. `_data/photos.js` downloads anything missing from the bucket before `processLocal()` runs; both directions no-op silently when R2 env vars aren't set. New dep: `@aws-sdk/client-s3`.
+- fix: `local/*.md` sidecars un-ignored in `.gitignore` (images stay ignored) — same treatment as `glass-sidecars/`, needed so captions written via Obsidian actually reach the repo and survive a CI checkout.
+- add: `deploy.yml` "Build" step now passes R2 credentials through from the `BUCKET_NAME` / `ENDPOINT_URL` / `ACCESS_KEY_ID` / `SECRET_ACCESS_KEY` repo secrets; "Commit new sidecars" step now also stages `local/` alongside `glass-sidecars/`.
+
+---
+
 ## 2026-08-03 — v2.3.0
 
 - add: `src/robots.txt` (passthrough-copied to `dist/robots.txt`) disallows all crawlers, with named entries for GPTBot, ClaudeBot, Google-Extended, CCBot, and other AI training/retrieval bots — site is not meant to be indexed or used for LLM training

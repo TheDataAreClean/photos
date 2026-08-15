@@ -13,9 +13,15 @@ node_modules/
 # Keep it ignored if using Netlify / Vercel / any CI that runs the build.
 dist/
 
-# Local source photos — originals carry raw EXIF/GPS, never commit them
+# Local source photos — originals carry raw EXIF/GPS, never commit them.
+# Sidecar captions are plain text with no location data, so those are
+# tracked normally (same treatment as glass-sidecars/).
 local/*
 !local/.gitkeep
+!local/*.md
+
+# Obsidian workspace state (local editor config, not project content)
+.obsidian/
 
 # OS
 .DS_Store

@@ -57,18 +57,22 @@ jobs:
         env:
           SITE_URL: https://photos.thedataareclean.com
           GLASS_TOKEN: ${{ secrets.GLASS_TOKEN }}
+          R2_BUCKET: ${{ secrets.BUCKET_NAME }}
+          R2_ENDPOINT_URL: ${{ secrets.ENDPOINT_URL }}
+          R2_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.SECRET_ACCESS_KEY }}
 
       - name: Commit new sidecars
         id: sidecars
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add glass-sidecars/
+          git add glass-sidecars/ local/
           if git diff --cached --quiet; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            git commit -m "Chore: auto-sync new Glass sidecars [skip ci]"
+            git commit -m "Chore: auto-sync new Glass/local sidecars [skip ci]"
             git push origin main
           fi
 

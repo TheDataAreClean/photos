@@ -7,15 +7,18 @@ Architecture reference. Factual, no opinion. See [CLAUDE.md](CLAUDE.md) for oper
 ## Architecture at a glance
 
 ```
-Glass API ──┐
-            ├─→ _data/photos.js ──→ Eleventy build ──→ dist/ ──→ GitHub Pages
-local/    ──┘        │       ↑
-            series/ ─────────┘
+Glass API ──────────┐
+R2 bucket ─→ local/ ┤
+                     ├─→ _data/photos.js ──→ Eleventy build ──→ dist/ ──→ GitHub Pages
+            series/ ─┘        │       ↑
                      │
                      ├─→ dist/photos/   (resized + watermarked images)
                      ├─→ dist/data/     (paginated JSON chunks)
-                     └─→ glass-sidecars/ (sidecar stubs, auto-created)
+                     ├─→ glass-sidecars/ (sidecar stubs, auto-created)
+                     └─→ local/*.md     (sidecar stubs, auto-created — tracked in git)
 ```
+
+`local/` originals are gitignored (raw EXIF/GPS) and a fresh CI checkout never has them — a private Cloudflare R2 bucket is the backup and the thing CI actually builds from. `downloadMissing()` pulls anything the checkout is missing into `local/` before `processLocal()` runs; `npm run sync:r2` pushes new originals from your machine up to the bucket. Both directions no-op silently when R2 env vars aren't set, so local dev without R2 configured is unaffected.
 
 Eleventy is the only build step. `_data/photos.js` runs first and produces both the photo array (consumed by templates) and all side-effect outputs (images, JSON, sidecars) before any HTML is generated.
 
@@ -43,10 +46,12 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `build/series.js` | `loadSeries()` — parses `series/*.md` into a slug → meta map |
 | `build/sources/glass.js` | Glass API pagination, `glassToUnified()`, sidecar create/merge |
 | `build/sources/local.js` | Local photo processor: auto-rename, EXIF, sharp resize, watermark |
+| `build/sources/r2.js` | R2 backup: `downloadMissing()` (bucket → `local/`, CI build step) and `uploadNew()` (`local/` → bucket, backup step) |
 | `build/merge.js` | Deduplication (local overrides Glass) + date sort |
 | `build/og-image.js` | Monthly OG image generation via `@napi-rs/canvas` |
 | `build/watermark.js` | Watermark compositing via sharp (resize result cached per target size) |
 | `scripts/sync-glass.js` | Standalone Glass sync — updates cache + sidecars without a full build |
+| `scripts/sync-r2.js` | Standalone R2 backup — uploads new `local/` originals to the bucket |
 | `scripts/glass-sync.sh` | Shell wrapper for launchd (resolves node across nvm/Homebrew) |
 
 ---
@@ -56,17 +61,18 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 `_data/photos.js` returns the merged photo array and has these side effects (all before Eleventy renders HTML):
 
 1. Fetches Glass API (or reads 1-hour cache from `.cache/glass-raw.json`)
-2. Processes local photos: auto-rename, EXIF extract, sharp resize, watermark
-3. Loads `series/*.md` via `loadSeries()` into a slug → meta map
-4. Fetches any `hiddenGlassPhotos` referenced by series (Glass posts hidden from the public profile but reachable by direct URL)
-5. Merges + deduplicates (local overrides Glass on matching ID)
-6. Sorts newest-first by `dateTaken`
-7. Applies series membership from `series/*.md` to each photo (`series`, `seriesOrder`, `seriesTitle`, `seriesCount`) — overrides any `series`/`seriesOrder` set in sidecars
-8. Writes paginated JSON chunks to `dist/data/photos-N.json` (60 photos each)
-9. Creates sidecar stubs for any new photos
-10. Prunes stale image files from `dist/photos/` and stale JSON chunks from `dist/data/`
-11. Prunes stale Glass image/hidden-post cache entries (`.cache/glass-images/`, `.cache/glass-hidden/`)
-12. Generates monthly OG image and copies favicon
+2. Downloads any originals missing from `local/` (bucket has them, checkout doesn't) from the R2 backup — no-op if R2 env vars aren't set
+3. Processes local photos: auto-rename, EXIF extract, sharp resize, watermark
+4. Loads `series/*.md` via `loadSeries()` into a slug → meta map
+5. Fetches any `hiddenGlassPhotos` referenced by series (Glass posts hidden from the public profile but reachable by direct URL)
+6. Merges + deduplicates (local overrides Glass on matching ID)
+7. Sorts newest-first by `dateTaken`
+8. Applies series membership from `series/*.md` to each photo (`series`, `seriesOrder`, `seriesTitle`, `seriesCount`) — overrides any `series`/`seriesOrder` set in sidecars
+9. Writes paginated JSON chunks to `dist/data/photos-N.json` (60 photos each)
+10. Creates sidecar stubs for any new photos
+11. Prunes stale image files from `dist/photos/` and stale JSON chunks from `dist/data/`
+12. Prunes stale Glass image/hidden-post cache entries (`.cache/glass-images/`, `.cache/glass-hidden/`)
+13. Generates monthly OG image and copies favicon
 
 ### Photo object shape (key fields)
 
@@ -116,6 +122,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 ## Sidecar semantics
 
 - Every photo has a `.md` sidecar: `glass-sidecars/ID.md` or `local/ID.md`
+- Both are tracked in git — `local/*.md` is explicitly un-ignored (only the image files under `local/` stay gitignored, for the raw-EXIF/GPS reason above)
 - Auto-created on first build with EXIF/Glass values pre-filled
 - `overrideExif` fields fall back to source when empty (`""` = not set, not override)
 - `ov(override, fallback)` helper in `glass.js` and `local.js` implements this
