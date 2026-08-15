@@ -29,7 +29,6 @@
   const counterEl   = document.getElementById('lightbox-counter');
   const shareBtn    = document.getElementById('lightbox-share');
   const downloadBtn = document.getElementById('lightbox-download');
-  const glassBtn    = document.getElementById('lightbox-glass');
   const closeBtn      = lightboxEl.querySelector('.lightbox__close');
   const prevBtn       = lightboxEl.querySelector('.lightbox__prev');
   const nextBtn       = lightboxEl.querySelector('.lightbox__next');
@@ -209,17 +208,6 @@
       span.textContent = dateStr;
       footerEl.appendChild(span);
     }
-
-    // Glass button — show only for Glass photos
-    if (glassBtn) {
-      if (photo.url.glass) {
-        glassBtn.href = photo.url.glass;
-        glassBtn.hidden = false;
-      } else {
-        glassBtn.hidden = true;
-      }
-    }
-
 
     // Download link
     if (downloadBtn) {

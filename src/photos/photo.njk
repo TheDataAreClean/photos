@@ -78,9 +78,6 @@ layout: layouts/base.njk
         {% if photo.url.download or photo.url.display %}
         <a class="lightbox__action-btn" href="{{ photo.url.download or photo.url.display }}" download="{{ photo.id }}">Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
         {% endif %}
-        {% if photo.url.glass %}
-        <a class="lightbox__action-btn" href="{{ photo.url.glass }}" target="_blank" rel="noopener noreferrer">Glass<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a>
-        {% endif %}
       </div>
     </div>
     </div>

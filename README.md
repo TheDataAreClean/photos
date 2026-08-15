@@ -29,44 +29,44 @@ Full command reference: [COMMANDS.md](COMMANDS.md)
 | `build/` | Build-time modules: EXIF, watermark, OG image, sources |
 | `scripts/` | CLI utilities: rename, Glass sync |
 | `local/` | Drop photos here — auto-processed on build |
-| `glass-sidecars/` | One `.md` per Glass photo — auto-created, edit freely |
+| `sidecars/` | One `.md` per photo (Glass + local both use it) — auto-created, edit freely |
 | `series/` | One `.md` per series — title, description, cover photo, ordered photo list |
-| `launchd/` | Weekly Glass sync agent for macOS |
+| `launchd/` | Weekly Glass sync + local photo auto-publish agents for macOS |
 | `dist/` | Build output — not committed |
 
 ---
 
 ## Adding photos
 
-**Glass** — set `glass.username` in `config.js`. Sidecars auto-created in `glass-sidecars/` on first build.
+**Local** (primary workflow) — drop image files into `local/`, or write directly in Obsidian (this repo doubles as the vault). On build: auto-renamed to `YYYY-MM-DD-slug.ext`, sidecar created in `sidecars/` with real EXIF pre-filled and the photo embedded inline, 800px thumbnail + 2400px display + watermarked download generated.
 
-**Local** — drop image files into `local/`. On build: auto-renamed to `YYYY-MM-DD-local-slug.ext`, sidecar created, 800px thumbnail + 2400px display + watermarked download generated.
+**Glass** (legacy — historic photos only, no longer actively posted to) — existing Glass photos keep working as before; set `glass.username` in `config.js` if you ever want to sync new ones.
 
 ---
 
 ## Photo metadata
 
-Edit the sidecar `.md` file for any photo:
+Edit the sidecar `.md` file for any photo — EXIF fields are top-level properties (not nested), so each shows up as its own editable row in Obsidian's Properties panel:
 
 ```markdown
 ---
 title: "Bougainvillea."
-tags: [street, bengaluru]
-overrideExif:
-  camera: "Fujifilm X-T50"
-  lens: "XF23mmF2 R WR"
-  focalLength: "23mm"
-  focalLength35: "35mm"
-  aperture: "ƒ/2.8"
-  shutterSpeed: "1/250s"
-  iso: 400
+camera: "Fujifilm X-T50"
+lens: "XF23mmF2 R WR"
+focalLength: "23mm"
+focalLength35: "35mm"
+aperture: "ƒ/2.8"
+shutterSpeed: "1/250s"
+iso: 400
 dateTaken: "2026-03-09T08:57:02Z"
 ---
+
+![[2026-03-09-bougainvillea.jpg]]
 
 Description shown in the lightbox and on the photo's permalink page.
 ```
 
-Leave any `overrideExif` field blank to fall back to what Glass or EXIF provides.
+Leave any EXIF field blank to fall back to what Glass or the photo's own EXIF provides. The `![[...]]` embed is optional — shows the photo inline while you write the caption in Obsidian, stripped out automatically before publishing.
 
 ---
 

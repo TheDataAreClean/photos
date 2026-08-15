@@ -27,13 +27,13 @@ Operating manual for Claude. Architecture lives in [APP.md](APP.md). Commands li
 ## Common traps
 
 **Changing a Glass slug breaks the URL**
-The slug is derived from the text before the first period or newline in the Glass description (so "Gate #12." → `gate-12`). Change that text → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body — not the Glass description.
+The slug is derived from the text before the first period or newline in the Glass description (so "Gate #12." → `gate-12`, ID `2026-05-16-gate-12`). Change that text → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body — not the Glass description.
 
 **Glass descriptions with mid-sentence periods truncate the ID**
 A description like "Mr. Smith waves." produces the snippet "Mr" → ID ending in `-mr`. Numbered series rely on this (`#12.` → `12`), but unrelated abbreviations or initials at the start of a description will produce short, possibly colliding slugs.
 
-**Empty `overrideExif` fields fall back to source, not blank**
-`overrideExif: { camera: "" }` restores the EXIF source value. `iso: 0` overrides with 0 — be explicit with numeric zeros.
+**Empty EXIF sidecar fields fall back to source, not blank**
+EXIF fields (`camera`, `lens`, `aperture`, etc.) are top-level sidecar properties, not nested — `camera: ""` restores the EXIF source value. `iso: 0` overrides with 0 — be explicit with numeric zeros.
 
 **Auto-rename runs before the sidecar is read**
 First build after dropping a new local photo: sidecar is created from EXIF, then the file is renamed. Two-step build is normal for new files — no data is lost.
@@ -116,12 +116,12 @@ src/scripts/series-overlay.js  Full-screen series viewer (thumbnail strip, prev/
 - [ ] `dist/` not committed
 - [ ] Browser console clean — no JS errors, no 404s
 - [ ] New local photos renamed (date-based stem) and sidecars auto-created
-- [ ] `glass-sidecars/` has one file per Glass photo
+- [ ] `sidecars/` has one file per photo (Glass + local, both sources share it)
 - [ ] Gallery grid loads, masonry correct at desktop + mobile
 - [ ] Lightbox opens (desktop: FLIP zoom; mobile: fade), prev/next/close, keyboard nav
 - [ ] Lightbox close when card is off-screen: zoom-out fade (no squish/stretch)
 - [ ] Infinite scroll loads next chunk when > 60 photos
-- [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{source}-{slug}/`
+- [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{slug}/` (Glass) or `/photos/YYYY-MM-DD-local-{slug}/` (local)
 - [ ] View toggle widget visible bottom-right, all three buttons functional
 - [ ] Grid ↔ stack switch persists across page reload
 - [ ] Shuffle toggle randomises order on reload; toggling off restores date order

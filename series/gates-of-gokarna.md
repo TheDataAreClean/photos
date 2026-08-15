@@ -1,25 +1,25 @@
 ---
 title: Gates of Gokarna
-coverPhoto: 2026-05-17-glass-gate-1
+coverPhoto: 2026-05-17-gate-1
 photos:
-  - 2026-05-17-glass-gate-1
-  - 2026-05-16-glass-gate-2
-  - 2026-05-17-glass-gate-3
-  - 2026-05-16-glass-gate-4
-  - 2026-05-16-glass-gate-5
-  - 2026-05-17-glass-gate-6
-  - 2026-05-17-glass-gate-7
-  - 2026-05-17-glass-gate-8
-  - 2026-05-17-glass-gate-9
-  - 2026-05-16-glass-gate-10
-  - 2026-05-16-glass-gate-11
-  - 2026-05-16-glass-gate-12
-  - 2026-05-16-glass-gate-13
-  - 2026-05-16-glass-gate-14
-  - 2026-05-16-glass-gate-15
-  - 2026-05-17-glass-gate-16
-  - 2026-05-16-glass-gate-17
-  - 2026-05-16-glass-gate-18
+  - 2026-05-17-gate-1
+  - 2026-05-16-gate-2
+  - 2026-05-17-gate-3
+  - 2026-05-16-gate-4
+  - 2026-05-16-gate-5
+  - 2026-05-17-gate-6
+  - 2026-05-17-gate-7
+  - 2026-05-17-gate-8
+  - 2026-05-17-gate-9
+  - 2026-05-16-gate-10
+  - 2026-05-16-gate-11
+  - 2026-05-16-gate-12
+  - 2026-05-16-gate-13
+  - 2026-05-16-gate-14
+  - 2026-05-16-gate-15
+  - 2026-05-17-gate-16
+  - 2026-05-16-gate-17
+  - 2026-05-16-gate-18
 hiddenGlassPhotos:
   - 2DXYuvHLlizp8qjLE3rug7  # Gate #2
   - 4Z7gIFuqC3FztAFRMExQZ8  # Gate #3

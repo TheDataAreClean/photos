@@ -30,7 +30,7 @@ for (const p of raw) {
   const stem     = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
   const datePart = stem.slice(0, 10);
   const rest     = stem.slice(11);
-  const id       = rest ? `${datePart}-glass-${rest}` : `${datePart}-glass`;
+  const id       = rest ? `${datePart}-${rest}` : datePart;
 
   const directPath = path.join(SIDECARS_DIR, `${id}.md`);
   const sidecarPath = fs.existsSync(directPath) ? directPath : autoIdMap.get(id);

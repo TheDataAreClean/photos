@@ -22,9 +22,9 @@ local/*
 # Obsidian workspace state (local editor config, not project content)
 .obsidian/
 
-# Glass photo backup — full-resolution originals, never commit them
+# Photo backup — full-resolution originals, never commit them
 # (also pushed to R2 by scripts/backup-glass.js)
-glass-backup/
+backup/
 
 # OS
 .DS_Store

@@ -6,7 +6,7 @@ const sharp  = require('sharp');
 const matter = require('gray-matter');
 const { extractExif }                = require('../exif');
 const { dateTitleStem, isCleanStem } = require('../utils/slug');
-const { ov, ymlStr, ymlNum }         = require('../utils/sidecar');
+const { ov, ymlStr, ymlNum, stripImageEmbeds } = require('../utils/sidecar');
 const { applyWatermark }             = require('../watermark');
 
 const IMAGE_EXTS  = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.tiff', '.tif']);
@@ -127,18 +127,18 @@ async function processOne(filename, photosDir, outputDir, config) {
       fs.stat(filepath),
     ]);
 
-    const sidecar        = await loadSidecar(SIDECARS_DIR, stem, exifData, exifData.dateTaken);
-    const overrides      = sidecar?.data?.overrideExif || {};
-    const finalDateTaken = ov(sidecar?.data?.dateTaken, exifData.dateTaken);
+    const sidecar        = await loadSidecar(SIDECARS_DIR, stem, exifData, exifData.dateTaken, filename);
+    const d              = sidecar?.data || {};
+    const finalDateTaken = ov(d.dateTaken, exifData.dateTaken);
 
     const finalExif = {
-      camera:        ov(overrides.camera,        exifData.camera),
-      lens:          ov(overrides.lens,          exifData.lens),
-      focalLength:   ov(overrides.focalLength,   exifData.focalLength),
-      focalLength35: ov(overrides.focalLength35, exifData.focalLength35),
-      aperture:      ov(overrides.aperture,      exifData.aperture),
-      shutterSpeed:  ov(overrides.shutterSpeed,  exifData.shutterSpeed),
-      iso:           ov(overrides.iso,           exifData.iso),
+      camera:        ov(d.camera,        exifData.camera),
+      lens:          ov(d.lens,          exifData.lens),
+      focalLength:   ov(d.focalLength,   exifData.focalLength),
+      focalLength35: ov(d.focalLength35, exifData.focalLength35),
+      aperture:      ov(d.aperture,      exifData.aperture),
+      shutterSpeed:  ov(d.shutterSpeed,  exifData.shutterSpeed),
+      iso:           ov(d.iso,           exifData.iso),
       flash:         exifData.flash ?? null,
       gps:           exifData.gps   ?? null,
       dateTaken:     finalDateTaken,
@@ -202,22 +202,26 @@ async function processOne(filename, photosDir, outputDir, config) {
 }
 
 // ── Sidecar helpers ───────────────────────────────────
-function sidecarStub(exifData, dateTaken) {
+// EXIF fields are flattened to top-level frontmatter properties (not nested
+// under overrideExif:) so each one shows up as its own editable row in
+// Obsidian's Properties panel — a nested object just renders as opaque YAML
+// there.
+function sidecarStub(exifData, dateTaken, filename) {
   return `---
 title:
 
 # Edit any value below — leave blank to fall back to EXIF
-overrideExif:
-  camera:${ymlStr(exifData.camera)}
-  lens:${ymlStr(exifData.lens)}
-  focalLength:${ymlStr(exifData.focalLength)}
-  focalLength35:${ymlStr(exifData.focalLength35)}
-  aperture:${ymlStr(exifData.aperture)}
-  shutterSpeed:${ymlStr(exifData.shutterSpeed)}
-  iso:${ymlNum(exifData.iso)}
-
+camera:${ymlStr(exifData.camera)}
+lens:${ymlStr(exifData.lens)}
+focalLength:${ymlStr(exifData.focalLength)}
+focalLength35:${ymlStr(exifData.focalLength35)}
+aperture:${ymlStr(exifData.aperture)}
+shutterSpeed:${ymlStr(exifData.shutterSpeed)}
+iso:${ymlNum(exifData.iso)}
 dateTaken:${ymlStr(dateTaken)}
 ---
+
+![[${filename}]]
 
 `.trimEnd() + '\n';
 }
@@ -238,7 +242,7 @@ function backfillExifLines(rawContent, exifData, dateTaken) {
 
   for (const field of EXIF_STR_FIELDS) {
     if (exifData[field] == null) continue;
-    const re = new RegExp(`^(  ${field}:)[ \\t]*$`, 'm');
+    const re = new RegExp(`^(${field}:)[ \\t]*$`, 'm');
     if (re.test(updated)) {
       updated = updated.replace(re, `$1${ymlStr(exifData[field])}`);
       changed = true;
@@ -246,7 +250,7 @@ function backfillExifLines(rawContent, exifData, dateTaken) {
   }
 
   if (exifData.iso != null) {
-    const isoRe = /^(  iso:)[ \t]*$/m;
+    const isoRe = /^(iso:)[ \t]*$/m;
     if (isoRe.test(updated)) {
       updated = updated.replace(isoRe, `$1${ymlNum(exifData.iso)}`);
       changed = true;
@@ -264,23 +268,7 @@ function backfillExifLines(rawContent, exifData, dateTaken) {
   return { updated, changed };
 }
 
-// Strips Obsidian image embeds (wikilink `![[photo.jpg]]` or standard
-// Markdown `![alt](photo.jpg)`) out of the sidecar body before it's used as
-// the photo's description. Lets you see the photo right in the note while
-// writing the caption without the embed syntax leaking onto the live site.
-function stripImageEmbeds(text) {
-  if (!text) return text;
-  return text
-    .split('\n')
-    .filter(line => {
-      const t = line.trim();
-      return !(/^!\[\[.+\]\]$/.test(t) || /^!\[[^\]]*\]\([^)]+\)$/.test(t));
-    })
-    .join('\n')
-    .trim();
-}
-
-async function loadSidecar(dir, stem, exifData, dateTaken) {
+async function loadSidecar(dir, stem, exifData, dateTaken, filename) {
   const sidecarPath = path.join(dir, `${stem}.md`);
   try {
     let [content, stat] = await Promise.all([
@@ -299,7 +287,7 @@ async function loadSidecar(dir, stem, exifData, dateTaken) {
     parsed._mtime = stat.mtime.toISOString();
     return parsed;
   } catch {
-    const stub = sidecarStub(exifData, dateTaken);
+    const stub = sidecarStub(exifData, dateTaken, filename);
     await fs.writeFile(sidecarPath, stub, 'utf8').catch(() => {});
     return matter(stub);
   }

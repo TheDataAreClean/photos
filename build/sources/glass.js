@@ -5,7 +5,7 @@ const path   = require('path');
 const matter = require('gray-matter');
 const sharp  = require('sharp');
 const { toSlug, dateTitleStem } = require('../utils/slug');
-const { ov, ymlStr, ymlNum }    = require('../utils/sidecar');
+const { ov, ymlStr, ymlNum, stripImageEmbeds } = require('../utils/sidecar');
 const { applyWatermark, fetchBuffer } = require('../watermark');
 
 const GLASS_API    = 'https://glass.photo/api/v3/users';
@@ -105,7 +105,7 @@ function glassToUnified(p) {
   const stem        = date ? dateTitleStem(date, descSnippet) : toSlug(p.id);
   const datePart    = stem.slice(0, 10);
   const rest        = stem.slice(11);
-  const id          = rest ? `${datePart}-glass-${rest}` : `${datePart}-glass`;
+  const id          = rest ? `${datePart}-${rest}` : datePart;
 
   // Default title: full text before the first period/newline (same slice used for the ID)
   const autoTitle = descSnippet || null;
@@ -205,6 +205,12 @@ async function findSidecarPath(photoId, autoIdMap) {
 }
 
 // ── Sidecar management ────────────────────────────────
+// EXIF fields are flattened to top-level frontmatter properties (not nested
+// under overrideExif:) so each one shows up as its own editable row in
+// Obsidian's Properties panel — a nested object just renders as opaque YAML
+// there. The photo itself is embedded via its Glass CDN URL (standard
+// Markdown image syntax — Obsidian renders external URLs inline too) so the
+// sidecar shows the photo without needing a local copy of it.
 const SIDECAR_STUB = (photo) => {
   const e = photo.exif || {};
   const body = photo.description
@@ -214,19 +220,17 @@ const SIDECAR_STUB = (photo) => {
 title:${ymlStr(photo.title)}
 
 # Edit any value below — leave blank to fall back to what Glass provides
-overrideExif:
-  camera:${ymlStr(e.camera)}
-  lens:${ymlStr(e.lens)}
-  focalLength:${ymlStr(e.focalLength)}
-  focalLength35:${ymlStr(e.focalLength35)}
-  aperture:${ymlStr(e.aperture)}
-  shutterSpeed:${ymlStr(e.shutterSpeed)}
-  iso:${ymlNum(e.iso)}
-
+camera:${ymlStr(e.camera)}
+lens:${ymlStr(e.lens)}
+focalLength:${ymlStr(e.focalLength)}
+focalLength35:${ymlStr(e.focalLength35)}
+aperture:${ymlStr(e.aperture)}
+shutterSpeed:${ymlStr(e.shutterSpeed)}
+iso:${ymlNum(e.iso)}
 dateTaken:${ymlStr(photo.dateTaken)}
 ---
 
-${body}
+${photo.url.full ? `![](${photo.url.full})\n\n` : ''}${body}
 `.trimEnd() + '\n';
 };
 
@@ -250,15 +254,15 @@ async function mergeSidecars(photos, autoIdMap) {
       sidecarMtime = (await fs.stat(sidecarPath)).mtime.toISOString();
     } catch { return photo; }
 
-    const d         = sidecar.data || {};
-    const overrides = d.overrideExif || {};
-    const finalDate = ov(d.dateTaken, photo.dateTaken);
+    const d           = sidecar.data || {};
+    const finalDate   = ov(d.dateTaken, photo.dateTaken);
+    const strippedContent = stripImageEmbeds(sidecar.content);
 
     const mergedSeries = d.series || photo.series || null;
     // seriesOrder: sidecar value → auto-extracted from description → null
     let mergedSeriesOrder = d.seriesOrder != null ? d.seriesOrder : null;
     if (mergedSeriesOrder == null && mergedSeries) {
-      const desc = sidecar.content?.trim() || photo.description || '';
+      const desc = strippedContent || photo.description || '';
       const m = desc.match(/#(\d+)/) || (photo.description || '').match(/#(\d+)/);
       if (m) mergedSeriesOrder = parseInt(m[1], 10);
     }
@@ -266,7 +270,7 @@ async function mergeSidecars(photos, autoIdMap) {
     return {
       ...photo,
       title:       ov(d.title,            photo.title),
-      description: ov(sidecar.content?.trim(), photo.description),
+      description: ov(strippedContent,    photo.description),
       altText:     ov(d.title,            photo.altText),
       tags:             d.tags?.length ? d.tags : photo.tags,
       series:           mergedSeries,
@@ -275,13 +279,13 @@ async function mergeSidecars(photos, autoIdMap) {
       dateTaken:        finalDate,
       exif: {
         ...photo.exif,
-        camera:        ov(overrides.camera,        photo.exif.camera),
-        lens:          ov(overrides.lens,          photo.exif.lens),
-        focalLength:   ov(overrides.focalLength,   photo.exif.focalLength),
-        focalLength35: ov(overrides.focalLength35, photo.exif.focalLength35),
-        aperture:      ov(overrides.aperture,      photo.exif.aperture),
-        shutterSpeed:  ov(overrides.shutterSpeed,  photo.exif.shutterSpeed),
-        iso:           ov(overrides.iso,           photo.exif.iso),
+        camera:        ov(d.camera,        photo.exif.camera),
+        lens:          ov(d.lens,          photo.exif.lens),
+        focalLength:   ov(d.focalLength,   photo.exif.focalLength),
+        focalLength35: ov(d.focalLength35, photo.exif.focalLength35),
+        aperture:      ov(d.aperture,      photo.exif.aperture),
+        shutterSpeed:  ov(d.shutterSpeed,  photo.exif.shutterSpeed),
+        iso:           ov(d.iso,           photo.exif.iso),
         dateTaken:     finalDate,  // keep in sync with photo.dateTaken
       },
     };

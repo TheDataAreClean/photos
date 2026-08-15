@@ -49,8 +49,8 @@ async function main() {
 
     const stem = path.parse(filename).name;
 
-    // Must match YYYY-MM-DD-glass-<slug>
-    const m = stem.match(/^(\d{4}-\d{2}-\d{2})-glass-(.+)$/);
+    // Must match YYYY-MM-DD-<slug>
+    const m = stem.match(/^(\d{4}-\d{2}-\d{2})-(.+)$/);
     if (!m) continue;
 
     const [, datePart, currentSlug] = m;
@@ -58,7 +58,7 @@ async function main() {
 
     if (!idealSlug || currentSlug === idealSlug) continue; // already clean
 
-    const newStem = `${datePart}-glass-${idealSlug}`;
+    const newStem = `${datePart}-${idealSlug}`;
     const newFile = `${newStem}.md`;
 
     // Collision check — skip if target already exists

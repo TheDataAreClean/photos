@@ -3,8 +3,8 @@
  * backup-glass.js
  *
  * Downloads the best-resolution copy of every Glass photo (visible + hidden)
- * directly from Glass's CDN and saves it, unprocessed, to glass-backup/ and
- * (if configured) the R2 bucket under a glass/ prefix.
+ * directly from Glass's CDN and saves it, unprocessed, to backup/ and
+ * (if configured) the R2 bucket under a backup/ prefix.
  *
  * Why this exists: the normal build pipeline only ever produces a resized,
  * watermarked copy (capped ~2400px wide) in dist/, which isn't even
@@ -28,7 +28,7 @@ const { fetchGlass, fetchHiddenGlassPosts } = require('../build/sources/glass');
 const { loadSeries }  = require('../build/series');
 const { putObject, isConfigured } = require('../build/sources/r2');
 
-const BACKUP_DIR = path.resolve('glass-backup');
+const BACKUP_DIR = path.resolve('backup');
 const CONCURRENCY = 6;
 
 async function mapWithConcurrency(items, limit, fn) {
@@ -68,7 +68,7 @@ async function downloadBest(photo) {
 
     let uploaded = false;
     try {
-      uploaded = await putObject(config, `glass/${fname}`, buf);
+      uploaded = await putObject(config, `backup/${fname}`, buf);
     } catch (err) {
       console.warn(`  R2 upload failed for ${fname}: ${err.message}`);
     }
@@ -83,7 +83,7 @@ async function main() {
   await fs.mkdir(BACKUP_DIR, { recursive: true });
 
   if (!isConfigured(config)) {
-    console.warn('  R2 not configured — backing up locally only (glass-backup/), no off-machine copy will be made.');
+    console.warn('  R2 not configured — backing up locally only (backup/), no off-machine copy will be made.');
   }
 
   console.log('  Fetching fresh Glass data (visible + hidden posts)…');
@@ -123,14 +123,14 @@ async function main() {
   // independent of how this repo's pipeline currently parses it.
   const rawCache = path.join(path.resolve(config.build.cacheDir), 'glass-raw.json');
   try {
-    await fs.copyFile(rawCache, path.join(BACKUP_DIR, 'glass-raw-metadata.json'));
+    await fs.copyFile(rawCache, path.join(BACKUP_DIR, 'raw-metadata.json'));
   } catch (err) {
     console.warn(`  Could not copy raw metadata: ${err.message}`);
   }
 
   console.log(`\n✓ Backed up ${ok.length}/${all.length} photo(s), ${(totalBytes / 1024 / 1024).toFixed(1)} MB, to ${BACKUP_DIR}`);
   if (isConfigured(config)) {
-    console.log(`  ${ok.filter(r => r.uploaded).length}/${ok.length} also uploaded to R2 under glass/`);
+    console.log(`  ${ok.filter(r => r.uploaded).length}/${ok.length} also uploaded to R2 under backup/`);
   }
   if (failed.length) {
     console.warn(`✗ ${failed.length} failed:`);
