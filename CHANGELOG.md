@@ -8,7 +8,6 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ## UNRELEASED
 
-- add: `scripts/publish-ghost.js` (`npm run publish:ghost -- path/to/note.md`) — pushes a Markdown note (frontmatter: title/slug/tags/status/excerpt/featureImage) to a Ghost blog via the Admin API, converting the body to HTML with `marked`; defaults to `status: draft` so nothing goes live unreviewed. New deps: `@tryghost/admin-api`, `marked`.
 - add: `build/sources/r2.js` + `scripts/sync-r2.js` (`npm run sync:r2`) — private Cloudflare R2 bucket now backs up `local/` originals and is what CI actually builds from, since `local/` is gitignored and a fresh checkout never has anything dropped in there. `_data/photos.js` downloads anything missing from the bucket before `processLocal()` runs; both directions no-op silently when R2 env vars aren't set. New dep: `@aws-sdk/client-s3`.
 - add: `deploy.yml` "Build" step now passes R2 credentials through from the `BUCKET_NAME` / `ENDPOINT_URL` / `ACCESS_KEY_ID` / `SECRET_ACCESS_KEY` repo secrets.
 - add: `scripts/publish-local.js` (`npm run publish:local`) + `scripts/local-sync.sh` + `launchd/com.thedataareclean.photos-local-sync.plist` — automates the last manual step: backs up new `local/` originals to R2, then commits + pushes `sidecars/` if any changed (the push triggers the normal CI build/deploy). Runs every 20 min via launchd once installed. Only ever `git add`s `sidecars/`, never anything else in the repo.
