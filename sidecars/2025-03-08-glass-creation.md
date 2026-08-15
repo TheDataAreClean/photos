@@ -1,0 +1,17 @@
+---
+title: "creation"
+
+# Edit any value below — leave blank to fall back to what Glass provides
+overrideExif:
+  camera: "Apple iPhone 15 Pro Max"
+  lens: "Back Telephoto 15.66mm ƒ/2.8"
+  focalLength: "16mm"
+  focalLength35: "120mm"
+  aperture: "ƒ/2.8"
+  shutterSpeed: "1/5780s"
+  iso: 40
+
+dateTaken: "2025-03-08T01:46:13Z"
+---
+
+creation.
