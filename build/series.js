@@ -26,17 +26,12 @@ async function loadSeries() {
           : { id: item.id, order: item.order ?? i + 1 }
       );
 
-      const hiddenGlassPhotos = Array.isArray(parsed.data.hiddenGlassPhotos)
-        ? parsed.data.hiddenGlassPhotos.filter(id => typeof id === 'string')
-        : [];
-
       map[slug] = {
         slug,
-        title:             parsed.data.title       || slug,
-        description:       parsed.content?.trim()   || null,
-        coverPhoto:        parsed.data.coverPhoto   || null,
+        title:       parsed.data.title       || slug,
+        description: parsed.content?.trim()   || null,
+        coverPhoto:  parsed.data.coverPhoto   || null,
         photos,
-        hiddenGlassPhotos,
       };
     } catch {}
   }));

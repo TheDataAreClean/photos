@@ -146,7 +146,8 @@
   // Wire click + keyboard on a series card to open the series page.
   function wireSeriesEvents(card, seriesData) {
     function openSeries() {
-      window.location.href = '/series/' + seriesData.slug + '/';
+      if (window.SeriesOverlay) window.SeriesOverlay.open(seriesData.slug, card);
+      else window.location.href = '/series/' + seriesData.slug + '/';
     }
     card.addEventListener('click', openSeries);
     card.addEventListener('keydown', e => {

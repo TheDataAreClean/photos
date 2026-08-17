@@ -24,7 +24,7 @@ const H = 630;
 const CACHE_DIR = path.resolve(config.build.cacheDir);
 const TITLE     = config.site.displayTitle;
 const SUBTITLE  = config.site.description;
-const ATTR      = `@${config.glass.username}`;
+const ATTR      = `@${config.site.handle}`;
 
 // ── Seeded PRNG (LCG) — deterministic per calendar month ──────────────────
 function seededRand(seed) {
@@ -201,22 +201,14 @@ async function getImageBuffer(photo, distDir) {
   const { display } = photo.url || {};
   if (!display) return null;
 
-  // Local photos — root-relative path, read from dist/
+  // Root-relative path — read straight from dist/
   if (!display.startsWith('http')) {
     try {
       return await fs.readFile(path.join(distDir, display));
     } catch { return null; }
   }
 
-  // Glass photos — check .cache/glass-images/${id}.bin first
-  if (photo.id) {
-    const cached = path.join(CACHE_DIR, 'glass-images', `${photo.id}.bin`);
-    if (await fileExists(cached)) {
-      return fs.readFile(cached);
-    }
-  }
-
-  // Fallback: fetch from CDN
+  // Defensive fallback for any external URL
   return fetchBuf(display).catch(() => null);
 }
 

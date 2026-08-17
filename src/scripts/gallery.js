@@ -115,7 +115,8 @@
   // ── Attach click + keyboard events to a series card ───
   function attachSeriesEvents(card, slug) {
     function openSeries() {
-      window.location.href = '/series/' + slug + '/';
+      if (window.SeriesOverlay) window.SeriesOverlay.open(slug, card);
+      else window.location.href = '/series/' + slug + '/';
     }
     card.addEventListener('click', openSeries);
     card.addEventListener('keydown', e => {

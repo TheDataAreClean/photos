@@ -8,8 +8,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const config = require('../config');
 
-const SIDECARS_DIR = path.join(__dirname, '..', 'sidecars');
+const SIDECARS_DIR = path.resolve(path.join(__dirname, '..'), config.local.sidecarsDir);
 
 const TITLE_RE = /^title: "([^".]+)\.\"$/m;
 

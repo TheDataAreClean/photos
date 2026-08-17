@@ -1,6 +1,6 @@
 # Memories
 
-A static photography gallery for [@thedataareclean](https://glass.photo/thedataareclean). Pulls photos from [Glass.photo](https://glass.photo) and local files, builds with [Eleventy](https://www.11ty.dev/), deploys to GitHub Pages. No database, no server.
+A static photography gallery for @thedataareclean. Builds with [Eleventy](https://www.11ty.dev/), deploys to GitHub Pages. No database, no server.
 
 Every photo has a plain Markdown sidecar for editing title, description, tags, and EXIF overrides. Drop a photo in `local/`, edit its sidecar, run build — done.
 
@@ -10,7 +10,7 @@ Every photo has a plain Markdown sidecar for editing title, description, tags, a
 
 ```sh
 npm install
-# Set your Glass username and site URL in config.js
+# Set your site URL in config.js
 npm run dev        # → http://localhost:3003
 ```
 
@@ -23,24 +23,23 @@ Full command reference: [COMMANDS.md](COMMANDS.md)
 | Path | What's here |
 |---|---|
 | `config.js` | All site + build configuration |
-| `_data/` | Data pipeline — fetches Glass, processes local, outputs JSON chunks |
+| `_data/` | Data pipeline — processes photos, outputs JSON chunks |
 | `_includes/` | Nunjucks layout shell |
 | `src/` | Templates, styles, scripts, Atom feed |
 | `build/` | Build-time modules: EXIF, watermark, OG image, sources |
-| `scripts/` | CLI utilities: rename, Glass sync |
+| `scripts/` | CLI utilities: rename, R2 sync/publish |
+| `test/` | `node --test` unit tests for pure logic (slug, sidecar, EXIF backfill) |
 | `local/` | Drop photos here — auto-processed on build |
-| `sidecars/` | One `.md` per photo (Glass + local both use it) — auto-created, edit freely |
+| `sidecars/` | One `.md` per photo — auto-created, edit freely |
 | `series/` | One `.md` per series — title, description, cover photo, ordered photo list |
-| `launchd/` | Weekly Glass sync + local photo auto-publish agents for macOS |
+| `launchd/` | Local photo auto-publish agent for macOS |
 | `dist/` | Build output — not committed |
 
 ---
 
 ## Adding photos
 
-**Local** (primary workflow) — drop image files into `local/`, or write directly in Obsidian (this repo doubles as the vault). On build: auto-renamed to `YYYY-MM-DD-slug.ext`, sidecar created in `sidecars/` with real EXIF pre-filled and the photo embedded inline, 800px thumbnail + 2400px display + watermarked download generated.
-
-**Glass** (legacy — historic photos only, no longer actively posted to) — existing Glass photos keep working as before; set `glass.username` in `config.js` if you ever want to sync new ones.
+Drop image files into `local/`, or write directly in Obsidian (this repo doubles as the vault). On build: auto-renamed to `YYYY-MM-DD-slug.ext`, sidecar created in `sidecars/` with real EXIF pre-filled and the photo embedded inline, 800px thumbnail + 2400px display + watermarked download generated.
 
 ---
 
@@ -61,12 +60,12 @@ iso: 400
 dateTaken: "2026-03-09T08:57:02Z"
 ---
 
-![[2026-03-09-bougainvillea.jpg]]
+![](../local/2026-03-09-bougainvillea.jpg)
 
 Description shown in the lightbox and on the photo's permalink page.
 ```
 
-Leave any EXIF field blank to fall back to what Glass or the photo's own EXIF provides. The `![[...]]` embed is optional — shows the photo inline while you write the caption in Obsidian, stripped out automatically before publishing.
+Leave any EXIF field blank to fall back to the photo's own EXIF. The `![](../local/...)` embed is optional — shows the photo inline while you write the caption in Obsidian, stripped out automatically before publishing.
 
 ---
 

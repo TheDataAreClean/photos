@@ -1,5 +1,5 @@
 function mergeAndSort(photos) {
-  // Deduplicate by id — last writer wins (local overrides Glass if same id)
+  // Deduplicate by id — last writer wins
   const map = new Map();
   for (const photo of photos) {
     map.set(photo.id, photo);

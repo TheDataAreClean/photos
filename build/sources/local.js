@@ -4,13 +4,24 @@ const fs     = require('fs/promises');
 const path   = require('path');
 const sharp  = require('sharp');
 const matter = require('gray-matter');
+const rootConfig                     = require('../../config');
 const { extractExif }                = require('../exif');
 const { dateTitleStem, isCleanStem } = require('../utils/slug');
 const { ov, ymlStr, ymlNum, stripImageEmbeds } = require('../utils/sidecar');
 const { applyWatermark }             = require('../watermark');
 
 const IMAGE_EXTS  = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.tiff', '.tif']);
-const SIDECARS_DIR = path.resolve('sidecars');
+// Single source of truth: config.local.sidecarsDir (see config.js). Other
+// scripts (rename-local.js, strip-title-periods.js, publish-local.js) must
+// derive this same path from config rather than hardcoding "sidecars".
+const SIDECARS_DIR = path.resolve(rootConfig.local.sidecarsDir);
+
+// Single source of truth for the overridable string EXIF fields — used by
+// sidecarStub() (the auto-created template), backfillExifLines() (fills in
+// blank lines on a template-created sidecar), and finalExif (the merged
+// sidecar-override-vs-EXIF result). `iso` is handled alongside these but
+// kept separate since it's numeric (ymlNum, not ymlStr).
+const EXIF_STR_FIELDS = ['camera', 'lens', 'focalLength', 'focalLength35', 'aperture', 'shutterSpeed'];
 
 async function fsExists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -113,11 +124,11 @@ async function processOne(filename, photosDir, outputDir, config) {
   const stem     = path.parse(filename).name;
   const datePart = stem.slice(0, 10);
   const rest     = stem.slice(11);
-  const id       = rest ? `${datePart}-local-${rest}` : `${datePart}-local`;
+  const id       = rest ? `${datePart}-${rest}` : datePart;
 
   const thumbName        = `${stem}@800.webp`;
-  const displayFilename  = `${stem}@2400.webp`;
-  const downloadFilename = `${stem}@2400-wm.webp`;
+  const displayFilename  = `${stem}@2400.avif`;
+  const downloadFilename = `${stem}@2400-wm.avif`;
 
   try {
     const source = sharp(filepath);
@@ -132,16 +143,12 @@ async function processOne(filename, photosDir, outputDir, config) {
     const finalDateTaken = ov(d.dateTaken, exifData.dateTaken);
 
     const finalExif = {
-      camera:        ov(d.camera,        exifData.camera),
-      lens:          ov(d.lens,          exifData.lens),
-      focalLength:   ov(d.focalLength,   exifData.focalLength),
-      focalLength35: ov(d.focalLength35, exifData.focalLength35),
-      aperture:      ov(d.aperture,      exifData.aperture),
-      shutterSpeed:  ov(d.shutterSpeed,  exifData.shutterSpeed),
-      iso:           ov(d.iso,           exifData.iso),
-      flash:         exifData.flash ?? null,
-      gps:           exifData.gps   ?? null,
-      dateTaken:     finalDateTaken,
+      ...Object.fromEntries(
+        EXIF_STR_FIELDS.map(field => [field, ov(d[field], exifData[field])])
+      ),
+      iso:       ov(d.iso, exifData.iso),
+      flash:     exifData.flash ?? null,
+      dateTaken: finalDateTaken,
     };
 
     // Only generate output images when any file is missing — avoids full
@@ -160,8 +167,8 @@ async function processOne(filename, photosDir, outputDir, config) {
 
       await Promise.all([
         resizeImage(source.clone(), path.join(outputDir, thumbName), config.local.thumbWidth),
-        sharp(displayBuf).webp({ quality: 95 }).toFile(path.join(outputDir, displayFilename)),
-        sharp(watermarked).webp({ quality: 95 }).toFile(path.join(outputDir, downloadFilename)),
+        sharp(displayBuf).avif({ quality: 75, effort: 6 }).toFile(path.join(outputDir, displayFilename)),
+        sharp(watermarked).avif({ quality: 75, effort: 6 }).toFile(path.join(outputDir, downloadFilename)),
       ]);
     }
 
@@ -180,7 +187,6 @@ async function processOne(filename, photosDir, outputDir, config) {
         display:  `/photos/${displayFilename}`,
         download: `/photos/${downloadFilename}`,
         thumb:    `/photos/${thumbName}`,
-        glass:    null,
       },
       width:       sharpMeta.width  || null,
       height:      sharpMeta.height || null,
@@ -193,7 +199,6 @@ async function processOne(filename, photosDir, outputDir, config) {
       seriesOrder:      sidecar?.data?.seriesOrder ?? null,
       sidecarUpdatedAt: sidecar?._mtime || null,
       _local:           { filename, sidecarFound: !!sidecar },
-      _glass:      null,
     };
   } catch (err) {
     console.warn(`  Skipping ${filename}: ${err.message}`);
@@ -207,21 +212,20 @@ async function processOne(filename, photosDir, outputDir, config) {
 // Obsidian's Properties panel — a nested object just renders as opaque YAML
 // there.
 function sidecarStub(exifData, dateTaken, filename) {
+  const exifLines = EXIF_STR_FIELDS
+    .map(field => `${field}:${ymlStr(exifData[field])}`)
+    .join('\n');
+
   return `---
 title:
 
 # Edit any value below — leave blank to fall back to EXIF
-camera:${ymlStr(exifData.camera)}
-lens:${ymlStr(exifData.lens)}
-focalLength:${ymlStr(exifData.focalLength)}
-focalLength35:${ymlStr(exifData.focalLength35)}
-aperture:${ymlStr(exifData.aperture)}
-shutterSpeed:${ymlStr(exifData.shutterSpeed)}
+${exifLines}
 iso:${ymlNum(exifData.iso)}
 dateTaken:${ymlStr(dateTaken)}
 ---
 
-![[${filename}]]
+![](../local/${filename})
 
 `.trimEnd() + '\n';
 }
@@ -234,38 +238,52 @@ dateTaken:${ymlStr(dateTaken)}
 // matches, so re-running on an already-filled sidecar is a no-op. Edits the
 // raw text directly (not a parse+re-stringify) so comments/formatting the
 // user is looking at in Obsidian survive untouched.
-const EXIF_STR_FIELDS = ['camera', 'lens', 'focalLength', 'focalLength35', 'aperture', 'shutterSpeed'];
-
 function backfillExifLines(rawContent, exifData, dateTaken) {
-  let updated = rawContent;
+  // Scoped to the YAML frontmatter block only (between the leading `---`
+  // delimiters) — must NOT run against the Markdown body, or a caption that
+  // happens to contain a bare line like "lens:" (e.g. a shot-log note) would
+  // get silently overwritten with EXIF data and the corruption persisted to
+  // disk on the next write.
+  const fmMatch = rawContent.match(/^(---\r?\n)([\s\S]*?)(\r?\n---)/);
+  if (!fmMatch) return { updated: rawContent, changed: false };
+
+  const [fullMatch, open, frontmatter, close] = fmMatch;
+  let updatedFm = frontmatter;
   let changed = false;
 
   for (const field of EXIF_STR_FIELDS) {
     if (exifData[field] == null) continue;
     const re = new RegExp(`^(${field}:)[ \\t]*$`, 'm');
-    if (re.test(updated)) {
-      updated = updated.replace(re, `$1${ymlStr(exifData[field])}`);
+    if (re.test(updatedFm)) {
+      updatedFm = updatedFm.replace(re, `$1${ymlStr(exifData[field])}`);
       changed = true;
     }
   }
 
   if (exifData.iso != null) {
     const isoRe = /^(iso:)[ \t]*$/m;
-    if (isoRe.test(updated)) {
-      updated = updated.replace(isoRe, `$1${ymlNum(exifData.iso)}`);
+    if (isoRe.test(updatedFm)) {
+      updatedFm = updatedFm.replace(isoRe, `$1${ymlNum(exifData.iso)}`);
       changed = true;
     }
   }
 
   if (dateTaken) {
     const dateRe = /^(dateTaken:)[ \t]*$/m;
-    if (dateRe.test(updated)) {
-      updated = updated.replace(dateRe, `$1${ymlStr(dateTaken)}`);
+    if (dateRe.test(updatedFm)) {
+      updatedFm = updatedFm.replace(dateRe, `$1${ymlStr(dateTaken)}`);
       changed = true;
     }
   }
 
-  return { updated, changed };
+  if (!changed) return { updated: rawContent, changed: false };
+
+  const updated =
+    rawContent.slice(0, fmMatch.index) +
+    open + updatedFm + close +
+    rawContent.slice(fmMatch.index + fullMatch.length);
+
+  return { updated, changed: true };
 }
 
 async function loadSidecar(dir, stem, exifData, dateTaken, filename) {
@@ -304,4 +322,4 @@ async function resizeImage(source, dest, width) {
   }
 }
 
-module.exports = { processLocal };
+module.exports = { processLocal, backfillExifLines, sidecarStub };

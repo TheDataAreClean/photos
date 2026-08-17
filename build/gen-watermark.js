@@ -14,11 +14,13 @@ const fs   = require('fs/promises');
 const path = require('path');
 const https = require('https');
 const http  = require('http');
+const config = require('../config');
 
 const FONT_CSS      = 'https://fonts.googleapis.com/css2?family=Schoolbell&display=swap';
 const FONT_TTF_CACHE = path.resolve('.cache/schoolbell.ttf');
 const OUT_PATH      = path.resolve('build/assets/watermark.png');
-const TEXT          = '@thedataareclean';
+// Single source of truth: config.site.handle (also used by build/og-image.js)
+const TEXT          = `@${config.site.handle}`;
 
 async function main() {
   // ── 1. Ensure Schoolbell TTF is cached ───────────────

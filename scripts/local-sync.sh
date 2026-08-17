@@ -18,8 +18,14 @@ find_node() {
   # 1. nvm (sources .nvm/nvm.sh if present)
   if [ -s "$HOME/.nvm/nvm.sh" ]; then
     export NVM_DIR="$HOME/.nvm"
+    # nvm.sh can return non-zero as normal internal control flow; under
+    # `set -e` that would silently abort this whole script before we ever
+    # reach the Homebrew/PATH fallbacks below. Disable -e only around the
+    # source call, then restore it immediately after.
+    set +e
     # shellcheck source=/dev/null
     source "$NVM_DIR/nvm.sh" --no-use
+    set -e
     if command -v nvm &>/dev/null; then
       nvm use default --silent 2>/dev/null || true
     fi

@@ -4,6 +4,8 @@ module.exports = {
     title:       'Memories | TheDataAreClean',
     displayTitle: 'Memories',
     description: 'My experiments behind the viewfinder.',
+    // Attribution handle drawn on the monthly OG image
+    handle: 'thedataareclean',
     // Full URL of your deployed site (no trailing slash).
     // Used for absolute Open Graph image URLs.
     // Can be set via environment variable: SITE_URL=https://example.com npm run build
@@ -18,21 +20,15 @@ module.exports = {
     })(),
   },
 
-  glass: {
-    // Your Glass username (the part after glass.photo/@)
-    username: 'thedataareclean',
-    // Optional auth token — improves rate limits but not required for public profiles.
-    // Set via environment variable: GLASS_TOKEN=your_token npm run build
-    token: process.env.GLASS_TOKEN || null,
-    // Maximum number of Glass photos to fetch
-    maxPhotos: 500,
-  },
-
   local: {
-    // Folder containing your local photo files (relative to project root).
+    // Folder containing your photo files (relative to project root).
     // Drop .jpg / .jpeg / .png / .webp / .heic files here.
-    // Files are auto-renamed to YYYY-MM-DD-local-slug.ext on build.
+    // Files are auto-renamed to YYYY-MM-DD-slug.ext on build.
     photosDir: './local',
+    // Folder containing one Markdown sidecar per photo (captions + EXIF
+    // overrides). Single source of truth for this path — every script that
+    // reads/writes sidecars should derive it from here, not hardcode it.
+    sidecarsDir: './sidecars',
     // Width of grid thumbnails in pixels (originals are served in the lightbox)
     thumbWidth: 800,
   },
@@ -48,10 +44,8 @@ module.exports = {
   },
 
   build: {
-    outputDir:       './dist',
-    cacheDir:        './.cache',
-    // How long to reuse the cached Glass API response (minutes)
-    cacheTTLMinutes: 60,
+    outputDir: './dist',
+    cacheDir:  './.cache',
   },
 
 };

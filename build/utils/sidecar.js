@@ -14,7 +14,7 @@ function ymlNum(v) { return v != null ? ` ${v}`   : ''; }
 // Markdown `![alt](url)`, including plain external URLs) out of a sidecar
 // body before it's used as a photo's description. Lets you see the photo
 // inline while writing the caption without the embed syntax leaking onto
-// the live site. Shared by glass.js and local.js.
+// the live site.
 function stripImageEmbeds(text) {
   if (!text) return text;
   return text

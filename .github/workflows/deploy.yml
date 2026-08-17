@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 6 1 * *'   # 1st of every month, 06:00 UTC — refreshes OG image
-    - cron: '0 6 * * 1'   # every Monday, 06:00 UTC — picks up Glass edits/new photos
 
 permissions:
   contents: write
@@ -33,30 +32,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run tests
+        run: npm test
+
       - name: Install system fonts
         run: sudo apt-get install -y fonts-open-sans fonts-liberation
 
-      - name: Cache Glass API response
+      - name: Cache fonts
         uses: actions/cache@v4
         with:
           path: .cache
           key: photos-cache-${{ runner.os }}-${{ github.run_id }}
           restore-keys: photos-cache-${{ runner.os }}-
 
-      - name: Sync Glass API
-        run: npm run sync:glass
-        env:
-          GLASS_TOKEN: ${{ secrets.GLASS_TOKEN }}
-
-      - name: Check for sidecar/Glass drift
-        if: github.event_name == 'schedule'
-        run: node scripts/sweep-glass-drift.js
-
       - name: Build
         run: npm run build
         env:
           SITE_URL: https://photos.thedataareclean.com
-          GLASS_TOKEN: ${{ secrets.GLASS_TOKEN }}
           R2_BUCKET: ${{ secrets.BUCKET_NAME }}
           R2_ENDPOINT_URL: ${{ secrets.ENDPOINT_URL }}
           R2_ACCESS_KEY_ID: ${{ secrets.ACCESS_KEY_ID }}

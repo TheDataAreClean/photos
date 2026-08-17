@@ -15,18 +15,24 @@
 const fs     = require('fs/promises');
 const path   = require('path');
 const matter = require('gray-matter');
+const config = require('../config');
 const { extractExif }               = require('../build/exif');
 const { dateTitleStem, isCleanStem } = require('../build/utils/slug');
 
-const LOCAL_DIR  = path.resolve(__dirname, '../local');
+const PROJECT_DIR = path.resolve(__dirname, '..');
+// Images and sidecars live in separate directories (config.js is the single
+// source of truth for both) — a sidecar for local/foo.jpg lives at
+// sidecars/foo.md, NOT local/foo.md.
+const PHOTOS_DIR    = path.resolve(PROJECT_DIR, config.local.photosDir);
+const SIDECARS_DIR  = path.resolve(PROJECT_DIR, config.local.sidecarsDir);
 const DRY_RUN    = !process.argv.includes('--apply');
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.heic', '.tiff', '.tif']);
 
 async function main() {
-  const entries = await fs.readdir(LOCAL_DIR);
+  const entries = await fs.readdir(PHOTOS_DIR);
   const images  = entries.filter(f => IMAGE_EXTS.has(path.extname(f).toLowerCase()));
 
-  if (!images.length) { console.log('No images in ./local/'); return; }
+  if (!images.length) { console.log(`No images in ${config.local.photosDir}/`); return; }
 
   const usedStems = new Set(
     images.map(f => path.parse(f).name).filter(isCleanStem)
@@ -37,7 +43,7 @@ async function main() {
     if (isCleanStem(stem)) return null; // already clean
 
     const ext      = path.extname(filename).toLowerCase();
-    const filepath = path.join(LOCAL_DIR, filename);
+    const filepath = path.join(PHOTOS_DIR, filename);
 
     let date = null;
     try {
@@ -48,7 +54,7 @@ async function main() {
 
     let title = null;
     try {
-      const raw = await fs.readFile(path.join(LOCAL_DIR, `${stem}.md`), 'utf8');
+      const raw = await fs.readFile(path.join(SIDECARS_DIR, `${stem}.md`), 'utf8');
       title = matter(raw).data?.title || null;
     } catch {}
 
@@ -60,7 +66,7 @@ async function main() {
     }
     usedStems.add(newStem);
 
-    const hasSidecar = await fs.access(path.join(LOCAL_DIR, `${stem}.md`)).then(() => true).catch(() => false);
+    const hasSidecar = await fs.access(path.join(SIDECARS_DIR, `${stem}.md`)).then(() => true).catch(() => false);
 
     return { stem, newStem, ext, filename, newFile: `${newStem}${ext}`, hasSidecar };
   }));
@@ -77,11 +83,11 @@ async function main() {
     console.log();
 
     if (!DRY_RUN) {
-      await fs.rename(path.join(LOCAL_DIR, filename), path.join(LOCAL_DIR, newFile));
+      await fs.rename(path.join(PHOTOS_DIR, filename), path.join(PHOTOS_DIR, newFile));
       if (hasSidecar) {
         await fs.rename(
-          path.join(LOCAL_DIR, `${stem}.md`),
-          path.join(LOCAL_DIR, `${newStem}.md`)
+          path.join(SIDECARS_DIR, `${stem}.md`),
+          path.join(SIDECARS_DIR, `${newStem}.md`)
         );
       }
     }

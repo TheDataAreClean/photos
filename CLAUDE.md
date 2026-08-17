@@ -16,6 +16,7 @@ Operating manual for Claude. Architecture lives in [APP.md](APP.md). Commands li
 
 ## Before you change code
 
+- Run `npm test` — unit tests for the pure logic (slug generation, sidecar parsing/overrides, EXIF backfill), must pass
 - Run `npm run build` — must exit zero errors, zero warnings
 - Check browser console — no JS errors, no 404s
 - Test the golden path: grid loads → lightbox opens → prev/next/close → per-photo page loads
@@ -26,11 +27,8 @@ Operating manual for Claude. Architecture lives in [APP.md](APP.md). Commands li
 
 ## Common traps
 
-**Changing a Glass slug breaks the URL**
-The slug is derived from the text before the first period or newline in the Glass description (so "Gate #12." → `gate-12`, ID `2026-05-16-gate-12`). Change that text → new slug → 404 for old links. To update display text without breaking the URL, edit the sidecar body — not the Glass description.
-
-**Glass descriptions with mid-sentence periods truncate the ID**
-A description like "Mr. Smith waves." produces the snippet "Mr" → ID ending in `-mr`. Numbered series rely on this (`#12.` → `12`), but unrelated abbreviations or initials at the start of a description will produce short, possibly colliding slugs.
+**Renaming a photo's file (or its sidecar) breaks the URL**
+`id` — and so the permalink `/photos/{id}/` — comes straight from the image's filename stem. `autoRename()` only touches filenames that aren't already "clean" (`isCleanStem()` in `build/utils/slug.js`), so once a file has been renamed once, editing its sidecar's `title:` afterward does *not* rename it again — safe. Manually renaming the image or sidecar file yourself is what breaks the URL.
 
 **Empty EXIF sidecar fields fall back to source, not blank**
 EXIF fields (`camera`, `lens`, `aperture`, etc.) are top-level sidecar properties, not nested — `camera: ""` restores the EXIF source value. `iso: 0` overrides with 0 — be explicit with numeric zeros.
@@ -38,11 +36,8 @@ EXIF fields (`camera`, `lens`, `aperture`, etc.) are top-level sidecar propertie
 **Auto-rename runs before the sidecar is read**
 First build after dropping a new local photo: sidecar is created from EXIF, then the file is renamed. Two-step build is normal for new files — no data is lost.
 
-**Glass cache TTL is 1 hour**
-New Glass photos won't appear until the cache expires. Use `npm run build:fresh` or `npm run sync:glass` to force a re-fetch.
-
-**Local photo URLs must be root-relative**
-`/photos/filename.jpg` not `photos/filename.jpg` — they resolve from `/photos/YYYY-MM-DD-local-slug/` permalink pages.
+**Photo URLs must be root-relative**
+`/photos/filename.jpg` not `photos/filename.jpg` — they resolve from `/photos/YYYY-MM-DD-slug/` permalink pages.
 
 **`overflow-x: hidden` on `<html>` or `<body>` can break `position: fixed` on iOS Safari**
 On `<html>`: fixed children behave as `position: absolute`. On `<body>`: real child elements may be contained by body rather than the viewport on some iOS versions. The codebase uses `overflow-x: clip` on `body` (see `base.css`) — same visual clipping result, does not create a scroll container, does not trap fixed elements. Never revert this to `hidden`.
@@ -89,8 +84,8 @@ _includes/layouts/base.njk  HTML shell, OG tags, feed autodiscovery
 src/index.njk          Gallery index (grid, stack, lightbox, infinite scroll)
 src/feed.njk           Atom feed → dist/feed.xml
 src/styles/base.css    Design tokens — all CSS custom properties
-build/sources/glass.js Glass API, sidecar create/merge, sidecarUpdatedAt
-build/sources/local.js Local processor, auto-rename, sidecarUpdatedAt
+build/sources/local.js Photo processor: auto-rename, EXIF, sidecar create/merge
+build/sources/r2.js    R2 backup/restore for local/ originals
 build/og-image.js      Monthly OG image (seeded PRNG, 6 templates)
 build/series.js        loadSeries() — parses series/*.md into slug → meta map
 series/*.md            One file per series: title, cover photo, ordered photo list
@@ -112,16 +107,17 @@ src/scripts/series-overlay.js  Full-screen series viewer (thumbnail strip, prev/
 
 ## Pre-push checklist
 
+- [ ] `npm test` — all unit tests pass
 - [ ] `npm run build` — zero errors, zero warnings
 - [ ] `dist/` not committed
 - [ ] Browser console clean — no JS errors, no 404s
-- [ ] New local photos renamed (date-based stem) and sidecars auto-created
-- [ ] `sidecars/` has one file per photo (Glass + local, both sources share it)
+- [ ] New photos renamed (date-based stem) and sidecars auto-created
+- [ ] `sidecars/` has one file per photo
 - [ ] Gallery grid loads, masonry correct at desktop + mobile
 - [ ] Lightbox opens (desktop: FLIP zoom; mobile: fade), prev/next/close, keyboard nav
 - [ ] Lightbox close when card is off-screen: zoom-out fade (no squish/stretch)
 - [ ] Infinite scroll loads next chunk when > 60 photos
-- [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{slug}/` (Glass) or `/photos/YYYY-MM-DD-local-{slug}/` (local)
+- [ ] Per-photo pages load at `/photos/YYYY-MM-DD-{slug}/`
 - [ ] View toggle widget visible bottom-right, all three buttons functional
 - [ ] Grid ↔ stack switch persists across page reload
 - [ ] Shuffle toggle randomises order on reload; toggling off restores date order
@@ -151,6 +147,6 @@ git push origin v1.2.3
 
 **Commit convention:** `{Type}: {description}` — types: `Add` `Fix` `Update` `Refactor` `Docs` `Chore`
 
-**Never tag content commits** — photo syncs, Glass sidecar edits, and `Chore: sync Glass` commits are not releases.
+**Never tag content commits** — photo syncs, sidecar edits, and `Chore: auto-sync new sidecars` commits are not releases.
 
 Move UNRELEASED entries in [CHANGELOG.md](CHANGELOG.md) to a dated version block on each release.

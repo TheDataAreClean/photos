@@ -121,12 +121,4 @@ async function uploadNew(config) {
   return { uploaded: toUpload.length };
 }
 
-// ── Generic single-object upload (used by scripts/backup-glass.js) ───
-async function putObject(config, key, buffer) {
-  if (!isConfigured(config)) return false;
-  const client = getClient(config);
-  await client.send(new PutObjectCommand({ Bucket: config.r2.bucket, Key: key, Body: buffer }));
-  return true;
-}
-
-module.exports = { downloadMissing, uploadNew, putObject, isConfigured };
+module.exports = { downloadMissing, uploadNew, isConfigured };
