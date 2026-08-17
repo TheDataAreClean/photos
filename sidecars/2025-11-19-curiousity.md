@@ -14,6 +14,6 @@ dateTaken: "2025-11-19T16:05:34Z"
 ---
 
 
-![](https://cdn.glass.photo/OZkDIcCx2UUKr9ChLpPhyIlJwYwUtEZR2ltACnHiueg/rs:fit:3072:3072:0/q:90/L3Bvc3QvM2MxNmI5ZjctNWVmMi00Njg3LWIwYWYtMjYyZWJkZWI5MjJjL3Bob3Rv)
+![](../local/2025-11-19-curiousity.jpg)
 
 curiousity.

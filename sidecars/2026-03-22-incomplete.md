@@ -14,7 +14,7 @@ dateTaken: "2026-03-22T03:58:41Z"
 ---
 
 
-![](https://cdn.glass.photo/j8E7F70w_kQW_rt-a53BRhuQ8MJrFy-xifFl9UQS3GU/rs:fit:3072:3072:0/q:90/L3Bvc3QvNjNhNmFhMWYtMmQ2Mi00MTZlLTk4MjMtNTZhMjFjNDRlMDY4L3Bob3Rv)
+![](../local/2026-03-22-incomplete.jpg)
 
 After moving into our new house nearly five years ago, a house where mirrors (huge mirrors) are installed right into the cupboards, this one has been sitting idle. Unused.
 

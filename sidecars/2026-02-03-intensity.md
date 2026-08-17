@@ -14,6 +14,6 @@ dateTaken: "2026-02-03T19:54:13Z"
 ---
 
 
-![](https://cdn.glass.photo/MmJpkct-hGQCSHWFRAp5FWY8uqQNb35__4mDZBfhTdo/rs:fit:3072:3072:0/q:90/L3Bvc3QvMTM5M2JiNTEtOTIyYi00MDhjLWFiYWItY2E4ZGY3NjNmZTJjL3Bob3Rv)
+![](../local/2026-02-03-intensity.jpg)
 
 intensity.

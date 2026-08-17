@@ -16,4 +16,4 @@ dateTaken: "2025-11-16T04:01:46Z"
 ---
 
 
-![](https://cdn.glass.photo/aFxvO-s0RyPWUrz9T-6vf_nQCtY5kgCygqONkm9-5xw/rs:fit:3072:3072:0/q:90/L3Bvc3QvYWNjZTRlM2UtOTBlYS00MzkzLWFlMzAtNjg2MzdhNGE5Y2RkL3Bob3Rv)
+![](../local/2025-11-16-park-grass.jpg)

@@ -16,4 +16,4 @@ dateTaken: "2026-01-13T21:09:23Z"
 ---
 
 
-![](https://cdn.glass.photo/IFGf2m3rAvGOvLW18uz-wqeT4z7taIBQx_i8tyN2olo/rs:fit:3072:3072:0/q:90/L3Bvc3QvZTQ1ODRkOWQtMzk1Ni00MzE0LTgxNWItOTRjODgyYThmMDM1L3Bob3Rv)
+![](../local/2026-01-13-forest-light.jpg)

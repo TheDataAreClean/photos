@@ -14,7 +14,7 @@ dateTaken: "2026-03-09T08:57:02Z"
 ---
 
 
-![](https://cdn.glass.photo/azAzlQxE2vPHyn95Jj1iAAcfad7IVZGwPNMSoI0np24/rs:fit:3072:3072:0/q:90/L3Bvc3QvYTlkZjk5Y2UtZGY5Mi00NTYwLThmMDgtMjRmMTUxNjllOWE3L3Bob3Rv)
+![](../local/2026-03-09-bougainvillea.jpg)
 
 The yearly cycle of flowers colouring Bengaluru never ceases to amaze me even after all these years. And the summers are for bougainvilleas (amongst some others).
 
