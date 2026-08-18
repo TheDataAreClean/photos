@@ -20,6 +20,8 @@ R2 bucket ─→ local/ ┐
 
 `local/` originals are gitignored (raw EXIF/GPS) and a fresh CI checkout never has them — a private Cloudflare R2 bucket is the backup and the thing CI actually builds from. `downloadMissing()` pulls anything the checkout is missing into `local/` before `processLocal()` runs; `npm run sync:r2` pushes new originals from your machine up to the bucket. Both directions no-op silently when R2 env vars aren't set, so local dev without R2 configured is unaffected.
 
+Since Glass retired, R2 is the *sole* source of originals for CI — there is no fallback. A misconfigured bucket (wrong name, wrong token scope, a rotated/expired credential) doesn't fail the build; `downloadMissing()`'s error is caught and just logged as a warning (`_data/photos.js`), so CI happily builds and deploys an empty gallery. Local (`R2_*` env vars) and CI (`BUCKET_NAME`/`ENDPOINT_URL`/`ACCESS_KEY_ID`/`SECRET_ACCESS_KEY` repo secrets) must reference the *same* bucket and token — see the R2 entry in [CLAUDE.md](CLAUDE.md)'s Common traps for the specific failure modes this can produce.
+
 Eleventy is the only build step. `_data/photos.js` runs first and produces both the photo array (consumed by templates) and all side-effect outputs (images, JSON, sidecars) before any HTML is generated.
 
 ---
@@ -49,6 +51,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `build/merge.js` | Dedup by id (last writer wins) + date sort |
 | `build/og-image.js` | Monthly OG image generation via `@napi-rs/canvas` |
 | `build/watermark.js` | Watermark compositing via sharp (resize result cached per target size) |
+| `build/gen-watermark.js` | Generates `build/assets/watermark.png` (handle text in Schoolbell) consumed by `watermark.js`; run manually or auto-invoked on first build if the PNG is missing. Reads the handle from `config.site.handle` |
 | `scripts/sync-r2.js` | Standalone R2 backup — uploads new `local/` originals to the bucket |
 | `scripts/publish-local.js` | Backs up new `local/` originals to R2, then commits + pushes `sidecars/` if changed — the push triggers CI build/deploy |
 | `test/*.test.js` | `node --test` unit tests for pure logic: slug generation, sidecar `ov()`/embed-stripping, EXIF backfill. No framework — Node's built-in test runner |

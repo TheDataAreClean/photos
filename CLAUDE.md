@@ -54,6 +54,13 @@ The old endpoint now returns dynamic `fonts.gstatic.com` URLs with no extension.
 **Feed `<updated>` only bumps when the sidecar file is saved**
 The pipeline reads sidecar `mtime` via `fs.stat()`. If you edit a description but the file mtime doesn't change (e.g. copying content without touching the file), the feed won't signal an update. Just save the file normally.
 
+**R2 credentials that "connect fine" can still fail silently, or fail differently at each step**
+`local/` is gitignored — since Glass retired, R2 is the *only* source of originals for CI, so a misconfigured bucket means CI builds with **zero photos** and still deploys successfully (no error — `downloadMissing()`'s failure is caught and only logged as a warning in `_data/photos.js`). Three distinct, easy-to-conflate failure modes:
+- **Wrong bucket name** (e.g. using the site's display name instead of the actual R2 bucket name) → `Access Denied` on every call, even with a correctly-scoped, correctly-permissioned token.
+- **List works, Get (download) doesn't, or vice versa** — R2 API tokens can end up authorized for one S3 operation but not another; a clean `ListObjectsV2` response with `object count: 0` only proves the bucket is reachable and empty, not that a subsequent `GetObject` will succeed once it has content.
+- **A token that worked yesterday can be `401 Unauthorized` today** if it gets rotated/deleted later (e.g. as a "let's clean up now that I'm done" step) — nothing in the app changes, only the credential's validity did.
+Local (`R2_BUCKET`/`R2_ENDPOINT_URL`/`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY` exported in your shell for `npm run sync:r2`) and CI (`BUCKET_NAME`/`ENDPOINT_URL`/`ACCESS_KEY_ID`/`SECRET_ACCESS_KEY` repo secrets) **must reference the exact same bucket and the exact same token** — two different "working" tokens for the same bucket is a common way to end up debugging a phantom permissions mismatch that's actually just two different credentials being compared. If CI ever reports `Local: no images found in ./local` with no R2 log line above it, or an R2 error, don't assume "not configured" — verify the *actual* live bucket object count first (least effort: temporarily add a one-off script that just runs `ListObjectsV2` and logs the count, as a CI step or job — cheap in-place instrumentation using the real repo secrets beats guessing from outside).
+
 ---
 
 ## Review triggers
@@ -129,6 +136,7 @@ src/scripts/series-overlay.js  Full-screen series viewer (thumbnail strip, prev/
 - [ ] Series folder card renders in grid, opens series overlay
 - [ ] Series overlay: thumbnail strip, prev/next, counter work; closing restores focus to the folder card; clicking a photo opens the lightbox
 - [ ] Series permalink page loads at `/series/{slug}/`
+- [ ] If `local/` originals changed or R2 credentials changed: confirm the R2 bucket actually has the expected object count (not just that a sync script reported success) *before* relying on a from-scratch CI build — CI deploying an empty gallery is a silent, non-failing outcome
 
 ---
 
