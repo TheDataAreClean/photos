@@ -28,13 +28,13 @@ Operating manual for Claude. Architecture lives in [APP.md](APP.md). Commands li
 ## Common traps
 
 **Renaming a photo's file (or its sidecar) breaks the URL**
-`id` — and so the permalink `/photos/{id}/` — comes straight from the image's filename stem. `autoRename()` only touches filenames that aren't already "clean" (`isCleanStem()` in `build/utils/slug.js`), so once a file has been renamed once, editing its sidecar's `title:` afterward does *not* rename it again — safe. Manually renaming the image or sidecar file yourself is what breaks the URL.
+`id` — and so the permalink `/photos/{id}/` — comes straight from the image's filename stem. `autoRename()` only touches filenames that aren't already "clean" (`isCleanStem()` in `build/utils/slug.js`), so once a file has been renamed once, editing its sidecar's `title:` afterward does *not* rename it again — safe. Manually renaming the image or sidecar file yourself is what breaks the URL. `local.js` looks a sidecar up strictly by the image's current stem (`sidecars/${stem}.md`), so renaming *only* the sidecar doesn't just fail to change the URL — it orphans the sidecar and the next build silently regenerates a blank one under the old name. To actually change a photo's slug, rename image + sidecar together with `npm run rename-photo -- <old-id> <new-id> --apply` (also updates any `series/*.md` reference) — still no redirect from the old URL.
 
 **Empty EXIF sidecar fields fall back to source, not blank**
 EXIF fields (`camera`, `lens`, `aperture`, etc.) are top-level sidecar properties, not nested — `camera: ""` restores the EXIF source value. `iso: 0` overrides with 0 — be explicit with numeric zeros.
 
-**Auto-rename runs before the sidecar is read**
-First build after dropping a new local photo: sidecar is created from EXIF, then the file is renamed. Two-step build is normal for new files — no data is lost.
+**Auto-rename runs before any sidecar is read — a new photo needs a pre-existing sidecar to get a title-based slug**
+On a photo's first build, `autoRename()` runs before `sidecarStub()` creates anything. If no sidecar already exists for the photo's raw filename stem, there's no `title:` to read yet, so it falls back to a timestamp-based stem (`YYYY-MM-DD-HHMMSS`) — permanently (see the renaming trap above). To get a clean slug on the first build, copy [TEMPLATE.md](TEMPLATE.md) into `sidecars/<raw-stem>.md` and fill in `title:` before dropping the photo into `local/`.
 
 **Photo URLs must be root-relative**
 `/photos/filename.jpg` not `photos/filename.jpg` — they resolve from `/photos/YYYY-MM-DD-slug/` permalink pages.
@@ -93,6 +93,7 @@ src/feed.njk           Atom feed → dist/feed.xml
 src/styles/base.css    Design tokens — all CSS custom properties
 build/sources/local.js Photo processor: auto-rename, EXIF, sidecar create/merge
 build/sources/r2.js    R2 backup/restore for local/ originals
+scripts/rename-photo.js Rename a photo's image + sidecar + series refs together
 build/og-image.js      Monthly OG image (seeded PRNG, 6 templates)
 build/series.js        loadSeries() — parses series/*.md into slug → meta map
 series/*.md            One file per series: title, cover photo, ordered photo list

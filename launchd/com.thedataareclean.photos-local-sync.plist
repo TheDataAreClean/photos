@@ -17,6 +17,23 @@
   <key>WorkingDirectory</key>
   <string>/Users/thedataareclean/Documents/thedataareclean/photos</string>
 
+  <!-- launchd does not inherit your interactive shell's `export`s — without
+       these, publish-local.js runs but silently skips the R2 backup step
+       ("R2: not configured"). Fill in your REAL values on the INSTALLED copy
+       at ~/Library/LaunchAgents/ only — never commit real credentials here,
+       this checked-in file must keep placeholders. -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>R2_BUCKET</key>
+    <string>REPLACE_ME</string>
+    <key>R2_ENDPOINT_URL</key>
+    <string>REPLACE_ME</string>
+    <key>R2_ACCESS_KEY_ID</key>
+    <string>REPLACE_ME</string>
+    <key>R2_SECRET_ACCESS_KEY</key>
+    <string>REPLACE_ME</string>
+  </dict>
+
   <!-- Every 20 minutes -->
   <key>StartInterval</key>
   <integer>1200</integer>

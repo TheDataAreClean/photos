@@ -13,7 +13,7 @@ Nothing urgent.
 ## NEXT
 
 **Sveltia CMS for sidecar editing — edit captions and tags through a browser UI**
-Sveltia CMS (Git-backed, open source) can manage the `glass-sidecars/` and `local/` `.md` files directly via the GitHub API. Scoped to metadata editing only — keep the local photo ingestion pipeline as-is. Small config, no new infrastructure. Skip photo upload via CMS (raw binaries in Git + pipeline rename conflicts make it messy).
+Sveltia CMS (Git-backed, open source) can manage the `sidecars/` and `local/` `.md` files directly via the GitHub API. Scoped to metadata editing only — keep the local photo ingestion pipeline as-is. Small config, no new infrastructure. Skip photo upload via CMS (raw binaries in Git + pipeline rename conflicts make it messy).
 
 ---
 

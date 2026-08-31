@@ -39,13 +39,15 @@ Full command reference: [COMMANDS.md](COMMANDS.md)
 
 ## Adding photos
 
-Drop image files into `local/`, or write directly in Obsidian (this repo doubles as the vault). On build: auto-renamed to `YYYY-MM-DD-slug.ext`, sidecar created in `sidecars/` with real EXIF pre-filled and the photo embedded inline, 800px thumbnail + 2400px display + watermarked download generated.
+Drop image files into `local/`. On build: auto-renamed to `YYYY-MM-DD-slug.ext`, sidecar created in `sidecars/` with real EXIF pre-filled and the photo embedded inline, 800px thumbnail + 2400px display + watermarked download generated.
+
+To get a clean title-based slug on the first build instead of a timestamp, copy [TEMPLATE.md](TEMPLATE.md) into `sidecars/<raw-filename-stem>.md` and fill in `title:` before dropping the photo in.
 
 ---
 
 ## Photo metadata
 
-Edit the sidecar `.md` file for any photo — EXIF fields are top-level properties (not nested), so each shows up as its own editable row in Obsidian's Properties panel:
+Edit the sidecar `.md` file for any photo — EXIF fields are top-level properties, not nested:
 
 ```markdown
 ---
@@ -65,7 +67,7 @@ dateTaken: "2026-03-09T08:57:02Z"
 Description shown in the lightbox and on the photo's permalink page.
 ```
 
-Leave any EXIF field blank to fall back to the photo's own EXIF. The `![](../local/...)` embed is optional — shows the photo inline while you write the caption in Obsidian, stripped out automatically before publishing.
+Leave any EXIF field blank to fall back to the photo's own EXIF. The `![](../local/...)` embed is optional — shows the photo inline in any Markdown-aware editor while you write the caption, stripped out automatically before publishing.
 
 ---
 
@@ -78,4 +80,5 @@ Leave any EXIF field blank to fall back to the photo's own EXIF. The `![](../loc
 | [COMMANDS.md](COMMANDS.md) | All commands, copy-paste ready |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 | [FUTURE.md](FUTURE.md) | Ideas backlog |
+| [TEMPLATE.md](TEMPLATE.md) | Blank sidecar frontmatter — copy into `sidecars/` to pre-caption a photo before it exists |
 | [CLAUDE.md](CLAUDE.md) | Operating instructions for Claude |

@@ -54,6 +54,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `build/gen-watermark.js` | Generates `build/assets/watermark.png` (handle text in Schoolbell) consumed by `watermark.js`; run manually or auto-invoked on first build if the PNG is missing. Reads the handle from `config.site.handle` |
 | `scripts/sync-r2.js` | Standalone R2 backup — uploads new `local/` originals to the bucket |
 | `scripts/publish-local.js` | Backs up new `local/` originals to R2, then commits + pushes `sidecars/` if changed — the push triggers CI build/deploy |
+| `scripts/rename-photo.js` | Renames one photo's image + sidecar + any `series/*.md` reference together — the only safe way to change a live slug |
 | `test/*.test.js` | `node --test` unit tests for pure logic: slug generation, sidecar `ov()`/embed-stripping, EXIF backfill. No framework — Node's built-in test runner |
 
 ---
@@ -85,7 +86,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 | `url.display` | `/photos/ID@2400.avif` | |
 | `url.download` | `/photos/ID@2400-wm.avif` | watermarked; used in feed image |
 | `url.thumb` | `/photos/ID@800.webp` | |
-| `exif` | sidecar top-level fields (`camera`, `lens`, etc.) → EXIF | one property per field — not nested — so each renders as its own row in Obsidian's Properties panel |
+| `exif` | sidecar top-level fields (`camera`, `lens`, etc.) → EXIF | one property per field — not nested |
 | `tags` | sidecar `tags:` | rendered as hashtags in `feed.njk`; not auto-populated (defaults to `[]`) — add manually to a sidecar if wanted |
 | `series` | `series/*.md` `photos:` list (overrides sidecar `series:`) | slug of the series this photo belongs to, or `null` |
 | `seriesOrder` | `series/*.md` `photos:` list (overrides sidecar `seriesOrder:`) | 1-indexed position within the series |
@@ -110,7 +111,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 ## URL slugs
 
 - **Format:** `YYYY-MM-DD-{slug}` — derived from the image's filename stem, via `dateTitleStem()`/`toSlug()` in `build/utils/slug.js`.
-- **Changing a photo's filename breaks the URL.** The permalink is `/photos/{id}/` and `id` comes straight from the filename — don't rename the image or its sidecar by hand once it's live.
+- **Changing a photo's filename breaks the URL.** The permalink is `/photos/{id}/` and `id` comes straight from the filename — don't rename the image or its sidecar by hand once it's live. Use `npm run rename-photo -- <old-id> <new-id> --apply` (see `scripts/rename-photo.js`) — renaming just the sidecar orphans it, since the sidecar is looked up by the image's current stem.
 - **Auto-rename:** `local.js`'s `autoRename()` only touches filenames that aren't already "clean" (`isCleanStem()`) — a brand-new messy filename (e.g. straight off a phone) gets renamed to a date-based stem once, using the sidecar's `title:` if one already exists, and the sidecar is renamed in lockstep. Once a file has a clean stem, `autoRename()` leaves it alone permanently, even if `title:` changes later.
 
 ---
@@ -119,12 +120,12 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 
 - Every photo has a `.md` sidecar in `sidecars/` — `sidecars/ID.md`. Image files live separately, in `local/`.
 - Auto-created on first build with EXIF values pre-filled
-- EXIF fields (`camera`, `lens`, `focalLength`, `focalLength35`, `aperture`, `shutterSpeed`, `iso`) are **top-level frontmatter properties**, not nested under an `overrideExif:` object — so each shows up as its own editable row in Obsidian's Properties panel instead of opaque YAML
+- EXIF fields (`camera`, `lens`, `focalLength`, `focalLength35`, `aperture`, `shutterSpeed`, `iso`) are **top-level frontmatter properties**, not nested under an `overrideExif:` object — each is independently editable
 - These fields fall back to the photo's real EXIF when empty (`""` = not set, not override) — the `ov(override, fallback)` helper in `build/utils/sidecar.js` implements this
 - `tags:` is not auto-populated (defaults to `[]`) — add manually to a sidecar if wanted
-- **Auto-generated sidecars embed the photo itself** — `![](../local/filename)`, standard Markdown syntax (not Obsidian's `![[wikilink]]` embed) pointing at the actual file in `local/`. Every sidecar shows its photo when opened, not just ones you build yourself from the Obsidian template.
-- **EXIF auto-backfill:** if a sidecar's EXIF/`dateTaken` fields are blank (e.g. a note created ahead of time in Obsidian from the New Photo template, before the photo's ever been processed), `backfillExifLines()` in `local.js` writes the real extracted values into those exact lines on disk — a targeted text replace, not a full re-serialize, so comments/formatting survive. Idempotent: once a line has a value it's left alone.
-- **Image embeds in the body:** any embed (Markdown `![](url)`/`![](../local/file)`, or Obsidian `![[photo.jpg]]` if written by hand) in the sidecar body is stripped out by `stripImageEmbeds()` (`build/utils/sidecar.js`) before the body becomes the photo's `description` — lets you see the photo inline while writing the caption without the embed syntax leaking onto the live site.
+- **Auto-generated sidecars embed the photo itself** — `![](../local/filename)`, standard Markdown, pointing at the actual file in `local/`. Every sidecar shows its photo inline when opened in any Markdown-aware editor.
+- **EXIF auto-backfill:** if a sidecar's EXIF/`dateTaken` fields are blank (e.g. pre-created from [`TEMPLATE.md`](TEMPLATE.md) before the photo's ever been processed), `backfillExifLines()` in `local.js` writes the real extracted values into those exact lines on disk — a targeted text replace, not a full re-serialize, so comments/formatting survive. Idempotent: once a line has a value it's left alone.
+- **Image embeds in the body:** any Markdown embed (`![](url)` or `![](../local/file)`) in the sidecar body is stripped out by `stripImageEmbeds()` (`build/utils/sidecar.js`) before the body becomes the photo's `description` — lets you see the photo inline while writing the caption without the embed syntax leaking onto the live site.
 
 ---
 

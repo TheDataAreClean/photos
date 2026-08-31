@@ -16,6 +16,8 @@ All commands, copy-paste ready. See [CLAUDE.md](CLAUDE.md) for when to use each.
 | Back up + commit + push local/ (full auto-publish) | `npm run publish:local` |
 | Rename — dry run | `npm run rename` |
 | Rename — apply | `npm run rename -- --apply` |
+| Rename one photo's slug (image + sidecar + series refs together) — dry run | `npm run rename-photo -- <old-id> <new-id>` |
+| Rename one photo's slug — apply | `npm run rename-photo -- <old-id> <new-id> --apply` |
 | Regenerate favicon assets | `npm run gen:favicon` |
 | Regenerate OG image | `npm run gen:og` |
 
@@ -30,11 +32,17 @@ launchctl load ~/Library/LaunchAgents/com.thedataareclean.photos-local-sync.plis
 
 # Uninstall
 launchctl unload ~/Library/LaunchAgents/com.thedataareclean.photos-local-sync.plist
+
+# Force a run right now instead of waiting for the next 20-min interval
+launchctl kickstart -k gui/$(id -u)/com.thedataareclean.photos-local-sync
 ```
 
 Runs `scripts/local-sync.sh` → `npm run publish:local` every 20 minutes (and once immediately on load). Backs up any new `local/` originals to R2, then commits + pushes `sidecars/` if any changed — the push triggers the normal CI build/deploy. Only ever touches `sidecars/`, never anything else in the repo. Logs to `~/Library/Logs/photos-local-sync.log`.
 
-**Requires:** git push access to work non-interactively (an SSH key without a passphrase prompt, or a cached credential helper) — the same credentials you already use for manual `git push` from this Mac.
+**Requires, after copying the plist to `~/Library/LaunchAgents/`, before it's actually functional:**
+- **R2 credentials, filled into the *installed* copy's `EnvironmentVariables` block** (`R2_BUCKET`/`R2_ENDPOINT_URL`/`R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`) — `launchd` does not inherit your interactive shell's `export`s. Leaving the block absent entirely, the agent skips the R2 backup step cleanly (`R2: not configured`) and still commits+pushes sidecar changes. Leaving the checked-in `REPLACE_ME` placeholders *in place* is different and worse — they're non-empty strings, so the agent treats R2 as configured, tries to use `REPLACE_ME` as a real endpoint, and fails (caught and logged as a warning as of the `publish-local.js` fix, but still means R2 backup silently never runs). Fill in real values or leave the block out — never leave placeholders in an installed copy. Never commit real values to the checked-in template. After editing the installed copy, `launchctl unload` + `launchctl load` again to pick up the change (editing the file alone doesn't reload a running agent).
+- **Full Disk Access for `/bin/bash` and `node`** (System Settings → Privacy & Security → Full Disk Access) — macOS blocks unattended/`launchd` processes from reading `~/Documents` by default, even though your interactive Terminal can access it fine. Without this the log shows `getcwd: cannot access parent directories: Operation not permitted` and the script never even starts.
+- **git push access to work non-interactively** (an SSH key without a passphrase prompt, or a cached credential helper) — the same credentials you already use for manual `git push` from this Mac.
 
 ---
 
