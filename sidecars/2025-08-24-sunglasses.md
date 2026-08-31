@@ -1,9 +1,8 @@
 ---
 title: "Sunglasses"
 
-glassAutoId: "2025-08-24-063125"
 
-# Edit any value below — leave blank to fall back to what Glass provides
+# Edit any value below — leave blank to fall back to EXIF
 camera: "Apple iPhone 15 Pro Max"
 lens: "Back Wide 6.765mm ƒ/1.78"
 focalLength: "7mm"

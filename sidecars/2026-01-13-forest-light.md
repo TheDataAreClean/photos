@@ -1,9 +1,8 @@
 ---
 title: "Forest Light"
 
-glassAutoId: "2026-01-13-210923"
 
-# Edit any value below — leave blank to fall back to what Glass provides
+# Edit any value below — leave blank to fall back to EXIF
 camera: "Apple iPhone 15 Pro Max"
 lens: "Back Wide 6.765mm ƒ/1.78"
 focalLength: "7mm"
