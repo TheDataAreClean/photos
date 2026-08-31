@@ -61,7 +61,13 @@ function validateStagedSidecars() {
 }
 
 async function main() {
-  const { uploaded } = await uploadNew(config);
+  // A backup failure (bad/placeholder credentials, network issue) must not
+  // block the caption commit+push below — mirrors how _data/photos.js
+  // treats downloadMissing() failures as a non-fatal warning.
+  const { uploaded } = await uploadNew(config).catch(err => {
+    console.warn(`  R2: upload failed — ${err.message}`);
+    return { uploaded: 0 };
+  });
   console.log(`✓ R2: ${uploaded} new original(s) uploaded`);
 
   run(`git add ${SIDECARS_PATHSPEC}/`);
