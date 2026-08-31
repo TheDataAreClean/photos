@@ -8,6 +8,7 @@
     "build": "eleventy",
     "test": "node --test",
     "rename": "node scripts/rename-local.js",
+    "rename-photo": "node scripts/rename-photo.js",
     "sync:r2": "node scripts/sync-r2.js",
     "publish:local": "node scripts/publish-local.js",
     "gen:favicon": "node build/gen-favicon.js",
