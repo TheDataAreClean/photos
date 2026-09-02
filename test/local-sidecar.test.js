@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { backfillExifLines, sidecarStub } = require('../build/sources/local');
+const { backfillExifLines, sidecarStub, thumbUrl } = require('../build/sources/local');
 
 const EXIF = {
   camera: 'Fujifilm X-T50',
@@ -102,6 +102,29 @@ test('backfillExifLines', async (t) => {
     assert.equal(changed, false);
     assert.equal(updated, raw);
   });
+
+  await t.test('fills a blank image: line from the stem, not from EXIF', () => {
+    const raw = [
+      '---',
+      'image:',
+      'title: "Test"',
+      '---',
+      '',
+      'Body.',
+      '',
+    ].join('\n');
+
+    const { updated, changed } = backfillExifLines(raw, EXIF, null, '2026-03-09-bougainvillea');
+    assert.equal(changed, true);
+    assert.match(updated, /image: "\/photos\/2026-03-09-bougainvillea@800\.webp"/);
+  });
+
+  await t.test('leaves image: blank when no stem is given', () => {
+    const raw = ['---', 'image:', 'title: "Test"', '---', '', 'Body.', ''].join('\n');
+    const { updated, changed } = backfillExifLines(raw, EXIF, null);
+    assert.equal(changed, false);
+    assert.equal(updated, raw);
+  });
 });
 
 test('sidecarStub', async (t) => {
@@ -122,4 +145,13 @@ test('sidecarStub', async (t) => {
     const stub = sidecarStub(EXIF, null, 'photo.jpg');
     assert.match(stub, /^title:$/m);
   });
+
+  await t.test('image: is pre-filled with the thumbnail URL derived from the filename', () => {
+    const stub = sidecarStub(EXIF, '2026-03-09T08:57:02Z', '2026-03-09-bougainvillea.jpg');
+    assert.match(stub, /image: "\/photos\/2026-03-09-bougainvillea@800\.webp"/);
+  });
+});
+
+test('thumbUrl', () => {
+  assert.equal(thumbUrl('2026-03-09-bougainvillea'), '/photos/2026-03-09-bougainvillea@800.webp');
 });

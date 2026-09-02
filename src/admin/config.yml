@@ -33,7 +33,9 @@ collections:
     identifier_field: title
     create: false
     delete: false
+    thumbnail: image
     fields:
+      - { label: Thumbnail, name: image, widget: image, required: false, hint: "Auto-set from the filename — don't change this" }
       - { label: Title, name: title, widget: string, required: false }
 
       - { label: Camera, name: camera, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }

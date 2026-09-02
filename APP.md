@@ -126,6 +126,7 @@ Eleventy is the only build step. `_data/photos.js` runs first and produces both 
 - **Auto-generated sidecars embed the photo itself** — `![](../local/filename)`, standard Markdown, pointing at the actual file in `local/`. Every sidecar shows its photo inline when opened in any Markdown-aware editor.
 - **EXIF auto-backfill:** if a sidecar's EXIF/`dateTaken` fields are blank (e.g. pre-created from [`TEMPLATE.md`](TEMPLATE.md) before the photo's ever been processed), `backfillExifLines()` in `local.js` writes the real extracted values into those exact lines on disk — a targeted text replace, not a full re-serialize, so comments/formatting survive. Idempotent: once a line has a value it's left alone.
 - **Image embeds in the body:** any Markdown embed (`![](url)` or `![](../local/file)`) in the sidecar body is stripped out by `stripImageEmbeds()` (`build/utils/sidecar.js`) before the body becomes the photo's `description` — lets you see the photo inline while writing the caption without the embed syntax leaking onto the live site.
+- **`image:` (top-level frontmatter, added for Sveltia CMS):** the published thumbnail URL (`/photos/{id}@800.webp`), deterministic from the sidecar's own filename — not read by the build pipeline at all, purely so the CMS list view has something to render. Never derived from the body's `../local/` embed, which isn't reachable from the CMS (`local/` is gitignored — see the R2 trap above). Filled in the same way as the EXIF fields: `sidecarStub()` pre-fills it on a brand-new sidecar, `backfillExifLines()` fills it in on a `TEMPLATE.md`-seeded one once the photo's processed.
 
 ---
 
@@ -215,9 +216,9 @@ Favicon is fixed (variant 4, stacked prints). `build/gen-favicon.js` copies pre-
 
 `/admin` (`src/admin/index.html` + `config.yml`) is [Sveltia CMS](https://github.com/sveltia/sveltia-cms) — a git-backed editor that commits straight to `main` via the GitHub API, same as any manual sidecar edit.
 
-- **Editable:** `sidecars/*.md` (title, EXIF override fields, tags, series/seriesOrder, caption body) and `series/*.md` (title, cover photo, ordered photo list, description) — the `photos` collection has `create: false`/`delete: false`.
+- **Editable:** `sidecars/*.md` (thumbnail, title, EXIF override fields, tags, series/seriesOrder, caption body) and `series/*.md` (title, cover photo, ordered photo list, description) — the `photos` collection has `create: false`/`delete: false`.
 - **Not editable:** new photos. Creating one always stays the `local/` → R2 → `autoRename()` flow — a CMS-authored sidecar wouldn't exist before the photo's first build, so it would miss the clean-slug path (see URL slugs, above).
-- **Wrinkle:** the caption field includes the sidecar's `![](../local/{id}.jpg)` embed line. `stripImageEmbeds()` strips it regardless of exact form, so deleting it in the CMS doesn't break the build — it only loses the inline photo preview next time the file's opened in an editor like Obsidian.
+- **Thumbnails:** the `image:` frontmatter field (see Sidecar semantics, above) — not the caption's `![](../local/{id}.jpg)` embed, which is unreachable from the CMS (`local/` is gitignored) and always renders broken there. `stripImageEmbeds()` strips that embed line regardless of exact form either way, so it's harmless to leave alone or delete — the only loss from deleting it is the inline preview next time the sidecar's opened in an editor like Obsidian.
 - **Auth:** GitHub OAuth via the shared [`sveltia-cms-auth`](https://github.com/sveltia/sveltia-cms-auth) Cloudflare Worker (`base_url` in `config.yml`) — the same Worker `musings/config.yml` uses. Its `ALLOWED_DOMAINS` env var must include `photos.thedataareclean.com` for sign-in to work here.
 
 ---

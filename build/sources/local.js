@@ -212,11 +212,15 @@ async function processOne(filename, photosDir, outputDir, config) {
 // Obsidian's Properties panel — a nested object just renders as opaque YAML
 // there.
 function sidecarStub(exifData, dateTaken, filename) {
+  const stem = path.parse(filename).name;
   const exifLines = EXIF_STR_FIELDS
     .map(field => `${field}:${ymlStr(exifData[field])}`)
     .join('\n');
 
   return `---
+# Auto-set from filename — used only by the Sveltia CMS thumbnail; leave as-is
+image:${ymlStr(thumbUrl(stem))}
+
 title:
 
 # Edit any value below — leave blank to fall back to EXIF
@@ -230,6 +234,13 @@ dateTaken:${ymlStr(dateTaken)}
 `.trimEnd() + '\n';
 }
 
+// Public URL of a photo's 800px thumbnail, deterministic from its filename
+// stem — used only to give the Sveltia CMS admin something to render as a
+// thumbnail (see backfillExifLines below). Never read by the build itself.
+function thumbUrl(stem) {
+  return `/photos/${stem}@800.webp`;
+}
+
 // Fills in any still-blank overrideExif/dateTaken lines with real values
 // extracted from the photo. Needed because a sidecar created ahead of time
 // in Obsidian (from the New Photo template) starts with those lines empty —
@@ -238,7 +249,7 @@ dateTaken:${ymlStr(dateTaken)}
 // matches, so re-running on an already-filled sidecar is a no-op. Edits the
 // raw text directly (not a parse+re-stringify) so comments/formatting the
 // user is looking at in Obsidian survive untouched.
-function backfillExifLines(rawContent, exifData, dateTaken) {
+function backfillExifLines(rawContent, exifData, dateTaken, stem) {
   // Scoped to the YAML frontmatter block only (between the leading `---`
   // delimiters) — must NOT run against the Markdown body, or a caption that
   // happens to contain a bare line like "lens:" (e.g. a shot-log note) would
@@ -276,6 +287,14 @@ function backfillExifLines(rawContent, exifData, dateTaken) {
     }
   }
 
+  if (stem) {
+    const imageRe = /^(image:)[ \t]*$/m;
+    if (imageRe.test(updatedFm)) {
+      updatedFm = updatedFm.replace(imageRe, `$1${ymlStr(thumbUrl(stem))}`);
+      changed = true;
+    }
+  }
+
   if (!changed) return { updated: rawContent, changed: false };
 
   const updated =
@@ -294,7 +313,7 @@ async function loadSidecar(dir, stem, exifData, dateTaken, filename) {
       fs.stat(sidecarPath),
     ]);
 
-    const backfilled = backfillExifLines(content, exifData, dateTaken);
+    const backfilled = backfillExifLines(content, exifData, dateTaken, stem);
     if (backfilled.changed) {
       await fs.writeFile(sidecarPath, backfilled.updated, 'utf8');
       content = backfilled.updated;
@@ -322,4 +341,4 @@ async function resizeImage(source, dest, width) {
   }
 }
 
-module.exports = { processLocal, backfillExifLines, sidecarStub };
+module.exports = { processLocal, backfillExifLines, sidecarStub, thumbUrl };

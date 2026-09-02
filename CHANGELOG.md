@@ -8,7 +8,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ## UNRELEASED
 
-Nothing yet.
+- **Fix:** Sveltia CMS `/admin` now shows real photo thumbnails. New `image:` sidecar frontmatter field (the published `/photos/{id}@800.webp` thumbnail URL, deterministic from filename) wired into `sidecarStub()`/`backfillExifLines()` the same way EXIF fields are, plus a one-off backfill across all 112 existing sidecars. Previously the CMS had no working image at all — the caption body's `![](../local/{id}.jpg)` embed is unreachable from Sveltia since `local/` is gitignored.
 
 ---
 
