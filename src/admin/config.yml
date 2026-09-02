@@ -19,6 +19,10 @@ site_url: https://photos.thedataareclean.com
 media_folder: src/admin/uploads
 public_folder: /admin/uploads
 
+slug:
+  encoding: ascii
+  clean_accents: true
+
 collections:
   - name: photos
     label: Photos
@@ -29,8 +33,6 @@ collections:
     identifier_field: title
     create: false
     delete: false
-    slug:
-      encoding: unicode
     fields:
       - { label: Title, name: title, widget: string, required: false }
 
@@ -62,8 +64,6 @@ collections:
     identifier_field: title
     create: true
     delete: false
-    slug:
-      encoding: unicode
     fields:
       - { label: Title, name: title, widget: string, required: true }
       - label: Cover Photo
