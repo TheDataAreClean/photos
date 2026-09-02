@@ -1,0 +1,92 @@
+# Sveltia CMS config — edits existing sidecars/*.md and series/*.md only.
+# New photos are never created here: that stays the local/ → R2 → auto-rename
+# flow (see CLAUDE.md "Auto-rename runs before any sidecar is read"). A
+# CMS-authored sidecar wouldn't get a clean title-based slug on first build.
+
+backend:
+  name: github
+  repo: TheDataAreClean/photos
+  branch: main
+  # Shared sveltia-cms-auth Worker (same one musings/config.yml uses) —
+  # its ALLOWED_DOMAINS env var must include photos.thedataareclean.com,
+  # or every publish will fail at the auth step with no useful client error.
+  base_url: https://sveltia-cms-auth.thedataareclean.workers.dev
+
+site_url: https://photos.thedataareclean.com
+
+# Required by the config schema; never referenced — no field below uses an
+# image/file upload widget, so nothing is ever written here.
+media_folder: src/admin/uploads
+public_folder: /admin/uploads
+
+collections:
+  - name: photos
+    label: Photos
+    label_singular: Photo
+    folder: sidecars
+    extension: md
+    format: yaml-frontmatter
+    identifier_field: title
+    create: false
+    delete: false
+    slug:
+      encoding: unicode
+    fields:
+      - { label: Title, name: title, widget: string, required: false }
+
+      - { label: Camera, name: camera, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: Lens, name: lens, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: Focal Length, name: focalLength, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: "Focal Length (35mm equiv)", name: focalLength35, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: Aperture, name: aperture, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: Shutter Speed, name: shutterSpeed, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
+      - { label: ISO, name: iso, widget: number, value_type: int, required: false, hint: "Leave blank to fall back to EXIF — do not enter 0 unless you mean to override with 0" }
+      - { label: Date Taken, name: dateTaken, widget: datetime, required: false, hint: "Leave blank to fall back to EXIF" }
+
+      - { label: Tags, name: tags, widget: list, required: false }
+      - { label: Series slug, name: series, widget: string, required: false, hint: "Usually managed from the Series collection instead — a series file's photos: list overrides this" }
+      - { label: Series order, name: seriesOrder, widget: number, value_type: int, required: false }
+
+      - label: Caption
+        name: body
+        widget: markdown
+        required: false
+        hint: "Leave the ![](../local/...) embed line at the top alone if present"
+
+  - name: series
+    label: Series
+    label_singular: Series
+    folder: series
+    extension: md
+    format: yaml-frontmatter
+    identifier_field: title
+    create: true
+    delete: false
+    slug:
+      encoding: unicode
+    fields:
+      - { label: Title, name: title, widget: string, required: true }
+      - label: Cover Photo
+        name: coverPhoto
+        widget: relation
+        collection: photos
+        search_fields: [title]
+        value_field: "{{slug}}"
+        display_fields: [title, "{{slug}}"]
+        required: false
+      - label: Photos (ordered)
+        name: photos
+        widget: list
+        required: false
+        field:
+          label: Photo
+          name: photo
+          widget: relation
+          collection: photos
+          search_fields: [title]
+          value_field: "{{slug}}"
+          display_fields: [title, "{{slug}}"]
+      - label: Description
+        name: body
+        widget: markdown
+        required: false

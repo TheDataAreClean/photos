@@ -211,6 +211,17 @@ Favicon is fixed (variant 4, stacked prints). `build/gen-favicon.js` copies pre-
 
 ---
 
+## Content management (Sveltia CMS)
+
+`/admin` (`src/admin/index.html` + `config.yml`) is [Sveltia CMS](https://github.com/sveltia/sveltia-cms) — a git-backed editor that commits straight to `main` via the GitHub API, same as any manual sidecar edit.
+
+- **Editable:** `sidecars/*.md` (title, EXIF override fields, tags, series/seriesOrder, caption body) and `series/*.md` (title, cover photo, ordered photo list, description) — the `photos` collection has `create: false`/`delete: false`.
+- **Not editable:** new photos. Creating one always stays the `local/` → R2 → `autoRename()` flow — a CMS-authored sidecar wouldn't exist before the photo's first build, so it would miss the clean-slug path (see URL slugs, above).
+- **Wrinkle:** the caption field includes the sidecar's `![](../local/{id}.jpg)` embed line. `stripImageEmbeds()` strips it regardless of exact form, so deleting it in the CMS doesn't break the build — it only loses the inline photo preview next time the file's opened in an editor like Obsidian.
+- **Auth:** GitHub OAuth via the shared [`sveltia-cms-auth`](https://github.com/sveltia/sveltia-cms-auth) Cloudflare Worker (`base_url` in `config.yml`) — the same Worker `musings/config.yml` uses. Its `ALLOWED_DOMAINS` env var must include `photos.thedataareclean.com` for sign-in to work here.
+
+---
+
 ## Runtime and deploy
 
 | Concern | Detail |

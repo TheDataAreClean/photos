@@ -26,6 +26,7 @@ Full command reference: [COMMANDS.md](COMMANDS.md)
 | `_data/` | Data pipeline — processes photos, outputs JSON chunks |
 | `_includes/` | Nunjucks layout shell |
 | `src/` | Templates, styles, scripts, Atom feed |
+| `src/admin/` | Sveltia CMS — web editor for sidecars/series at `/admin` |
 | `build/` | Build-time modules: EXIF, watermark, OG image, sources |
 | `scripts/` | CLI utilities: rename, R2 sync/publish |
 | `test/` | `node --test` unit tests for pure logic (slug, sidecar, EXIF backfill) |

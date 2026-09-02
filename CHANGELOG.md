@@ -8,7 +8,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ## UNRELEASED
 
-Nothing yet.
+- **Add:** Sveltia CMS admin UI at `/admin` for editing photo sidecars and series metadata from a browser, without touching files directly. Commits straight to `main`, authenticated via GitHub OAuth through the shared `sveltia-cms-auth` Cloudflare Worker (same one `musings` uses — see APP.md). Scoped to editing existing `sidecars/*.md`/`series/*.md` only; new photos still go through `local/` → R2 → auto-rename as before.
 
 ---
 
