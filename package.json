@@ -1,6 +1,6 @@
 {
   "name": "photography-gallery",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Static photography gallery, built with Eleventy",
   "private": true,
   "scripts": {
