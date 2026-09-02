@@ -8,7 +8,14 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ## UNRELEASED
 
+Nothing yet.
+
+---
+
+## 2026-09-02 — v4.0.1
+
 - **Fix:** Sveltia CMS `/admin` now shows real photo thumbnails. New `image:` sidecar frontmatter field (the published `/photos/{id}@800.webp` thumbnail URL, deterministic from filename) wired into `sidecarStub()`/`backfillExifLines()` the same way EXIF fields are, plus a one-off backfill across all 112 existing sidecars. Previously the CMS had no working image at all — the caption body's `![](../local/{id}.jpg)` embed is unreachable from Sveltia since `local/` is gitignored.
+- **Fix:** `config.yml`'s per-collection `slug:` option must be a string template, not an object — the site-wide `encoding`/`clean_accents` object belongs at the top level instead (moved there). Sveltia rejected both collections with "The slug option must be a string" until this was corrected.
 
 ---
 
