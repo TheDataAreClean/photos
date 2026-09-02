@@ -1,4 +1,7 @@
 ---
+# Auto-set from filename — used only by the Sveltia CMS thumbnail; leave as-is
+image: "/photos/2025-08-24-sunglasses@800.webp"
+
 title: "Sunglasses"
 
 

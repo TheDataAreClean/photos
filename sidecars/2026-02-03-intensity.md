@@ -1,4 +1,7 @@
 ---
+# Auto-set from filename — used only by the Sveltia CMS thumbnail; leave as-is
+image: "/photos/2026-02-03-intensity@800.webp"
+
 title: "intensity"
 
 # Edit any value below — leave blank to fall back to EXIF

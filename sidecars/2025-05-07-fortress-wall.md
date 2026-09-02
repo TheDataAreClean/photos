@@ -1,4 +1,7 @@
 ---
+# Auto-set from filename — used only by the Sveltia CMS thumbnail; leave as-is
+image: "/photos/2025-05-07-fortress-wall@800.webp"
+
 title: "Fortress Wall"
 
 
