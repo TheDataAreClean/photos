@@ -1,6 +1,7 @@
 ---
 // Same markup as the Eleventy site's src/photos/photo.njk.
 import { getEmDashEntry } from "emdash";
+import { PortableText } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
 import { loadGallery, longDate, toGalleryPhoto, type PhotoData } from "../../lib/gallery";
 
@@ -10,8 +11,13 @@ if (!entry) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 const { photos, series } = await loadGallery();
-const photo = photos.find((p) => p.id === entry.id) ?? toGalleryPhoto(entry.id, entry.data);
+// The entry itself, so an editor sees their draft; series membership from the gallery.
+const listed = photos.find((p) => p.id === entry.id);
+const photo = { ...toGalleryPhoto(entry.id, entry.data), series: listed?.series ?? null };
 const seriesMeta = photo.series ? series[photo.series] : undefined;
+
+// Edit annotations only exist for a signed-in editor in edit mode.
+const editing = Object.keys({ ...entry.edit.title }).length > 0;
 
 const exif = photo.exif;
 let focal = exif.focalLength35;
@@ -56,8 +62,12 @@ else if (!focal) focal = exif.focalLength || "—";
 
     <div class="lightbox__meta-panels">
     <div class="lightbox__meta-top">
-      {photo.title && <div class="lightbox__title" {...entry.edit.title}>{photo.title}</div>}
-      {photo.description && <p class="lightbox__description" {...entry.edit.caption}>{photo.description}</p>}
+      {(photo.title || editing) && <div class="lightbox__title" {...entry.edit.title}>{photo.title}</div>}
+      {editing ? (
+        <div class="lightbox__description lightbox__description--editing"><PortableText value={entry.data.caption ?? []} /></div>
+      ) : (
+        photo.description && <p class="lightbox__description">{photo.description}</p>
+      )}
       {seriesMeta && <a class="lightbox__series-tag" href={`/series/${photo.series}/`}>{seriesMeta.title}</a>}
     </div>
 
@@ -84,6 +94,7 @@ else if (!focal) focal = exif.focalLength || "—";
         {(photo.url.download || photo.url.display) && (
         <a class="lightbox__action-btn" href={photo.url.download || photo.url.display} download={photo.id}>Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
         )}
+        {Astro.locals.user && <a class="lightbox__action-btn" href={`/_emdash/admin/content/photos/${entry.data.id}`}>Edit</a>}
       </div>
     </div>
     </div>
@@ -96,6 +107,7 @@ else if (!focal) focal = exif.focalLength || "—";
 
 </main>
 
+{editing && <style is:inline>.lightbox__description--editing p { margin: 0 0 1em; }</style>}
 <script is:inline>
 (function () {
   // Meta panel toggle

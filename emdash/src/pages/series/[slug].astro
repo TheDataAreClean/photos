@@ -97,6 +97,7 @@ const spPhotos = seriesPhotos(photos, slug);
 <script is:inline src="/scripts/gallery-core.js"></script>
 <script is:inline src="/scripts/gallery.js"></script>
 <script is:inline src="/scripts/lightbox.js"></script>
+{Astro.locals.user && <script is:inline src="/scripts/editor-links.js"></script>}
 <script is:inline>
 (function () {
   var badge = document.querySelector('.series-page__badge');

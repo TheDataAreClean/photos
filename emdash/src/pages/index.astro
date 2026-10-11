@@ -150,4 +150,5 @@ const totalChunks = Math.ceil(photos.length / CHUNK_SIZE);
 <script is:inline src="/scripts/stack.js"></script>
 <script is:inline src="/scripts/lightbox.js"></script>
 <script is:inline src="/scripts/series-overlay.js"></script>
+{Astro.locals.user && <script is:inline src="/scripts/editor-links.js"></script>}
 </Base>
