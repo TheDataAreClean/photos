@@ -37,25 +37,26 @@ collections:
     fields:
       - { label: Thumbnail, name: image, widget: image, required: false, hint: "Auto-set from the filename — don't change this" }
       - { label: Title, name: title, widget: string, required: false }
-
-      - { label: Camera, name: camera, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: Lens, name: lens, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: Focal Length, name: focalLength, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: "Focal Length (35mm equiv)", name: focalLength35, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: Aperture, name: aperture, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: Shutter Speed, name: shutterSpeed, widget: string, required: false, hint: "Leave blank to fall back to EXIF" }
-      - { label: ISO, name: iso, widget: number, value_type: int, required: false, hint: "Leave blank to fall back to EXIF — do not enter 0 unless you mean to override with 0" }
-      - { label: Date Taken, name: dateTaken, widget: datetime, required: false, hint: "Leave blank to fall back to EXIF" }
-
-      - { label: Tags, name: tags, widget: list, required: false }
-      - { label: Series slug, name: series, widget: string, required: false, hint: "Usually managed from the Series collection instead — a series file's photos: list overrides this" }
-      - { label: Series order, name: seriesOrder, widget: number, value_type: int, required: false }
-
       - label: Caption
         name: body
         widget: markdown
         required: false
         hint: "Leave the ![](../local/...) embed line at the top alone if present"
+      - { label: Tags, name: tags, widget: list, required: false }
+      - { label: Date Taken, name: dateTaken, widget: datetime, required: false, hint: "Leave blank to fall back to EXIF" }
+
+      - { label: Series slug, name: series, widget: string, required: false, hint: "Usually managed from the Series collection instead — a series file's photos: list overrides this" }
+      - { label: Series order, name: seriesOrder, widget: number, value_type: int, required: false }
+
+      # EXIF overrides — rarely edited, so they sit last. Must stay top-level
+      # fields (no object group): the pipeline reads them flat from frontmatter.
+      - { label: Camera, name: camera, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: Lens, name: lens, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: Focal Length, name: focalLength, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: "Focal Length (35mm equiv)", name: focalLength35, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: Aperture, name: aperture, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: Shutter Speed, name: shutterSpeed, widget: string, required: false, hint: "EXIF override — leave blank to use the photo's EXIF" }
+      - { label: ISO, name: iso, widget: number, value_type: int, required: false, hint: "EXIF override — leave blank to use the photo's EXIF; 0 means override with 0" }
 
   - name: series
     label: Series
@@ -68,6 +69,10 @@ collections:
     delete: false
     fields:
       - { label: Title, name: title, widget: string, required: true }
+      - label: Description
+        name: body
+        widget: markdown
+        required: false
       - label: Cover Photo
         name: coverPhoto
         widget: relation
@@ -88,7 +93,3 @@ collections:
           search_fields: [title]
           value_field: "{{slug}}"
           display_fields: [title, "{{slug}}"]
-      - label: Description
-        name: body
-        widget: markdown
-        required: false
