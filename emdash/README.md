@@ -1,7 +1,8 @@
 # Memories on EmDash (experiment)
 
 The gallery rebuilt on [EmDash](https://github.com/emdash-cms/emdash) 1.2 — an Astro CMS
-with an admin UI at `/_emdash/admin`. Runs locally on SQLite + local file storage.
+with an admin UI at `/_emdash/admin`. Runs on Cloudflare Workers with D1 (database) and
+R2 (media); `npm run dev` runs the same bindings locally, with state in `.wrangler/`.
 The Eleventy site in the repo root is untouched and still what deploys.
 
 ## Run it
@@ -29,7 +30,7 @@ npm run import -- --placeholder         # no originals: grey stand-ins
 Reads `../sidecars/*.md` and `../series/*.md`. Each original is resized to 2400px,
 watermarked like `build/watermark.js`, and re-encoded as JPEG, so no EXIF or GPS
 reaches EmDash's media library. Re-running skips photos and series that already exist.
-To start over, stop the server and delete `data.db*` and `uploads/`.
+To start over, stop the server and delete `.wrangler/state`.
 
 ## What maps to what
 
@@ -65,6 +66,6 @@ HEIC only decodes in Safari; elsewhere export a JPEG first.
 
 - Masonry layout, lightbox, stack view, shuffle, card flip, series overlay (pages are plain server-rendered HTML)
 - Monthly OG image generation
-- Deployment: EmDash runs as a server (Cloudflare Workers + D1 + R2, or Node), not GitHub Pages.
-  The Cloudflare variant swaps the adapter and the `database`/`storage` lines in
-  `astro.config.mjs` (see EmDash's `templates/portfolio-cloudflare`).
+- Deployment: `npm run deploy` needs the `memories` D1 database and the `memories-media`
+  R2 bucket created first (`wrangler.jsonc`). That bucket is public media only; originals
+  stay in the private `photos` bucket, which the Worker never binds.

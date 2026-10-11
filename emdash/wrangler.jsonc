@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "memories",
+	"main": "./src/worker.ts",
+	"compatibility_date": "2026-02-24",
+	"compatibility_flags": ["nodejs_compat"],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "memories",
+		},
+	],
+	// Public media for the site: watermarked, metadata-free JPEGs only.
+	// Originals stay in the private `photos` bucket, which this Worker never binds.
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "memories-media",
+		},
+	],
+	"triggers": {
+		"crons": ["* * * * *"],
+	},
+}

@@ -10,12 +10,13 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "start": "node ./dist/server/entry.mjs",
+    "deploy": "astro build && wrangler deploy",
     "import": "node scripts/import.mjs"
   },
   "dependencies": {
-    "@astrojs/node": "^11.1.5",
+    "@astrojs/cloudflare": "^14.3.4",
     "@astrojs/react": "^7.0.0",
+    "@emdash-cms/cloudflare": "^1.2.0",
     "astro": "^7.3.2",
     "emdash": "1.2.0",
     "memories-plugin": "file:plugins/memories",
@@ -23,7 +24,9 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261011.1",
     "gray-matter": "4.0.3",
-    "sharp": "0.33.5"
+    "sharp": "0.33.5",
+    "wrangler": "^4.149.0"
   }
 }
