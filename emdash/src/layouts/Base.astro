@@ -1,0 +1,64 @@
+---
+import { getSiteSettingsWithCacheHint } from "emdash";
+import { EmDashBodyEnd, EmDashBodyStart, EmDashHead } from "emdash/ui";
+import { createPublicPageContext } from "emdash/page";
+import "../styles/base.css";
+import "../styles/site.css";
+
+interface Props {
+	title?: string;
+	description?: string | null;
+	image?: string | null;
+	type?: "website" | "article";
+	content?: { collection: string; id: string; slug?: string | null };
+}
+
+const { title, description, image, type = "website", content } = Astro.props;
+const settingsResult = await getSiteSettingsWithCacheHint();
+const settings = settingsResult.data;
+if (Astro.cache?.enabled) Astro.cache.set(settingsResult.cacheHint);
+
+const siteTitle = settings?.title || "Memories";
+const fullTitle = title ? `${title} — ${siteTitle}` : siteTitle;
+
+const pageCtx = createPublicPageContext({
+	Astro,
+	kind: content ? "content" : "custom",
+	pageType: type,
+	title: fullTitle,
+	pageTitle: title ?? siteTitle,
+	description: description || settings?.tagline,
+	canonical: new URL(Astro.url.pathname, Astro.url.origin).href,
+	image,
+	content,
+	seo: { ogImage: image },
+	siteName: siteTitle,
+});
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{fullTitle}</title>
+		<EmDashHead page={pageCtx} />
+		<link rel="alternate" type="application/atom+xml" title={siteTitle} href="/feed.xml" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link
+			rel="stylesheet"
+			href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Schoolbell&family=VT323&display=swap"
+		/>
+	</head>
+	<body>
+		<EmDashBodyStart page={pageCtx} />
+		<header class="site-header">
+			<a href="/" class="site-title">{siteTitle}</a>
+			<span class="site-tagline">{settings?.tagline}</span>
+		</header>
+		<main>
+			<slot />
+		</main>
+		<EmDashBodyEnd page={pageCtx} />
+	</body>
+</html>

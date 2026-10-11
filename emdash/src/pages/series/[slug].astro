@@ -1,0 +1,44 @@
+---
+import { decodeSlug, getEmDashEntry } from "emdash";
+import { Image, PortableText } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { formatDate, tilt } from "../../lib/photos";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: series, error, cacheHint } = await getEmDashEntry("series", slug, {
+	references: { cover: true, photos: { limit: 100 } },
+});
+if (error) return new Response("Could not load the series", { status: 500 });
+if (!series) return Astro.rewrite("/404");
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
+
+const photos = series.references?.photos.entries ?? [];
+const cover = series.references?.cover.entries[0] ?? photos[0];
+---
+
+<Base
+	title={series.data.title}
+	image={cover?.data.image?.src}
+	type="article"
+	content={{ collection: "series", id: series.data.id, slug }}
+>
+	<header class="series-head">
+		<h1 {...series.edit.title}>{series.data.title}</h1>
+		{series.data.description && (
+			<div class="photo__caption" {...series.edit.description}>
+				<PortableText value={series.data.description} />
+			</div>
+		)}
+	</header>
+	<section class="gallery">
+		{photos.map((p, n) => (
+			<a href={`/photos/${p.id}/`} class="card" style={`--tilt:${tilt(p.id)}`}>
+				<Image image={p.data.image} alt={p.data.title} sizes="(max-width: 680px) 100vw, 400px" />
+				<div class="card__title">{n + 1}. {p.data.title}</div>
+				{formatDate(p.data.date_taken) && <div class="card__date">{formatDate(p.data.date_taken)}</div>}
+			</a>
+		))}
+	</section>
+</Base>

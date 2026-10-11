@@ -1,0 +1,66 @@
+{
+  "$schema": "https://emdashcms.com/seed.schema.json",
+  "version": "1",
+  "meta": {
+    "name": "Memories",
+    "description": "Personal photography gallery",
+    "author": "Arpit"
+  },
+  "settings": {
+    "title": "Memories",
+    "tagline": "Photographs by @thedataareclean",
+    "url": "https://photos.thedataareclean.com"
+  },
+  "collections": [
+    {
+      "slug": "photos",
+      "label": "Photos",
+      "labelSingular": "Photo",
+      "supports": ["drafts", "revisions", "search", "seo"],
+      "fields": [
+        { "slug": "image", "label": "Photo", "type": "image", "required": true },
+        { "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
+        { "slug": "caption", "label": "Caption", "type": "portableText", "searchable": true },
+        { "slug": "date_taken", "label": "Date Taken", "type": "datetime" },
+        { "slug": "camera", "label": "Camera", "type": "string" },
+        { "slug": "lens", "label": "Lens", "type": "string" },
+        { "slug": "focal_length", "label": "Focal Length", "type": "string" },
+        { "slug": "focal_length_35", "label": "Focal Length (35mm equiv)", "type": "string" },
+        { "slug": "aperture", "label": "Aperture", "type": "string" },
+        { "slug": "shutter_speed", "label": "Shutter Speed", "type": "string" },
+        { "slug": "iso", "label": "ISO", "type": "integer" }
+      ]
+    },
+    {
+      "slug": "series",
+      "label": "Series",
+      "labelSingular": "Series",
+      "supports": ["drafts", "revisions", "search", "seo"],
+      "fields": [
+        { "slug": "title", "label": "Title", "type": "string", "required": true, "searchable": true },
+        { "slug": "description", "label": "Description", "type": "portableText", "searchable": true },
+        {
+          "slug": "cover",
+          "label": "Cover Photo",
+          "type": "reference",
+          "validation": { "targetCollection": "photos", "multiple": false }
+        },
+        {
+          "slug": "photos",
+          "label": "Photos (ordered)",
+          "type": "reference",
+          "validation": { "targetCollection": "photos", "multiple": true }
+        }
+      ]
+    }
+  ],
+  "taxonomies": [
+    {
+      "name": "tag",
+      "label": "Tags",
+      "labelSingular": "Tag",
+      "hierarchical": false,
+      "collections": ["photos"]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 ## UNRELEASED
 
-Nothing yet.
+- **Experiment:** `emdash/` — the gallery rebuilt on EmDash CMS (Astro, SQLite locally) with an importer for existing sidecars, series and `local/` originals. Not deployed; the Eleventy site is unchanged. See [emdash/README.md](emdash/README.md).
 
 ---
 

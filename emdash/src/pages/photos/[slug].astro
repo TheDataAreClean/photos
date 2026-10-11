@@ -1,0 +1,67 @@
+---
+import { decodeSlug, getEmDashCollection, getEmDashEntry, getEntryTerms } from "emdash";
+import { Image, PortableText } from "emdash/ui";
+import Base from "../../layouts/Base.astro";
+import { EXIF_FIELDS, formatDate } from "../../lib/photos";
+
+const slug = decodeSlug(Astro.params.slug);
+if (!slug) return Astro.rewrite("/404");
+
+const { entry: photo, error, cacheHint } = await getEmDashEntry("photos", slug);
+if (error) return new Response("Could not load the photo", { status: 500 });
+if (!photo) return Astro.rewrite("/404");
+
+const [tags, all] = await Promise.all([
+	getEntryTerms("photos", photo.data.id, "tag"),
+	getEmDashCollection("photos", { orderBy: { date_taken: "desc" }, limit: 500 }),
+]);
+if (Astro.cache?.enabled) {
+	Astro.cache.set(cacheHint);
+	Astro.cache.set(all.cacheHint);
+}
+
+const i = all.entries.findIndex((p) => p.id === photo.id);
+const newer = i > 0 ? all.entries[i - 1] : null;
+const older = i >= 0 && i < all.entries.length - 1 ? all.entries[i + 1] : null;
+const d = photo.data as Record<string, unknown>;
+---
+
+<Base
+	title={photo.data.title}
+	image={photo.data.image?.src}
+	type="article"
+	content={{ collection: "photos", id: photo.data.id, slug }}
+>
+	<article class="photo">
+		<div class="photo__image">
+			<Image image={photo.data.image} alt={photo.data.title} sizes="(max-width: 680px) 100vw, 70vw" {...photo.edit.image} />
+		</div>
+		<aside class="photo__meta">
+			<h1 {...photo.edit.title}>{photo.data.title}</h1>
+			{formatDate(photo.data.date_taken) && <div class="card__date">{formatDate(photo.data.date_taken)}</div>}
+			{photo.data.caption && (
+				<div class="photo__caption" {...photo.edit.caption}>
+					<PortableText value={photo.data.caption} />
+				</div>
+			)}
+			<dl class="exif">
+				{EXIF_FIELDS.filter(([k]) => d[k] != null && d[k] !== "").map(([k, label]) => (
+					<>
+						<dt>{label}</dt>
+						<dd>{String(d[k])}</dd>
+					</>
+				))}
+			</dl>
+			{tags.length > 0 && (
+				<div class="tags">
+					{tags.map((t) => <span class="tag">{t.label}</span>)}
+				</div>
+			)}
+			<nav class="photo__nav">
+				{newer ? <a href={`/photos/${newer.id}/`}>← Newer</a> : <span />}
+				<a href="/">Gallery</a>
+				{older ? <a href={`/photos/${older.id}/`}>Older →</a> : <span />}
+			</nav>
+		</aside>
+	</article>
+</Base>
