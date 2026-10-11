@@ -5,6 +5,8 @@
 //   npm run import                   # originals from ../local
 //   npm run import -- --local ~/path/to/originals
 //   npm run import -- --placeholder  # no originals at hand: grey stand-ins
+//   EMDASH_TOKEN=ec_pat_... npm run import -- --url https://memories.<you>.workers.dev
+//                                    # deployed site: API token from Settings → API tokens
 //
 // Reads ../sidecars/*.md and ../series/*.md. Each original becomes the same
 // three files the upload widget makes: a 2400px display JPEG, a watermarked
@@ -39,7 +41,10 @@ const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".heic", 
 
 const { stripImageEmbeds } = require(path.join(ROOT, "build/utils/sidecar.js"));
 
-const client = new EmDashClient({ baseUrl: BASE_URL, devBypass: true });
+const TOKEN = process.env.EMDASH_TOKEN;
+const client = new EmDashClient(
+	TOKEN ? { baseUrl: BASE_URL, token: TOKEN } : { baseUrl: BASE_URL, devBypass: true },
+);
 
 // Markdown-ish caption → Portable Text: one block per blank-line paragraph,
 // single newlines kept inside the text (soft breaks), as the sidecar had them.

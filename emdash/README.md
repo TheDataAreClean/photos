@@ -70,10 +70,22 @@ same HTML as the `.njk` templates, and `src/lib/gallery.ts` builds the same phot
 the scripts read, including `/data/photos-N.json` for infinite scroll. Each photo has three
 files: display (clean), download (watermarked) and an 800px thumbnail, as before.
 
+## Deploy
+
+`.github/workflows/emdash-deploy.yml` builds and deploys to Cloudflare Workers (manual run,
+plus monthly for the OG image). It does nothing until the repo variable `EMDASH_DEPLOY` is
+`true` and the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` exist; set
+`EMDASH_SITE_URL` to the live URL so the OG image picks from the live photos.
+The first deploy creates the `memories` D1 database and `memories-media` R2 bucket. That
+bucket holds public media only; originals stay in the private `photos` bucket.
+The Worker is about 4.7 MB gzipped, over the Workers Free limit of 3 MB, so it needs
+Workers Paid. After the first deploy, sign in at `/_emdash/admin`, create an API token,
+and import: `EMDASH_TOKEN=ec_pat_... npm run import -- --url <site>`.
+
+Monthly OG image: `scripts/gen-og-image.mjs` runs the Eleventy build's `build/og-image.js`
+against the live photos before `astro build`. EmDash's sitemaps are switched off in
+`src/middleware.ts`, since the site is unindexed.
+
 ## Not ported yet
 
-- Monthly OG image and favicon generation (static copies for now)
-- Feed parity with `src/feed.njk`
-- Deployment: `npm run deploy` needs the `memories` D1 database and the `memories-media`
-  R2 bucket created first (`wrangler.jsonc`). That bucket is public media only; originals
-  stay in the private `photos` bucket, which the Worker never binds.
+- Retiring Sveltia, the launchd watcher, `publish-local` and the sidecar pipeline (after cut-over)
