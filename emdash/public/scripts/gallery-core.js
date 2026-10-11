@@ -1,0 +1,349 @@
+// gallery-core.js — shared card factory and utilities
+// Exposes window.GalleryCore: { makeCard, makeSeriesCard, formatDateStamp, buildExifDl, copyLink }
+// Consumed by gallery.js (grid), stack.js (stack view), and lightbox.js (action buttons).
+(function () {
+  'use strict';
+
+  // ── Inline SVG icons ───────────────────────────────────
+  const ICON_LINK = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  const ICON_DOWN = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
+
+  const COPY_RESET_MS = 1500;
+
+  // ── Clipboard write with execCommand fallback ─────────
+  // navigator.clipboard requires a secure context; older browsers and
+  // some in-app webviews fall back to the deprecated execCommand path.
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error('execCommand copy failed'));
+      } catch (err) {
+        document.body.removeChild(ta);
+        reject(err);
+      }
+    });
+  }
+
+  // ── Copy a link and flash feedback in a label ─────────
+  // labelEl: span whose text flashes "Copied!"/"Error" then resets to resetText.
+  // toggleEl/toggleClass: optional element + class toggled during the "Copied!" state.
+  function copyLink(url, { labelEl, resetText = 'Share', toggleEl, toggleClass = 'is-copied' } = {}) {
+    copyToClipboard(url).then(() => {
+      if (labelEl) labelEl.textContent = 'Copied!';
+      if (toggleEl) toggleEl.classList.add(toggleClass);
+      setTimeout(() => {
+        if (labelEl) labelEl.textContent = resetText;
+        if (toggleEl) toggleEl.classList.remove(toggleClass);
+      }, COPY_RESET_MS);
+    }).catch(() => {
+      if (labelEl) labelEl.textContent = 'Error';
+      setTimeout(() => { if (labelEl) labelEl.textContent = resetText; }, COPY_RESET_MS);
+    });
+  }
+
+  // ── Date formatter — camera-style "MM DD 'YY" ─────────
+  function formatDateStamp(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const yy = String(d.getUTCFullYear()).slice(-2);
+    return `${mm} ${dd} '${yy}`;
+  }
+
+  // ── Build EXIF <dl> — shared by card back and lightbox ──
+  function buildExifDl(exif, className) {
+    if (!exif) return null;
+    const dash = '—';
+    const focal = exif.focalLength35
+      ? `${exif.focalLength35}${exif.focalLength ? ' (' + exif.focalLength + ')' : ''}`
+      : (exif.focalLength || dash);
+    const rows = [
+      ['Camera',   exif.camera       || dash],
+      ['Lens',     exif.lens         || dash],
+      ['Focal',    focal                    ],
+      ['Aperture', exif.aperture     || dash],
+      ['Shutter',  exif.shutterSpeed || dash],
+      ['ISO',      exif.iso != null  ? String(exif.iso) : dash],
+    ];
+    const dl = document.createElement('dl');
+    if (className) dl.className = className;
+    rows.forEach(([l, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = l;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      dl.appendChild(dt);
+      dl.appendChild(dd);
+    });
+    return dl;
+  }
+
+  // ── Build one card element ─────────────────────────────
+  // Pure factory — no masonry, no DOM side effects outside the card.
+  function makeCard(photo, index, eager) {
+    const rotation = (Math.random() * 6.4 - 3.2).toFixed(2);
+
+    const article = document.createElement('article');
+    article.className = 'photo-card';
+    article.style.setProperty('--rotation', `${rotation}deg`);
+    article.dataset.index = index;
+    article.setAttribute('role', 'listitem');
+    article.setAttribute('tabindex', '0');
+    article.setAttribute('aria-label',
+      photo.title || formatDateStamp(photo.dateTaken) || 'Photo'
+    );
+
+    // ── 3D inner ───────────────────────────────────────
+    const inner = document.createElement('div');
+    inner.className = 'photo-card__inner';
+
+    // ── Front face ─────────────────────────────────────
+    const front = document.createElement('div');
+    front.className = 'photo-card__front';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'photo-card__image-wrap';
+
+    const img = document.createElement('img');
+    img.className = 'is-loading';
+    img.alt = photo.altText || photo.title || '';
+    img.loading  = eager ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    if (eager) img.fetchPriority = 'high';
+    if (photo.aspectRatio) img.style.aspectRatio = String(photo.aspectRatio);
+    img.addEventListener('load',  () => img.classList.remove('is-loading'), { once: true });
+    img.addEventListener('error', () => img.classList.remove('is-loading'), { once: true });
+    img.draggable = false;
+    img.src = photo.url.thumb;
+    img.addEventListener('contextmenu', e => e.preventDefault());
+
+    const protect = document.createElement('div');
+    protect.className = 'img-protect';
+    protect.addEventListener('contextmenu', e => e.preventDefault());
+
+    wrap.appendChild(img);
+    wrap.appendChild(protect);
+    front.appendChild(wrap);
+
+    // ── Back face (postcard) ────────────────────────────
+    const back = document.createElement('div');
+    back.className = 'photo-card__back';
+
+    if (photo.title) {
+      const titleEl = document.createElement('h3');
+      titleEl.className = 'photo-card__back-title';
+      titleEl.textContent = photo.title;
+      back.appendChild(titleEl);
+    }
+
+    const backBody = document.createElement('div');
+    backBody.className = 'photo-card__back-body';
+
+    if (photo.description) {
+      const descEl = document.createElement('p');
+      descEl.className = 'photo-card__back-desc';
+      descEl.textContent = photo.description;
+      backBody.appendChild(descEl);
+    }
+
+    back.appendChild(backBody);
+
+    const exifDl = buildExifDl(photo.exif);
+    if (exifDl) {
+      const exifWrap = document.createElement('div');
+      exifWrap.className = 'photo-card__back-exif';
+      exifWrap.appendChild(exifDl);
+      back.appendChild(exifWrap);
+    }
+
+    // Clicking back face flips back (action buttons stop propagation)
+    back.addEventListener('click', e => {
+      e.stopPropagation();
+      article.classList.remove('is-flipped');
+    });
+
+    // Actions row
+    const actions = document.createElement('div');
+    actions.className = 'photo-card__back-actions';
+
+    // innerHTML is intentional here — ICON_* are hardcoded trusted SVG constants,
+    // not user data. All user-visible text uses textContent elsewhere in this function.
+    const shareBtn = document.createElement('button');
+    shareBtn.className = 'photo-card__action-btn';
+    shareBtn.innerHTML = `<span>Share</span>${ICON_LINK}`;
+    shareBtn.setAttribute('aria-label', 'Copy link to this photo');
+
+    const dlBtn = document.createElement('a');
+    dlBtn.className = 'photo-card__action-btn';
+    dlBtn.innerHTML = `Download${ICON_DOWN}`;
+    dlBtn.href = photo.url.download || photo.url.display;
+    dlBtn.setAttribute('download', photo.id || 'photo');
+    dlBtn.addEventListener('click', e => e.stopPropagation());
+
+    actions.appendChild(shareBtn);
+    actions.appendChild(dlBtn);
+
+    back.appendChild(actions);
+
+    inner.appendChild(front);
+    inner.appendChild(back);
+    article.appendChild(inner);
+
+    // Date stamp and flip buttons are appended to article (outside inner) so they sit
+    // on the paper mat border rather than inside the 3D-transformed inner element.
+    // Placing them inside inner would cause them to rotate with the card on flip.
+
+    // Date stamp — outside inner so it sits on the paper border
+    const stamp = formatDateStamp(photo.dateTaken);
+    if (stamp) {
+      const ds = document.createElement('span');
+      ds.className = 'photo-card__date-stamp';
+      ds.textContent = stamp;
+      article.appendChild(ds);
+    }
+
+    // Flip trigger (front → back)
+    const flipBtn = document.createElement('button');
+    flipBtn.className = 'photo-card__flip-btn';
+    flipBtn.innerHTML = '&#8635;';
+    flipBtn.setAttribute('aria-label', 'Show photo details');
+    article.appendChild(flipBtn);
+
+    // Flip back trigger (back → front)
+    const flipBackBtn = document.createElement('button');
+    flipBackBtn.className = 'photo-card__flip-back';
+    flipBackBtn.innerHTML = '&#8635;';
+    flipBackBtn.setAttribute('aria-label', 'Show photo');
+    article.appendChild(flipBackBtn);
+
+    // ── Flip events ────────────────────────────────────
+    flipBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      article.classList.add('is-flipped');
+    });
+
+    flipBackBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      article.classList.remove('is-flipped');
+    });
+
+    shareBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const url = `${window.location.origin}/photos/${photo.id}/`;
+      const labelEl = shareBtn.querySelector('span');
+      copyLink(url, { labelEl, resetText: 'Share' });
+    });
+
+    return article;
+  }
+
+  // ── Build one series folder card ────────────────────────
+  // seriesData: { slug, title, coverPhoto, photos: [{photo, _idx}, ...] }
+  function makeSeriesCard(seriesData, eager) {
+    const { slug, title, coverPhoto, photos: items } = seriesData;
+    const displayTitle = title || items[0]?.photo?.title || slug;
+    const count = items.length;
+
+    const article = document.createElement('article');
+    article.className = 'series-card';
+    article.setAttribute('role', 'button');
+    article.setAttribute('tabindex', '0');
+    article.setAttribute('aria-label', `Open series: ${displayTitle} (${count} photos)`);
+    article.dataset.series = slug;
+
+    // Prints peeking from behind the folder face
+
+    const printsWrap = document.createElement('div');
+    printsWrap.className = 'series-card__prints';
+
+    let peekPhotos;
+    if (coverPhoto) {
+      const coverItem = items.find(p => p.photo.id === coverPhoto);
+      const rest      = items.filter(p => p.photo.id !== coverPhoto).slice(0, 2);
+      peekPhotos = coverItem ? [coverItem, ...rest] : items.slice(0, 3);
+    } else {
+      peekPhotos = items.slice(0, 3);
+    }
+    peekPhotos.forEach(({ photo }) => {
+      const printEl = document.createElement('div');
+      printEl.className = 'series-card__print';
+      if (photo.url?.thumb) {
+        const img = document.createElement('img');
+        img.src = photo.url.thumb;
+        img.alt = '';
+        img.loading = eager ? 'eager' : 'lazy';
+        if (eager) img.fetchPriority = 'high';
+        img.draggable = false;
+        printEl.appendChild(img);
+      }
+      printsWrap.appendChild(printEl);
+    });
+    article.appendChild(printsWrap);
+
+    // Folder face — kraft paper body that covers the bottom of the prints
+    const face = document.createElement('div');
+    face.className = 'series-card__face';
+
+    const crease = document.createElement('div');
+    crease.className = 'series-card__crease';
+    face.appendChild(crease);
+
+    // Description floats in kraft area above the body panel
+    if (seriesData.description) {
+      const descEl = document.createElement('p');
+      descEl.className = 'series-card__desc';
+      descEl.textContent = seriesData.description;
+      face.appendChild(descEl);
+    }
+
+    // Body — title + count
+    const body = document.createElement('div');
+    body.className = 'series-card__body';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'series-card__title';
+    titleEl.textContent = displayTitle;
+    body.appendChild(titleEl);
+
+    const footer = document.createElement('div');
+    footer.className = 'series-card__footer';
+
+    const countEl = document.createElement('span');
+    countEl.className = 'series-card__count';
+    countEl.textContent = `${count} photo${count === 1 ? '' : 's'}`;
+    footer.appendChild(countEl);
+
+    const badge = document.createElement('button');
+    badge.className = 'series-card__badge';
+    badge.setAttribute('aria-label', 'Copy link to series');
+    const badgeLabel = document.createElement('span');
+    badgeLabel.textContent = 'series';
+    badge.appendChild(badgeLabel);
+    badge.insertAdjacentHTML('beforeend', '<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>');
+    badge.addEventListener('click', e => {
+      e.stopPropagation();
+      const url = window.location.origin + '/series/' + slug + '/';
+      copyLink(url, { labelEl: badgeLabel, resetText: 'series', toggleEl: badge });
+    });
+    footer.appendChild(badge);
+
+    body.appendChild(footer);
+    face.appendChild(body);
+    article.appendChild(face);
+
+    return article;
+  }
+
+  window.GalleryCore = { makeCard, makeSeriesCard, formatDateStamp, buildExifDl, copyLink };
+})();

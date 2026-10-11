@@ -1,7 +1,14 @@
 ---
 import Base from "../layouts/Base.astro";
+import { site } from "../lib/gallery";
+Astro.response.status = 404;
 ---
 
-<Base title="Not found">
-	<p class="empty">This photo isn't here. <a href="/">Back to the gallery</a></p>
+<Base pageTitle="Not found">
+<header class="site-header">
+  <div class="site-header__text">
+    <h1 class="site-title">{site.displayTitle}</h1>
+    <p class="site-subtitle">Nothing here. <a href="/">Back to the gallery</a></p>
+  </div>
+</header>
 </Base>

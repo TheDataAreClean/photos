@@ -3,8 +3,9 @@
  *
  * - `photo-upload` field widget (admin.tsx): reads EXIF in the browser,
  *   re-encodes through a canvas (drops every metadata block, GPS included),
- *   burns in the watermark, then uploads. The raw file never leaves the
- *   browser, so nothing with GPS reaches the public media store.
+ *   then uploads the display image, a watermarked download copy and a
+ *   thumbnail. The raw file never leaves the browser, so nothing with GPS
+ *   reaches the public media store.
  * - `content:beforeSave`: fills empty EXIF fields on a photo from the EXIF
  *   the widget stashed on the image value. Blank means "use the EXIF", the
  *   same rule the sidecars had.

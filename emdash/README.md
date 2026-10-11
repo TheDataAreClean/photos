@@ -62,10 +62,18 @@ same rule as the old sidecars: clear a field to get the EXIF value back; `0` cou
 The slug follows `YYYY-MM-DD-title` while it's auto-generated; typing your own slug stops that.
 HEIC only decodes in Safari; elsewhere export a JPEG first.
 
+## Design
+
+`public/styles`, `public/scripts` and `public/images` are copies of the Eleventy site's
+`src/` folders, unchanged. The Astro pages (`src/pages`, `src/layouts/Base.astro`) emit the
+same HTML as the `.njk` templates, and `src/lib/gallery.ts` builds the same photo objects
+the scripts read, including `/data/photos-N.json` for infinite scroll. Each photo has three
+files: display (clean), download (watermarked) and an 800px thumbnail, as before.
+
 ## Not ported yet
 
-- Masonry layout, lightbox, stack view, shuffle, card flip, series overlay (pages are plain server-rendered HTML)
-- Monthly OG image generation
+- Monthly OG image and favicon generation (static copies for now)
+- Feed parity with `src/feed.njk`
 - Deployment: `npm run deploy` needs the `memories` D1 database and the `memories-media`
   R2 bucket created first (`wrangler.jsonc`). That bucket is public media only; originals
   stay in the private `photos` bucket, which the Worker never binds.

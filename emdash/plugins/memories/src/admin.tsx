@@ -1,11 +1,13 @@
 /**
  * Photo upload widget. Replaces the editor for the photos `image` field.
  *
- * Pick a photo → EXIF read here → canvas re-encode at ≤2400px (no metadata
- * survives a canvas, so GPS is gone) → watermark burned in bottom-right at
- * 18% width, 1.8% margin (same as build/watermark.js) → upload. The stored
- * image value carries the safe EXIF subset in `meta.exif`; the plugin's
- * save hook copies it into blank fields.
+ * Pick a photo → EXIF read here → canvas re-encodes (no metadata survives a
+ * canvas, so GPS is gone) → upload. Three files, like the Eleventy build:
+ * the 2400px display image, a watermarked copy for the Download button
+ * (18% width, bottom-right, 1.8% margin — build/watermark.js), and an 800px
+ * thumbnail. The image value is the display file; the other two ride along
+ * in `meta.variants`, and the safe EXIF subset in `meta.exif`, which the
+ * plugin's save hook copies into blank fields.
  */
 import { uploadMedia } from "@emdash-cms/admin";
 import exifr from "exifr";
@@ -16,6 +18,7 @@ import watermarkUrl from "./watermark.png?url";
 
 const MAX_WIDTH = 2400;
 const QUALITY = 0.85;
+const THUMB_WIDTH = 800;
 
 interface ImageValue {
 	id: string;
@@ -25,7 +28,11 @@ interface ImageValue {
 	height?: number;
 	filename?: string;
 	mimeType?: string;
-	meta?: Record<string, unknown> & { storageKey?: string; exif?: PhotoExif };
+	meta?: Record<string, unknown> & {
+		storageKey?: string;
+		exif?: PhotoExif;
+		variants?: Record<string, { id: string; storageKey: string }>;
+	};
 }
 
 interface FieldWidgetProps {
@@ -44,32 +51,63 @@ function loadWatermark() {
 	return watermark;
 }
 
-/** Decode (EXIF orientation applied), resize, watermark, re-encode as JPEG. */
-export async function processPhoto(file: File): Promise<{ blob: Blob; width: number; height: number }> {
-	const src = await createImageBitmap(file, { imageOrientation: "from-image" });
-	const scale = Math.min(1, MAX_WIDTH / src.width);
-	const width = Math.round(src.width * scale);
-	const height = Math.round(src.height * scale);
+export interface Variant {
+	blob: Blob;
+	width: number;
+	height: number;
+	type: string;
+}
 
+function encode(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
+	return new Promise((resolve, reject) =>
+		canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Encode failed"))), type, quality),
+	);
+}
+
+function draw(src: ImageBitmap, width: number) {
+	const scale = Math.min(1, width / src.width);
 	const canvas = document.createElement("canvas");
-	canvas.width = width;
-	canvas.height = height;
+	canvas.width = Math.round(src.width * scale);
+	canvas.height = Math.round(src.height * scale);
 	const ctx = canvas.getContext("2d");
 	if (!ctx) throw new Error("Canvas unavailable");
 	ctx.imageSmoothingQuality = "high";
-	ctx.drawImage(src, 0, 0, width, height);
-	src.close();
+	ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
+	return { canvas, ctx };
+}
 
-	const wm = await loadWatermark();
-	const wmW = Math.round(width * 0.18);
-	const wmH = Math.round((wm.height / wm.width) * wmW);
-	const margin = Math.round(width * 0.018);
-	ctx.drawImage(wm, width - wmW - margin, height - wmH - margin, wmW, wmH);
+/**
+ * The three files the gallery serves, as on the Eleventy site:
+ * display (2400px, clean), download (display + watermark), thumb (800px WebP).
+ * Every one is a fresh canvas encode, so none carries EXIF or GPS.
+ */
+export async function processPhoto(
+	file: File,
+): Promise<{ display: Variant; download: Variant; thumb: Variant }> {
+	const src = await createImageBitmap(file, { imageOrientation: "from-image" });
+	try {
+		const { canvas, ctx } = draw(src, MAX_WIDTH);
+		const { width, height } = canvas;
+		const display = { blob: await encode(canvas, "image/jpeg", QUALITY), width, height, type: "image/jpeg" };
 
-	const blob = await new Promise<Blob>((resolve, reject) =>
-		canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Encode failed"))), "image/jpeg", QUALITY),
-	);
-	return { blob, width, height };
+		const wm = await loadWatermark();
+		const wmW = Math.round(width * 0.18);
+		const wmH = Math.round((wm.height / wm.width) * wmW);
+		const margin = Math.round(width * 0.018);
+		ctx.drawImage(wm, width - wmW - margin, height - wmH - margin, wmW, wmH);
+		const download = { blob: await encode(canvas, "image/jpeg", QUALITY), width, height, type: "image/jpeg" };
+
+		const small = draw(src, THUMB_WIDTH).canvas;
+		const thumbBlob = await encode(small, "image/webp", 0.82);
+		// Browsers that can't encode WebP hand back PNG; JPEG is smaller then.
+		const thumb =
+			thumbBlob.type === "image/webp"
+				? { blob: thumbBlob, width: small.width, height: small.height, type: "image/webp" }
+				: { blob: await encode(small, "image/jpeg", QUALITY), width: small.width, height: small.height, type: "image/jpeg" };
+		return { display, download, thumb };
+	} finally {
+		src.close();
+	}
 }
 
 function previewUrl(v: ImageValue) {
@@ -136,21 +174,33 @@ function PhotoUpload({ value, onChange, label, id, required }: FieldWidgetProps)
 			const exif = formatExif(raw);
 
 			setBusy("Removing location, adding watermark…");
-			const { blob, width, height } = await processPhoto(file);
-			const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-			const clean = new File([blob], name, { type: "image/jpeg" });
+			const { display, download, thumb } = await processPhoto(file);
+			const stem = file.name.replace(/\.[^.]+$/, "");
+			const ext = (t: string) => (t === "image/webp" ? "webp" : "jpg");
+			const asFile = (v: Variant, suffix: string) =>
+				new File([v.blob], `${stem}${suffix}.${ext(v.type)}`, { type: v.type });
 
 			setBusy("Uploading…");
-			const item = await uploadMedia(clean);
+			const [main, dl, th] = await Promise.all([
+				uploadMedia(asFile(display, "")),
+				uploadMedia(asFile(download, "-download")),
+				uploadMedia(asFile(thumb, "@800")),
+			]);
+			const ref = (m: typeof main) => ({ id: m.id, storageKey: m.storageKey });
 			onChange({
-				id: item.id,
+				id: main.id,
 				provider: "local",
 				alt: current?.alt ?? "",
-				width: item.width ?? width,
-				height: item.height ?? height,
-				filename: item.filename,
-				mimeType: item.mimeType,
-				meta: { ...item.meta, storageKey: item.storageKey, exif },
+				width: main.width ?? display.width,
+				height: main.height ?? display.height,
+				filename: main.filename,
+				mimeType: main.mimeType,
+				meta: {
+					...main.meta,
+					storageKey: main.storageKey,
+					exif,
+					variants: { download: ref(dl), thumb: ref(th) },
+				},
 			} satisfies ImageValue);
 		} catch (cause) {
 			setError(
@@ -219,7 +269,7 @@ function PhotoUpload({ value, onChange, label, id, required }: FieldWidgetProps)
 					{busy ??
 						(current?.id
 							? [`${current.width}×${current.height}`, facts].filter(Boolean).join(" · ")
-							: "Drop a photo or choose one. Location data is removed and the watermark added before upload.")}
+							: "Drop a photo or choose one. Location data is removed before upload; the download copy gets the watermark.")}
 				</p>
 				{error ? (
 					<p role="alert" className="text-sm text-kumo-danger">

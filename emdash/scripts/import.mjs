@@ -6,9 +6,10 @@
 //   npm run import -- --local ~/path/to/originals
 //   npm run import -- --placeholder  # no originals at hand: grey stand-ins
 //
-// Reads ../sidecars/*.md and ../series/*.md. Each original is resized to
-// 2400px and watermarked like build/watermark.js does, then re-encoded
-// as JPEG — which drops all EXIF, including GPS. Originals never leave the Mac.
+// Reads ../sidecars/*.md and ../series/*.md. Each original becomes the same
+// three files the upload widget makes: a 2400px display JPEG, a watermarked
+// copy for downloads (build/watermark.js placement) and an 800px WebP
+// thumbnail. Re-encoding drops all EXIF, including GPS. Originals never leave the Mac.
 // Safe to re-run: photos and series whose slug already exists are skipped.
 
 import { createRequire } from "node:module";
@@ -39,6 +40,23 @@ const IMAGE_EXTS = [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".heic", 
 const { stripImageEmbeds } = require(path.join(ROOT, "build/utils/sidecar.js"));
 
 const client = new EmDashClient({ baseUrl: BASE_URL, devBypass: true });
+
+// Markdown-ish caption → Portable Text: one block per blank-line paragraph,
+// single newlines kept inside the text (soft breaks), as the sidecar had them.
+let keySeq = 0;
+const key = () => `k${(keySeq++).toString(36)}`;
+const toPortableText = (text) =>
+	String(text ?? "")
+		.trim()
+		.split(/\n{2,}/)
+		.filter((p) => p.trim())
+		.map((p) => ({
+			_type: "block",
+			_key: key(),
+			style: "normal",
+			markDefs: [],
+			children: [{ _type: "span", _key: key(), text: p, marks: [] }],
+		}));
 
 const blank = (v) => v === undefined || v === null || v === "";
 const slugify = (s) =>
@@ -71,7 +89,7 @@ async function applyWatermark(buf) {
 	return sharp(buf).composite([{ input: resized, left: width - w - margin, top: height - h - margin }]).toBuffer();
 }
 
-async function prepareImage(stem, title) {
+async function prepareImage(stem, label) {
 	const original = await findOriginal(stem);
 	let display;
 	if (original) {
@@ -81,15 +99,19 @@ async function prepareImage(stem, title) {
 		display = await sharp({
 			create: { width: 1600, height: 1067, channels: 3, background: { r: shade, g: shade - 10, b: shade - 25 } },
 		})
-			.composite([{ input: Buffer.from(`<svg width="1600" height="1067"><text x="50%" y="50%" font-size="64" text-anchor="middle" fill="#ddd6cc" font-family="sans-serif">${title.replace(/[<&]/g, "")}</text></svg>`) }])
+			.composite([{ input: Buffer.from(`<svg width="1600" height="1067"><text x="50%" y="50%" font-size="64" text-anchor="middle" fill="#ddd6cc" font-family="sans-serif">${label.replace(/[<&]/g, "")}</text></svg>`) }])
 			.png()
 			.toBuffer();
 	} else {
 		return null;
 	}
-	const watermarked = await applyWatermark(display);
 	// toBuffer() without withMetadata() writes no EXIF/GPS.
-	return sharp(watermarked).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
+	const jpeg = (buf) => sharp(buf).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
+	return {
+		display: await jpeg(display),
+		download: await jpeg(await applyWatermark(display)),
+		thumb: await sharp(display).resize({ width: 800, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer(),
+	};
 }
 
 async function existingSlugs(collection) {
@@ -129,11 +151,16 @@ async function importPhotos() {
 	let created = 0, skipped = 0, missing = [];
 	for (const { stem, data, caption } of parsed) {
 		if (existing.has(stem)) { skipped++; continue; }
-		const title = blank(data.title) ? stem : String(data.title);
-		const body = await prepareImage(stem, title);
-		if (!body) { missing.push(stem); continue; }
+		const title = blank(data.title) ? null : String(data.title);
+		const alt = title ?? stem.replace(/-/g, " ");
+		const files = await prepareImage(stem, alt);
+		if (!files) { missing.push(stem); continue; }
 
-		const media = await client.mediaUpload(body, `${stem}.jpg`, { alt: title, contentType: "image/jpeg" });
+		const [media, download, thumb] = await Promise.all([
+			client.mediaUpload(files.display, `${stem}.jpg`, { alt, contentType: "image/jpeg" }),
+			client.mediaUpload(files.download, `${stem}-download.jpg`, { alt, contentType: "image/jpeg" }),
+			client.mediaUpload(files.thumb, `${stem}@800.webp`, { alt, contentType: "image/webp" }),
+		]);
 		const dateTaken = blank(data.dateTaken) ? null : new Date(data.dateTaken).toISOString();
 		const item = await client.create("photos", {
 			slug: stem,
@@ -141,15 +168,21 @@ async function importPhotos() {
 				image: {
 					provider: "local",
 					id: media.id,
-					alt: title,
+					alt,
 					width: media.width,
 					height: media.height,
 					mimeType: media.mimeType,
 					filename: media.filename,
-					meta: { storageKey: media.key },
+					meta: {
+						storageKey: media.storageKey,
+						variants: {
+							download: { id: download.id, storageKey: download.storageKey },
+							thumb: { id: thumb.id, storageKey: thumb.storageKey },
+						},
+					},
 				},
 				title,
-				caption,
+				caption: toPortableText(caption),
 				date_taken: dateTaken,
 				camera: blank(data.camera) ? null : String(data.camera),
 				lens: blank(data.lens) ? null : String(data.lens),
@@ -184,7 +217,7 @@ async function importSeries(photoIds) {
 		const cover = photoIds.get(data.coverPhoto) ?? photos[0];
 		const item = await client.create("series", {
 			slug,
-			data: { title: data.title || slug, description: content.trim() },
+			data: { title: data.title || slug, description: toPortableText(content) },
 			references: { photos, ...(cover ? { cover: [cover] } : {}) },
 		});
 		await client.publish("series", item.id);

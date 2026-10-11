@@ -1,62 +1,153 @@
 ---
-import { getEmDashCollection, getEmDashEntry } from "emdash";
-import { Image } from "emdash/ui";
+// Same markup as the Eleventy site's src/index.njk.
 import Base from "../layouts/Base.astro";
-import { formatDate, tilt } from "../lib/photos";
+import { CHUNK_SIZE, loadGallery, scriptJson, site } from "../lib/gallery";
 
-const [photosResult, seriesResult] = await Promise.all([
-	getEmDashCollection("photos", { orderBy: { date_taken: "desc" }, limit: 500 }),
-	getEmDashCollection("series", { orderBy: { published_at: "desc" } }),
-]);
-if (photosResult.error || seriesResult.error) {
-	return new Response("Could not load the gallery", { status: 500 });
-}
-if (Astro.cache?.enabled) {
-	Astro.cache.set(photosResult.cacheHint);
-	Astro.cache.set(seriesResult.cacheHint);
-}
-
-// Collection queries don't hydrate reference fields, so load each series on its own.
-const seriesList = (
-	await Promise.all(
-		seriesResult.entries.map((s) =>
-			getEmDashEntry("series", s.id, { references: { cover: true, photos: { limit: 100 } } }),
-		),
-	)
-).flatMap((r) => (r.entry ? [r.entry] : []));
-
-// Photos that belong to a series show inside its folder card, not loose in the grid.
-const inSeries = new Set(
-	seriesList.flatMap((s) => s.references?.photos.entries.map((p) => p.id) ?? []),
-);
-const photos = photosResult.entries.filter((p) => !inSeries.has(p.id));
+const { photos, series, cacheHints } = await loadGallery();
+if (Astro.cache?.enabled) for (const hint of cacheHints) Astro.cache.set(hint as never);
+const totalChunks = Math.ceil(photos.length / CHUNK_SIZE);
 ---
 
 <Base>
-	{
-		photosResult.entries.length === 0 ? (
-			<p class="empty">No photos yet. Run the importer or add one in the admin.</p>
-		) : (
-			<section class="gallery">
-				{seriesList.map((s) => {
-					const cover = s.references?.cover.entries[0] ?? s.references?.photos.entries[0];
-					const count = s.references?.photos.entries.length ?? 0;
-					return (
-						<a href={`/series/${s.id}/`} class="card card--series" style={`--tilt:${tilt(s.id)}`}>
-							{cover && <Image image={cover.data.image} alt={cover.data.title} sizes="(max-width: 680px) 100vw, 400px" />}
-							<div class="card__label">Series · {count} photos</div>
-							<div class="card__title">{s.data.title}</div>
-						</a>
-					);
-				})}
-				{photos.map((p) => (
-					<a href={`/photos/${p.id}/`} class="card" style={`--tilt:${tilt(p.id)}`} {...p.edit}>
-						<Image image={p.data.image} alt={p.data.title} sizes="(max-width: 680px) 100vw, 400px" />
-						<div class="card__title">{p.data.title}</div>
-						{formatDate(p.data.date_taken) && <div class="card__date">{formatDate(p.data.date_taken)}</div>}
-					</a>
-				))}
-			</section>
-		)
-	}
+<header class="site-header">
+  <div class="site-header__text">
+    <h1 class="site-title">{site.displayTitle}</h1>
+    <p class="site-subtitle">{photos.length} and counting..</p>
+  </div>
+  <a href="https://thedataareclean.com" class="site-attribution" target="_blank" rel="noopener noreferrer">@thedataareclean</a>
+</header>
+
+<main>
+
+  <div
+    id="gallery-root"
+    class="gallery-grid is-loading"
+    role="list"
+    data-total-chunks={totalChunks}
+  ></div>
+
+  <div id="stack-root" hidden aria-live="polite" aria-label="Stack view">
+
+    <div id="stack-stage">
+      <div class="stack-deck">
+        <div class="stack-layer stack-layer--2" aria-hidden="true"></div>
+        <div class="stack-layer stack-layer--1" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div id="stack-controls">
+      <div class="stack-nav-group">
+        <button id="stack-prev" class="stack-nav-btn" aria-label="Previous photo">&#8249;</button>
+        <span   id="stack-counter" class="stack-counter"></span>
+        <button id="stack-next" class="stack-nav-btn" aria-label="Next photo">&#8250;</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="scroll-sentinel" aria-hidden="true" style="height:1px"></div>
+
+</main>
+
+<footer class="site-footer"><a href="https://thedataareclean.com" target="_blank" rel="noopener noreferrer">@thedataareclean</a></footer>
+
+<div id="view-toggle" role="group" aria-label="Gallery view controls">
+  <button id="toggle-grid"    class="view-toggle__btn is-active" aria-pressed="true"  aria-label="Grid view"    title="Grid view">
+    <span class="material-symbols-outlined" aria-hidden="true">dashboard_2</span>
+  </button>
+  <button id="toggle-stack"   class="view-toggle__btn"           aria-pressed="false" aria-label="Stack view"   title="Stack view">
+    <span class="material-symbols-outlined" aria-hidden="true">photo_prints</span>
+  </button>
+  <button id="toggle-shuffle" class="view-toggle__btn view-toggle__btn--shuffle" aria-pressed="false" aria-label="Shuffle order" title="Shuffle order">
+    <span class="material-symbols-outlined" aria-hidden="true">casino</span>
+  </button>
+</div>
+
+<div id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo viewer" data-total-photos={photos.length}>
+  <div class="lightbox__backdrop"></div>
+  <div class="lightbox__layout">
+
+    <div class="lightbox__photo-col">
+      <div class="lightbox__print">
+        <img id="lightbox-img" src="" alt="" draggable="false" />
+        <div class="img-protect"></div>
+      </div>
+    </div>
+
+    <div class="lightbox__meta-col">
+
+      <button class="lightbox__meta-toggle" aria-label="Open photo info" aria-expanded="false">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      </button>
+
+      <div class="lightbox__tabs">
+        <button class="lightbox__tab-btn is-active" data-tab="about">About</button>
+        <button class="lightbox__tab-btn" data-tab="info">Info</button>
+      </div>
+
+      <div class="lightbox__meta-panels">
+        <div class="lightbox__meta-top">
+          <div id="lightbox-title"  class="lightbox__title" hidden></div>
+          <div id="lightbox-desc"   class="lightbox__description" hidden></div>
+          <a  id="lightbox-series" class="lightbox__series-tag" hidden></a>
+        </div>
+        <div class="lightbox__meta-bottom">
+          <div id="lightbox-exif"   class="lightbox__exif" hidden></div>
+          <div id="lightbox-footer" class="lightbox__footer"></div>
+          <div class="lightbox__actions">
+            <button id="lightbox-share" class="lightbox__action-btn"><span>Share</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+            <a id="lightbox-download" class="lightbox__action-btn" href="#" download>Download<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="lightbox__nav">
+        <button class="lightbox__prev" aria-label="Previous photo">&#8249;</button>
+        <span id="lightbox-counter" class="lightbox__counter"></span>
+        <button class="lightbox__next" aria-label="Next photo">&#8250;</button>
+      </div>
+    </div>
+
+  </div>
+  <button class="lightbox__close" aria-label="Close (Esc)">&times;</button>
+</div>
+
+<div id="series-overlay" class="series-overlay" role="dialog" aria-modal="true" aria-label="Series viewer">
+  <div class="series-overlay__bar">
+    <div class="series-overlay__identity">
+      <div class="series-overlay__folder-icon" aria-hidden="true"></div>
+      <div>
+        <div class="series-overlay__title" id="series-overlay-title"></div>
+        <div class="series-overlay__counter" id="series-overlay-counter"></div>
+      </div>
+    </div>
+    <button class="series-overlay__close" id="series-overlay-close" aria-label="Close series (Esc)">×</button>
+  </div>
+
+  <div class="series-overlay__stage">
+    <button class="series-overlay__nav" id="series-overlay-prev" aria-label="Previous photo">&#8249;</button>
+    <div class="series-overlay__print-wrap">
+      <div class="series-overlay__print" id="series-overlay-print">
+        <img id="series-overlay-img" src="" alt="" draggable="false" />
+        <div class="series-overlay__caption">
+          <span class="series-overlay__caption-title" id="series-overlay-cap-title"></span>
+          <span class="series-overlay__caption-date"  id="series-overlay-cap-date"></span>
+        </div>
+      </div>
+      <div class="series-overlay__open-hint">click photo to open in lightbox</div>
+    </div>
+    <button class="series-overlay__nav" id="series-overlay-next" aria-label="Next photo">&#8250;</button>
+  </div>
+
+  <div class="series-overlay__strip" id="series-overlay-strip"></div>
+</div>
+
+<script is:inline id="gallery-data" type="application/json" set:html={scriptJson(photos.slice(0, CHUNK_SIZE))}></script>
+<script is:inline set:html={`window.GallerySeriesMeta = ${scriptJson(series)};`}></script>
+<script is:inline src="/scripts/gallery-core.js"></script>
+<script is:inline src="/scripts/view-toggle.js"></script>
+<script is:inline src="/scripts/gallery.js"></script>
+<script is:inline src="/scripts/stack.js"></script>
+<script is:inline src="/scripts/lightbox.js"></script>
+<script is:inline src="/scripts/series-overlay.js"></script>
 </Base>
