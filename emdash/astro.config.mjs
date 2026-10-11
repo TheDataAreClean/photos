@@ -3,6 +3,7 @@ import react from "@astrojs/react";
 import { defineConfig } from "astro/config";
 import emdash, { local } from "emdash/astro";
 import { sqlite } from "emdash/db";
+import { memoriesPlugin } from "memories-plugin";
 
 // Local experiment: SQLite + local file storage. The Cloudflare variant
 // (D1 + R2) swaps the adapter and these two lines — see README.md.
@@ -18,6 +19,7 @@ export default defineConfig({
 				directory: "./uploads",
 				baseUrl: "/_emdash/api/media/file",
 			}),
+			plugins: [memoriesPlugin()],
 		}),
 	],
 	devToolbar: { enabled: false },

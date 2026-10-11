@@ -43,15 +43,28 @@ To start over, stop the server and delete `data.db*` and `uploads/`.
 | `local/` original | watermarked JPEG in the media library |
 | `/feed.xml` | `/feed.xml` (Atom, latest 15) |
 
-Field values are stored as entered — there's no live EXIF fallback any more; the
-importer copies the sidecar values, which the Eleventy build had already filled in.
+Field values are stored as entered; the importer copies the sidecar values, which the
+Eleventy build had already filled in.
+
+## Adding a photo in the admin
+
+The `Photo` field uses the `memories:photo-upload` widget from `plugins/memories`
+(a native EmDash plugin). Picking or dropping a photo:
+
+1. reads its EXIF in the browser (never location),
+2. redraws it through a canvas at ≤2400px wide, which drops every metadata block (GPS included),
+3. burns in the watermark exactly like `build/watermark.js` (18% width, bottom-right, 1.8% margin),
+4. uploads that JPEG. The original never leaves the browser.
+
+On save, blank EXIF fields (`date_taken`, `camera`, … `iso`) fill from the photo's EXIF,
+same rule as the old sidecars: clear a field to get the EXIF value back; `0` counts as a value.
+The slug follows `YYYY-MM-DD-title` while it's auto-generated; typing your own slug stops that.
+HEIC only decodes in Safari; elsewhere export a JPEG first.
 
 ## Not ported yet
 
 - Masonry layout, lightbox, stack view, shuffle, card flip, series overlay (pages are plain server-rendered HTML)
 - Monthly OG image generation
-- New photos: uploading in the admin works, but nothing reads EXIF from the upload or
-  strips GPS from it — the importer is the only path that does that today
 - Deployment: EmDash runs as a server (Cloudflare Workers + D1 + R2, or Node), not GitHub Pages.
   The Cloudflare variant swaps the adapter and the `database`/`storage` lines in
   `astro.config.mjs` (see EmDash's `templates/portfolio-cloudflare`).

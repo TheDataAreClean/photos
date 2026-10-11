@@ -18,6 +18,7 @@
     "@astrojs/react": "^7.0.0",
     "astro": "^7.3.2",
     "emdash": "1.2.0",
+    "memories-plugin": "file:plugins/memories",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
