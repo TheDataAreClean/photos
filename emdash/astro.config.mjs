@@ -17,6 +17,9 @@ export default defineConfig({
 			database: d1({ binding: "DB", session: "auto" }),
 			storage: r2({ binding: "MEDIA" }),
 			plugins: [memoriesPlugin()],
+			// English-only admin: the other ~30 translations are ~2 MB of the
+			// Worker, which would put it over the Workers Free 3 MB limit.
+			admin: { locales: ["en"] },
 		}),
 	],
 	devToolbar: { enabled: false },
