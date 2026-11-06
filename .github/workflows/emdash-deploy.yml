@@ -34,6 +34,10 @@ jobs:
         working-directory: emdash
         run: npm ci
 
+      - name: Unit tests
+        working-directory: emdash
+        run: npm test
+
       - name: Generate OG image
         working-directory: emdash
         run: node scripts/gen-og-image.mjs

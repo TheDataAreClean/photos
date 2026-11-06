@@ -9,7 +9,7 @@
  * in `meta.variants`, and the safe EXIF subset in `meta.exif`, which the
  * plugin's save hook copies into blank fields.
  */
-import { uploadMedia } from "@emdash-cms/admin";
+import { deleteMedia, uploadMedia } from "@emdash-cms/admin";
 import exifr from "exifr";
 import * as React from "react";
 
@@ -32,6 +32,7 @@ interface ImageValue {
 		storageKey?: string;
 		exif?: PhotoExif;
 		variants?: Record<string, { id: string; storageKey: string }>;
+		original?: string;
 	};
 }
 
@@ -110,6 +111,22 @@ export async function processPhoto(
 	}
 }
 
+const safeName = (name: string) => name.replace(/[^\w.@-]+/g, "_").slice(-120) || "original";
+
+/** POST the original file to the site's private-bucket route (/api/originals). */
+export async function saveOriginal(mediaId: string, file: File): Promise<void> {
+	const res = await fetch(
+		`/api/originals?id=${encodeURIComponent(mediaId)}&name=${encodeURIComponent(safeName(file.name))}`,
+		{
+			method: "POST",
+			credentials: "same-origin",
+			headers: { "X-EmDash-Request": "1", "Content-Type": file.type || "application/octet-stream" },
+			body: file,
+		},
+	);
+	if (!res.ok) throw new Error(`Couldn't save the original (${res.status}). Nothing was uploaded.`);
+}
+
 function previewUrl(v: ImageValue) {
 	const key = typeof v.meta?.storageKey === "string" ? v.meta.storageKey : v.id;
 	return `/_emdash/api/media/file/${encodeURIComponent(key)}`;
@@ -129,6 +146,16 @@ function slugify(s: string) {
  * while the slug is still auto-generated. Stops as soon as someone types
  * their own slug. Best effort: the slug box lives in the settings sidebar.
  */
+/** The slug box in the settings sidebar, found by its "Slug" label. */
+function findSlugInput(): HTMLInputElement | null {
+	for (const label of document.querySelectorAll("label")) {
+		if (label.textContent?.trim() !== "Slug") continue;
+		const control = label.htmlFor ? document.getElementById(label.htmlFor) : label.querySelector("input");
+		if (control instanceof HTMLInputElement) return control;
+	}
+	return null;
+}
+
 function useDateSlug(dateTaken: string | undefined) {
 	const last = React.useRef<string | null>(null);
 	React.useEffect(() => {
@@ -136,7 +163,7 @@ function useDateSlug(dateTaken: string | undefined) {
 		const date = dateTaken.slice(0, 10);
 		const apply = () => {
 			const title = document.querySelector<HTMLInputElement>("#field-title");
-			const slug = document.querySelector<HTMLInputElement>('input[placeholder="my-post-slug"]');
+			const slug = findSlugInput();
 			if (!title || !slug || !title.value) return;
 			const auto = slugify(title.value);
 			const isAuto = slug.value === "" || slug.value === auto || slug.value === last.current;
@@ -181,11 +208,29 @@ function PhotoUpload({ value, onChange, label, id, required }: FieldWidgetProps)
 				new File([v.blob], `${stem}${suffix}.${ext(v.type)}`, { type: v.type });
 
 			setBusy("Uploading…");
-			const [main, dl, th] = await Promise.all([
+			const uploads = await Promise.allSettled([
 				uploadMedia(asFile(display, "")),
 				uploadMedia(asFile(download, "-download")),
 				uploadMedia(asFile(thumb, "@800")),
 			]);
+			const done = uploads.flatMap((u) => (u.status === "fulfilled" ? [u.value] : []));
+			// All three or none: don't leave stray files in the media library.
+			const rollback = () => Promise.allSettled(done.map((m) => deleteMedia(m.id)));
+			const failed = uploads.find((u) => u.status === "rejected");
+			if (failed) {
+				await rollback();
+				throw (failed as PromiseRejectedResult).reason;
+			}
+			const [main, dl, th] = done;
+
+			// The untouched original goes to a private bucket (never the public media store).
+			setBusy("Saving the original…");
+			try {
+				await saveOriginal(main.id, file);
+			} catch (cause) {
+				await rollback();
+				throw cause;
+			}
 			const ref = (m: typeof main) => ({ id: m.id, storageKey: m.storageKey });
 			onChange({
 				id: main.id,
@@ -200,6 +245,7 @@ function PhotoUpload({ value, onChange, label, id, required }: FieldWidgetProps)
 					storageKey: main.storageKey,
 					exif,
 					variants: { download: ref(dl), thumb: ref(th) },
+					original: `originals/${main.id}/${safeName(file.name)}`,
 				},
 			} satisfies ImageValue);
 		} catch (cause) {

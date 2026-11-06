@@ -26,3 +26,10 @@ npm-debug.log*
 .dev.vars
 .dev.vars.*
 public/og-image.jpg
+public/styles/
+public/scripts/
+public/images/
+public/favicon.svg
+public/favicon-32.png
+public/apple-touch-icon.png
+public/robots.txt

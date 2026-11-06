@@ -4,7 +4,7 @@ import Base from "../../layouts/Base.astro";
 import { loadGallery, scriptJson, seriesPhotos } from "../../lib/gallery";
 
 const slug = Astro.params.slug ?? "";
-const { photos, series, cacheHints } = await loadGallery();
+const { photos, series, cacheHints } = await loadGallery({ fresh: !!Astro.locals.user });
 const sp = series[slug];
 if (!sp) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) for (const hint of cacheHints) Astro.cache.set(hint as never);

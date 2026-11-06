@@ -1,22 +1,16 @@
 import type { APIRoute } from "astro";
-import { getSiteSettings, getTermsForEntries } from "emdash";
+import { getSiteSettings } from "emdash";
 
 import { loadGallery, site, type GalleryPhoto } from "../lib/gallery";
 
 // Atom feed — same entries and markup as the Eleventy site's src/feed.njk:
 // latest 15, each series collapsed to its opening photo.
-export const GET: APIRoute = async ({ url }) => {
+export const GET: APIRoute = async ({ url, locals }) => {
 	const settings = await getSiteSettings();
 	const siteUrl = (settings?.url || url.origin).replace(/\/$/, "");
-	const { photos } = await loadGallery();
+	const { photos } = await loadGallery({ fresh: !!locals.user });
 
 	const feedPhotos = photos.filter((p) => !p.series || p.seriesOrder === 1).slice(0, 15);
-	const terms = await getTermsForEntries(
-		"photos",
-		feedPhotos.map((p) => p.entryId),
-		"tag",
-	).catch(() => new Map());
-	for (const p of feedPhotos) p.tags = (terms.get(p.entryId) ?? []).map((t: { label: string }) => t.label);
 
 	const abs = (u: string) => (/^https?:\/\//.test(u) ? u : siteUrl + u);
 	const entries = feedPhotos.map((p) => (p.series ? seriesEntry(p) : photoEntry(p))).join("");

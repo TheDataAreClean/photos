@@ -10,6 +10,7 @@ Reverse chronological. Append-only — no roadmap or ideas here (those live in [
 
 - **Experiment:** `emdash/` — the gallery rebuilt on EmDash CMS (Astro, SQLite locally) with an importer for existing sidecars, series and `local/` originals. Not deployed; the Eleventy site is unchanged. See [emdash/README.md](emdash/README.md).
 - **Experiment:** EmDash photo upload widget (`emdash/plugins/memories`) — strips GPS and burns in the watermark in the browser before upload, fills blank EXIF fields on save, and keeps the `YYYY-MM-DD-title` slug.
+- **Experiment:** EmDash 1.4 upgrade; originals go to a private R2 bucket via `/api/originals`; CSS/JS shared with the Eleventy site through `sync-assets`; edge/browser caching; tags in the feed; unit tests (`npm test` in `emdash/`); English-only admin to fit Workers Free.
 
 ---
 

@@ -10,15 +10,20 @@
 			"database_name": "memories",
 		},
 	],
-	// Public media for the site: watermarked, metadata-free JPEGs only.
-	// Originals stay in the private `photos` bucket, which this Worker never binds.
+	// Public media for the site: metadata-free JPEG/WebP files only.
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
 			"bucket_name": "memories-media",
 		},
+		// Private: untouched originals, written by src/pages/api/originals.ts and
+		// never served. The same bucket the Eleventy build restores originals from.
+		{
+			"binding": "ORIGINALS",
+			"bucket_name": "photos",
+		},
 	],
 	"triggers": {
-		"crons": ["* * * * *"],
+		"crons": ["0 * * * *"],
 	},
 }

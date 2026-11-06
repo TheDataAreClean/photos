@@ -11,22 +11,27 @@
     "build": "astro build",
     "preview": "astro preview",
     "deploy": "astro build && wrangler deploy",
-    "import": "node scripts/import.mjs"
+    "import": "node scripts/import.mjs",
+    "sync:assets": "node scripts/sync-assets.mjs",
+    "predev": "node scripts/sync-assets.mjs",
+    "prebuild": "node scripts/sync-assets.mjs",
+    "test": "node --test tests/*.spec.mjs",
+    "typecheck": "astro check"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.3.4",
-    "@astrojs/react": "^7.0.0",
-    "@emdash-cms/cloudflare": "^1.2.0",
-    "astro": "^7.3.2",
-    "emdash": "1.2.0",
+    "@astrojs/cloudflare": "^14.4.6",
+    "@astrojs/react": "^7.1.0",
+    "@emdash-cms/cloudflare": "^1.4.0",
+    "astro": "^7.4.1",
+    "emdash": "^1.4.0",
     "memories-plugin": "file:plugins/memories",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261011.1",
+    "@cloudflare/workers-types": "^5.20261106.1",
     "gray-matter": "4.0.3",
     "sharp": "0.33.5",
-    "wrangler": "^4.149.0"
+    "wrangler": "^4.158.0"
   }
 }

@@ -19,7 +19,11 @@ export default defineConfig({
 			plugins: [memoriesPlugin()],
 			// English-only admin: the other ~30 translations are ~2 MB of the
 			// Worker, which would put it over the Workers Free 3 MB limit.
-			admin: { locales: ["en"] },
+			admin: {
+				locales: ["en"],
+				// Features this gallery doesn't use; the pages stay reachable by URL.
+				hiddenNavItems: ["comments", "menus", "redirects", "widgets", "sections", "bylines", "import"],
+			},
 		}),
 	],
 	devToolbar: { enabled: false },

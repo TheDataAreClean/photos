@@ -3,17 +3,17 @@
 import { getEmDashEntry } from "emdash";
 import { PortableText } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
-import { loadGallery, longDate, toGalleryPhoto, type PhotoData } from "../../lib/gallery";
+import { loadGallery, longDate, MEDIA_BASE, toGalleryPhoto, type PhotoData } from "../../lib/gallery";
 
 const slug = Astro.params.slug ?? "";
 const { entry, cacheHint } = await getEmDashEntry<PhotoData>("photos", slug);
 if (!entry) return Astro.rewrite("/404");
 if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
-const { photos, series } = await loadGallery();
+const { photos, series } = await loadGallery({ fresh: !!Astro.locals.user });
 // The entry itself, so an editor sees their draft; series membership from the gallery.
 const listed = photos.find((p) => p.id === entry.id);
-const photo = { ...toGalleryPhoto(entry.id, entry.data), series: listed?.series ?? null };
+const photo = { ...toGalleryPhoto(entry.id, entry.data, MEDIA_BASE), tags: listed?.tags ?? [], series: listed?.series ?? null };
 const seriesMeta = photo.series ? series[photo.series] : undefined;
 
 // Edit annotations only exist for a signed-in editor in edit mode.

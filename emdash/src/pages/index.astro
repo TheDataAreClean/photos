@@ -3,7 +3,7 @@
 import Base from "../layouts/Base.astro";
 import { CHUNK_SIZE, loadGallery, scriptJson, site } from "../lib/gallery";
 
-const { photos, series, cacheHints } = await loadGallery();
+const { photos, series, cacheHints } = await loadGallery({ fresh: !!Astro.locals.user });
 if (Astro.cache?.enabled) for (const hint of cacheHints) Astro.cache.set(hint as never);
 const totalChunks = Math.ceil(photos.length / CHUNK_SIZE);
 ---

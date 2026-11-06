@@ -81,7 +81,8 @@ async function downloadMissing(config) {
   ]);
   const existingSet = new Set(existing);
 
-  const missing = keys.filter(key => IMAGE_EXTS.has(path.extname(key).toLowerCase()) && !existingSet.has(key));
+  // Root-level keys only: the EmDash site files its originals under originals/<id>/ in the same bucket.
+  const missing = keys.filter(key => !key.includes('/') && IMAGE_EXTS.has(path.extname(key).toLowerCase()) && !existingSet.has(key));
 
   await Promise.all(missing.map(async key => {
     const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));

@@ -9,13 +9,13 @@
   link.className = 'lightbox__action-btn';
   link.id = 'lightbox-edit';
   link.textContent = 'Edit';
-  link.hidden = true;
+  link.style.display = 'none';
   actions.appendChild(link);
 
   function sync() {
     var src = img.getAttribute('src');
     var photo = (window.GalleryPhotos || []).find(function (p) { return p.url && p.url.display === src; });
-    link.hidden = !photo || !photo.entryId;
+    link.style.display = photo && photo.entryId ? '' : 'none';
     if (photo && photo.entryId) link.href = '/_emdash/admin/content/photos/' + photo.entryId;
   }
   new MutationObserver(sync).observe(img, { attributes: true, attributeFilter: ['src'] });

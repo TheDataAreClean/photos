@@ -86,6 +86,15 @@ Monthly OG image: `scripts/gen-og-image.mjs` runs the Eleventy build's `build/og
 against the live photos before `astro build`. EmDash's sitemaps are switched off in
 `src/middleware.ts`, since the site is unindexed.
 
+## Notes
+
+- `npm test` runs the unit tests (EXIF formatting, gallery shaping).
+- `sync-assets` copies `src/{styles,scripts,images}` from the Eleventy site on `dev`/`build`, so CSS/JS has one source.
+- Raw originals are posted to `/api/originals` (signed-in only) and stored in the private `ORIGINALS` R2 bucket.
+- Optional `PUBLIC_MEDIA_BASE` serves media from a public R2 domain, bypassing the Worker's request quota.
+- Public pages are cached 60 s, media immutably; signed-in editors always see fresh data.
+- A cron runs hourly; sidebar items the site doesn't use are hidden via `admin.hiddenNavItems`.
+
 ## Not ported yet
 
 - Retiring Sveltia, the launchd watcher, `publish-local` and the sidecar pipeline (after cut-over)

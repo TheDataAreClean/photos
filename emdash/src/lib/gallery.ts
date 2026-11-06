@@ -1,165 +1,26 @@
-// Builds the exact data the Eleventy site handed its front-end scripts:
-// the photo objects in dist/data/photos-N.json and the series map in
-// window.GallerySeriesMeta. The copied scripts in public/scripts/ read
-// these shapes unchanged, so the gallery behaves the same.
+// Loads the gallery from EmDash in the exact shape the Eleventy site handed
+// its front-end scripts: the photo objects in dist/data/photos-N.json and the
+// series map in window.GallerySeriesMeta. The copied scripts in public/scripts/
+// read these shapes unchanged, so the gallery behaves the same.
 
-import { getEmDashCollection, getEmDashEntry } from "emdash";
+import { getEmDashCollection, getEmDashEntry, getTermsForEntries } from "emdash";
 
-export const CHUNK_SIZE = 60;
+import {
+	CHUNK_SIZE,
+	plainText,
+	str,
+	toGalleryPhoto,
+	type GalleryPhoto,
+	type PhotoData,
+	type SeriesMeta,
+} from "./shape";
 
-export const site = {
-	title: "Memories | TheDataAreClean",
-	displayTitle: "Memories",
-	description: "My experiments behind the viewfinder.",
-	handle: "thedataareclean",
-};
-
-interface MediaRef {
-	id: string;
-	storageKey?: string;
-}
-
-interface ImageValue extends MediaRef {
-	alt?: string;
-	width?: number;
-	height?: number;
-	meta?: {
-		storageKey?: string;
-		variants?: { download?: MediaRef; thumb?: MediaRef };
-	};
-}
-
-export interface PhotoData {
-	id: string;
-	image?: ImageValue | null;
-	title?: string | null;
-	caption?: unknown;
-	date_taken?: Date | string | null;
-	camera?: string | null;
-	lens?: string | null;
-	focal_length?: string | null;
-	focal_length_35?: string | null;
-	aperture?: string | null;
-	shutter_speed?: string | null;
-	iso?: number | null;
-	publishedAt?: Date | null;
-	updatedAt?: Date | null;
-}
+export * from "./shape";
 
 interface SeriesData {
 	id: string;
 	title?: string | null;
 	description?: unknown;
-}
-
-export interface GalleryPhoto {
-	id: string;
-	source: "emdash";
-	title: string | null;
-	description: string | null;
-	altText: string;
-	url: { full: string; display: string; download: string; thumb: string };
-	width: number | null;
-	height: number | null;
-	aspectRatio: number | null;
-	dateTaken: string | null;
-	dateAdded: string | null;
-	exif: {
-		camera: string | null;
-		lens: string | null;
-		focalLength: string | null;
-		focalLength35: string | null;
-		aperture: string | null;
-		shutterSpeed: string | null;
-		iso: number | null;
-	};
-	tags: string[];
-	series: string | null;
-	seriesOrder: number | null;
-	seriesTitle?: string | null;
-	seriesCount?: number;
-	sidecarUpdatedAt: string | null;
-	/** EmDash entry ID, for the edit button and inline editing. */
-	entryId: string;
-}
-
-export interface SeriesMeta {
-	slug: string;
-	title: string;
-	description: string | null;
-	coverPhoto: string | null;
-	photos: { id: string; order: number }[];
-	entryId: string;
-}
-
-export function mediaUrl(ref: MediaRef | undefined | null): string {
-	if (!ref) return "";
-	return `/_emdash/api/media/file/${ref.storageKey ?? ref.id}`;
-}
-
-/** Portable Text (or a legacy plain string) → plain text, paragraphs split by a blank line. */
-export function plainText(value: unknown): string | null {
-	if (typeof value === "string") return value.trim() || null;
-	if (!Array.isArray(value)) return null;
-	const paragraphs = value
-		.map((block) =>
-			block && typeof block === "object" && Array.isArray((block as { children?: unknown }).children)
-				? (block as { children: { text?: string }[] }).children.map((c) => c.text ?? "").join("")
-				: "",
-		)
-		.filter((p) => p.trim());
-	return paragraphs.length ? paragraphs.join("\n\n").trim() : null;
-}
-
-const iso = (d: Date | string | null | undefined) => {
-	if (!d) return null;
-	const date = d instanceof Date ? d : new Date(d);
-	// Sidecars wrote whole seconds without milliseconds; keep that shape.
-	return Number.isNaN(date.getTime()) ? null : date.toISOString().replace(".000Z", "Z");
-};
-
-const str = (v: string | null | undefined) => (v === undefined || v === null || v === "" ? null : v);
-
-export function toGalleryPhoto(slug: string, data: PhotoData): GalleryPhoto {
-	const image = data.image ?? undefined;
-	const display = mediaUrl(image?.meta?.storageKey ? { id: image.id, storageKey: image.meta.storageKey } : image);
-	const variants = image?.meta?.variants;
-	const width = image?.width ?? null;
-	const height = image?.height ?? null;
-	const title = str(data.title);
-	const dateTaken = iso(data.date_taken);
-	return {
-		id: slug,
-		source: "emdash",
-		title,
-		description: plainText(data.caption),
-		altText: title ?? slug.replace(/-/g, " "),
-		url: {
-			full: display,
-			display,
-			download: mediaUrl(variants?.download) || display,
-			thumb: mediaUrl(variants?.thumb) || display,
-		},
-		width,
-		height,
-		aspectRatio: width && height ? Number.parseFloat((width / height).toFixed(4)) : null,
-		dateTaken,
-		dateAdded: dateTaken ?? iso(data.publishedAt),
-		exif: {
-			camera: str(data.camera),
-			lens: str(data.lens),
-			focalLength: str(data.focal_length),
-			focalLength35: str(data.focal_length_35),
-			aperture: str(data.aperture),
-			shutterSpeed: str(data.shutter_speed),
-			iso: data.iso ?? null,
-		},
-		tags: [],
-		series: null,
-		seriesOrder: null,
-		sidecarUpdatedAt: iso(data.updatedAt),
-		entryId: data.id,
-	};
 }
 
 export interface Gallery {
@@ -168,8 +29,29 @@ export interface Gallery {
 	cacheHints: unknown[];
 }
 
-/** Every published photo, newest first, with series membership applied. */
-export async function loadGallery(): Promise<Gallery> {
+export const MEDIA_BASE: string | undefined = import.meta.env.PUBLIC_MEDIA_BASE || undefined;
+
+// A Worker isolate keeps this between requests, so a page view, its
+// infinite-scroll chunks and the feed share one load instead of each
+// re-reading every photo and series from D1. Signed-in editors bypass it,
+// so they see their changes at once; everyone else sees them within the TTL.
+const TTL_MS = 30_000;
+let cached: { at: number; gallery: Gallery } | undefined;
+let inflight: Promise<Gallery> | undefined;
+
+export function loadGallery({ fresh = false } = {}): Promise<Gallery> {
+	if (!fresh && cached && Date.now() - cached.at < TTL_MS) return Promise.resolve(cached.gallery);
+	if (!fresh && inflight) return inflight;
+	const run = readGallery().then((gallery) => {
+		if (!fresh) cached = { at: Date.now(), gallery };
+		return gallery;
+	});
+	if (!fresh) inflight = run.finally(() => (inflight = undefined));
+	return run;
+}
+
+/** Every published photo, newest first, with series membership and tags applied. */
+async function readGallery(): Promise<Gallery> {
 	const cacheHints: unknown[] = [];
 	const photos: GalleryPhoto[] = [];
 	let cursor: string | undefined;
@@ -181,7 +63,7 @@ export async function loadGallery(): Promise<Gallery> {
 		});
 		if (page.error) throw page.error;
 		cacheHints.push(page.cacheHint);
-		for (const entry of page.entries) photos.push(toGalleryPhoto(entry.id, entry.data));
+		for (const entry of page.entries) photos.push(toGalleryPhoto(entry.id, entry.data, MEDIA_BASE));
 		cursor = page.nextCursor;
 	} while (cursor);
 
@@ -191,6 +73,14 @@ export async function loadGallery(): Promise<Gallery> {
 		const db = b.dateTaken || b.dateAdded || "";
 		return da < db ? 1 : da > db ? -1 : 0;
 	});
+
+	// Tags, one query for all photos.
+	const terms = await getTermsForEntries(
+		"photos",
+		photos.map((p) => p.entryId),
+		"tag",
+	).catch(() => new Map<string, { label: string }[]>());
+	for (const p of photos) p.tags = (terms.get(p.entryId) ?? []).map((t) => t.label);
 
 	const seriesList = await getEmDashCollection<SeriesData>("series", { limit: 100 });
 	if (seriesList.error) throw seriesList.error;
@@ -227,25 +117,4 @@ export async function loadGallery(): Promise<Gallery> {
 	}
 
 	return { photos, series, cacheHints };
-}
-
-/** Series photos in their series order, as `seriesPhotos` did in .eleventy.js. */
-export function seriesPhotos(photos: GalleryPhoto[], slug: string): GalleryPhoto[] {
-	return photos
-		.filter((p) => p.series === slug)
-		.sort((a, b) => (a.seriesOrder ?? 9999) - (b.seriesOrder ?? 9999));
-}
-
-/** "Monday, January 1, 2024" — .eleventy.js `longDate`. */
-export function longDate(isoDate: string | null): string {
-	if (!isoDate) return "";
-	const d = new Date(isoDate);
-	return Number.isNaN(d.getTime())
-		? ""
-		: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
-}
-
-/** JSON safe to drop inside a <script> element. */
-export function scriptJson(value: unknown): string {
-	return JSON.stringify(value).replace(/</g, "\\u003c");
 }
